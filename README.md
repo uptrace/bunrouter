@@ -1,4 +1,4 @@
-httptreemux
+httptreemux  [![GoDoc](http://godoc.org/github.com/dimfeld/httptreemux?status.png)](http://godoc.org/github.com/dimfeld/httptreemux)
 ===========
 
 Simple tree-based HTTP router for Go.
