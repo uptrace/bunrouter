@@ -15,7 +15,7 @@ func SimplePanicHandler(w http.ResponseWriter, r *http.Request, err interface{})
 }
 
 // ShowErrorsPanicHandler prints a nice representation of an error to the browser.
-// Everything below was taken from github.com/gocraft/web, which adapted it from the Traffic project.
+// This was taken from github.com/gocraft/web, which adapted it from the Traffic project.
 func ShowErrorsPanicHandler(w http.ResponseWriter, r *http.Request, err interface{}) {
 	const size = 4096
 	stack := make([]byte, size)

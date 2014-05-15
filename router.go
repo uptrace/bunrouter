@@ -12,7 +12,9 @@ type PanicHandler func(http.ResponseWriter, *http.Request, interface{})
 type TreeMux struct {
 	root *node
 
-	PanicHandler    PanicHandler
+	// The default PanicHandler just returns a 500 code.
+	PanicHandler PanicHandler
+	// The default NotFoundHandler is http.NotFound.
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
 	// HeadCanUseGet allows the router to use the GET handler to respond to
 	// HEAD requests if no explicit HEAD handler has been added for the
