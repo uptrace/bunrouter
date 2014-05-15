@@ -78,11 +78,17 @@ GET /posts will match normally.
 POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
 
-## NotFoundHandler
-TreeMux.NotFoundHandler can be set to provide custom 404-error handling. The default implementation is Go's built-in http.NotFound function.
+## Error Handlers
 
-## Panic handling
-TreeMux.PanicHandler can be set to provide custom panic handling. The default implementation just returns error 500. The function ShowErrorsPanicHandler, adapted from [gocraft/web](https://github.com/gocraft/web), will print panic errors to the browser in an easily-readable format.
+### NotFoundHandler
+TreeMux.NotFoundHandler can be set to provide custom 404-error handling. The default implementation is Go's built-in `http.NotFound` function.
+
+### MethodNotAllowedHandler
+If a pattern matches, but the pattern does not have an associated handler for the requested method, the router calls the MethodNotAllowedHandler. The default
+version of this handler just writes the status code http.`StatusMethodNotAllowed`.
+
+### Panic handling
+TreeMux.PanicHandler can be set to provide custom panic handling. The default implementation just returns error 500. The function `ShowErrorsPanicHandler`, adapted from [gocraft/web](https://github.com/gocraft/web), will print panic errors to the browser in an easily-readable format.
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
