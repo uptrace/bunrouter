@@ -161,14 +161,58 @@ func TestPanics(t *testing.T) {
 		}
 	}
 
-	func() {
+	addPathPanic := func(p ...string) {
 		sawPanic = false
 		defer panicHandler()
 		tree := &node{path: "/"}
-		tree.addPath("abc/*path/")
-	}()
+		for _, path := range p {
+			tree.addPath(path)
+		}
+	}
+
+	addPathPanic("abc/*path/")
 	if !sawPanic {
 		t.Error("Expected panic with slash after catch-all")
 	}
 
+	addPathPanic("abc/*path/def")
+	if !sawPanic {
+		t.Error("Expected panic with path segment after catch-all")
+	}
+
+	addPathPanic("abc/*path", "abc/*paths")
+	if !sawPanic {
+		t.Error("Expected panic when adding conflicting catch-alls")
+	}
+
+	func() {
+		sawPanic = false
+		defer panicHandler()
+		tree := &node{path: "/"}
+		tree.setHandler("GET", dummyHandler)
+		tree.setHandler("GET", dummyHandler)
+	}()
+	if !sawPanic {
+		t.Error("Expected panic when adding a duplicate handler for a pattern")
+	}
+
+	addPathPanic("abc/ab:cd")
+	if !sawPanic {
+		t.Error("Expected panic with : in middle of path segment")
+	}
+
+	addPathPanic("abc/ab", "abc/ab:cd")
+	if !sawPanic {
+		t.Error("Expected panic with : in middle of path segment with existing path")
+	}
+
+	addPathPanic("abc/ab*cd")
+	if !sawPanic {
+		t.Error("Expected panic with * in middle of path segment")
+	}
+
+	addPathPanic("abc/ab", "abc/ab*cd")
+	if !sawPanic {
+		t.Error("Expected panic with * in middle of path segment with existing path")
+	}
 }
