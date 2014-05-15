@@ -30,6 +30,7 @@ Path elements starting with : indicate a wildcard in the path. A wildcard will o
 
 ### Routing Priority
 The priority rules in the router are simple.
+
 1. Static path segments take the highest priority. If a segment and its subtree are able to match the URL, that match is returned.
 2. Wildcards take seconds priority. For a particular wildcard to match, that wildcard and its subtree must match the URL.
 3. Finally, a catch-all rule will match when the earlier path segments have matched, and none of the static or wildcard conditions have matched. Catch-all rules must be at the end of a pattern.
