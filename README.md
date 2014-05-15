@@ -56,3 +56,8 @@ TreeMux.PanicHandler can be set to provide custom panic handling. The default im
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
+
+# Acknowledgements
+
+* Inspiration and CleanPath function from Julien Schmidt's [httprouter](https://github.com/julienschmidt/httprouter)
+* Show Errors panic handler from [gocraft/web](https://github.com/gocraft/web)
