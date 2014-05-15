@@ -2,7 +2,7 @@ package httptreemux
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter" // for the Clean function
+	"github.com/dimfeld/httppath"
 	"net/http"
 )
 
@@ -79,7 +79,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	n := t.root.search(path[1:], params)
 	if n == nil {
 		// Path was not found. Try cleaning it up and search again.
-		cleanPath := httprouter.CleanPath(path)
+		cleanPath := httppath.Clean(path)
 		n := t.root.search(cleanPath[1:], params)
 		if n == nil {
 			// Still nothing found.
