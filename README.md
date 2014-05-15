@@ -62,5 +62,5 @@ This package provides no middleware. But there are a lot of great options out th
 
 # Acknowledgements
 
-* Inspiration and CleanPath function from Julien Schmidt's [httprouter](https://github.com/julienschmidt/httprouter)
+* Inspiration from Julien Schmidt's [httprouter](https://github.com/julienschmidt/httprouter)
 * Show Errors panic handler from [gocraft/web](https://github.com/gocraft/web)
