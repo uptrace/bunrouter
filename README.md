@@ -18,6 +18,7 @@ Some examples of valid URL patterns are:
 * /post/all
 * /post/:postid
 * /post/:postid/page/:page
+* /post/:postid/:page
 * /images/*path
 * /favicon.ico
 * /:year/:month/
@@ -26,13 +27,15 @@ Some examples of valid URL patterns are:
 
 Note that all of the above URL patterns may exist concurrently in the router.
 
-Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a single path segment. A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
+Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a single path segment. That is the pattern `/post/:postid` will match on `/post/1` or `/post/1/`, but not `/post/1/2`.
+
+A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
 
 ### Routing Priority
 The priority rules in the router are simple.
 
 1. Static path segments take the highest priority. If a segment and its subtree are able to match the URL, that match is returned.
-2. Wildcards take seconds priority. For a particular wildcard to match, that wildcard and its subtree must match the URL.
+2. Wildcards take second priority. For a particular wildcard to match, that wildcard and its subtree must match the URL.
 3. Finally, a catch-all rule will match when the earlier path segments have matched, and none of the static or wildcard conditions have matched. Catch-all rules must be at the end of a pattern.
 
 So with the following patterns adapted from [simpleblog](https://www.github.com/dimfeld/simpleblog), we'll see certain matches:
@@ -50,6 +53,27 @@ router.GET("/favicon.ico", staticHandler)
 /images/CoolImage.gif will match /images/*path
 /images/2014/05/MayImage.jpg will also match /images/*path, with all the text after /images stored in the variable path.
 /favicon.ico will match /favicon.ico
+```
+
+### Special Method Behavior
+If TreeMux.HeadCanUseGet is set to true, the router will call the GET handler for a pattern when a HEAD request is processed, if no HEAD handler has been added for that pattern. This behavior is enabled by default.
+
+### Trailing Slashes
+The router has special handling for paths with trailing slashes. If a pattern is added to the router with a trailing slash, any matches on that pattern without a trailing slash will be redirected to the version with the slash. If a pattern does not have a trailing slash, matches on that pattern with a trailing slash will be redirected to the version without.
+
+The trailing slash flag is only stored once for a pattern. That is, if a pattern is added for a method with a trailing slash, all other methods for that pattern will also be considered to have a trailing slash, regardless of whether or not it is specified for those methods too.
+
+```go
+router = httptreemux.New()
+router.GET("/about", pageHandler)
+router.GET("/posts/", postIndexHandler)
+router.POST("/posts", postFormHandler)
+
+GET /about will match normally.
+GET /about/ will redirect to /about.
+GET /posts will redirect to /posts/.
+GET /posts will match normally.
+POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
 
 ## NotFoundHandler
