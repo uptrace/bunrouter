@@ -3,7 +3,7 @@ httptreemux
 
 Simple tree-based HTTP mux for Go.
 
-This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a high level of convenience in designing the routing patterns. In benchmarks, httptreemux is slightly slower than httprouter and much faster than the other common Go routers.
+This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a high level of convenience in designing the routing patterns. In [benchmarks](https://github.com/dimfeld/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter.
 
 ## Handler
 The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
