@@ -1,0 +1,174 @@
+package httptreemux
+
+import (
+	"net/http"
+	"testing"
+)
+
+func dummyHandler(w http.ResponseWriter, r *http.Request, urlParams map[string]string) {
+
+}
+
+func addPath(t *testing.T, tree *node, path string) {
+	t.Logf("Adding path %s", path)
+	n := tree.addPath(path[1:])
+	handler := func(w http.ResponseWriter, r *http.Request, urlParams map[string]string) {
+		urlParams["path"] = path
+	}
+	n.setHandler("GET", handler)
+}
+
+func testPath(t *testing.T, tree *node, path string, expectPath string, expectedParams map[string]string) {
+	if t.Failed() {
+		t.Log(tree.dumpTree(""))
+		t.FailNow()
+	}
+	t.Log("Testing", path)
+	params := make(map[string]string)
+	n := tree.search(path[1:], params)
+	if expectPath != "" && n == nil {
+		t.Errorf("No match for %s, expected %s", path, expectPath)
+		return
+	} else if expectPath == "" && n != nil {
+		t.Errorf("Expected no match for %s but got %v", path, n)
+		t.Error("Node and subtree was\n" + n.dumpTree(""))
+		return
+	}
+
+	if n == nil {
+		return
+	}
+
+	handler, ok := n.leafHandler["GET"]
+	if !ok {
+		t.Errorf("Path %s returned node without handler", path)
+		t.Error("Node and subtree was\n" + n.dumpTree(""))
+		return
+	}
+
+	pathMap := make(map[string]string)
+	handler(nil, nil, pathMap)
+	matchedPath := pathMap["path"]
+
+	if matchedPath != expectPath {
+		t.Errorf("Path %s matched %s, expected %s", path, matchedPath, expectPath)
+		t.Error("Node and subtree was\n" + n.dumpTree(""))
+	}
+
+	if expectedParams == nil {
+		if len(params) != 0 {
+			t.Errorf("Path %p expected no parameters, saw %v", path, params)
+		}
+	} else {
+		for key, val := range expectedParams {
+			sawVal, ok := params[key]
+			if !ok {
+				t.Errorf("Path %s matched without key %s", path, key)
+			} else if sawVal != val {
+				t.Errorf("Path %s expected param %s to be %s, saw %s", path, key, val, sawVal)
+			}
+
+			delete(params, key)
+		}
+
+		for key, val := range params {
+			t.Errorf("Path %s returned unexpected param %s=%s", path, key, val)
+		}
+	}
+
+}
+
+func TestTree(t *testing.T) {
+	tree := &node{path: "/"}
+
+	addPath(t, tree, "/")
+	addPath(t, tree, "/images")
+	addPath(t, tree, "/images/abc.jpg")
+	addPath(t, tree, "/images/:imgname")
+	addPath(t, tree, "/images/*path")
+	addPath(t, tree, "/ima")
+	addPath(t, tree, "/images1")
+	addPath(t, tree, "/images2")
+	addPath(t, tree, "/apples")
+	addPath(t, tree, "/:year/:month")
+	addPath(t, tree, "/:year/month")
+	addPath(t, tree, "/:year/:month/abc")
+	addPath(t, tree, "/:year/:month/:post")
+	addPath(t, tree, "/:year/:month/*post")
+	addPath(t, tree, "/:page")
+	addPath(t, tree, "/post/:post/page/:page")
+
+	testPath(t, tree, "/", "/", nil)
+	testPath(t, tree, "/images", "/images", nil)
+	testPath(t, tree, "/images/abc.jpg", "/images/abc.jpg", nil)
+	testPath(t, tree, "/images/something", "/images/:imgname",
+		map[string]string{"imgname": "something"})
+	testPath(t, tree, "/images/long/path", "/images/*path",
+		map[string]string{"path": "long/path"})
+	testPath(t, tree, "/images/even/longer/path", "/images/*path",
+		map[string]string{"path": "even/longer/path"})
+	testPath(t, tree, "/ima", "/ima", nil)
+	testPath(t, tree, "/apples", "/apples", nil)
+	testPath(t, tree, "/abc", "/:page",
+		map[string]string{"page": "abc"})
+	testPath(t, tree, "/post/a/page/2", "/post/:post/page/:page",
+		map[string]string{"post": "a", "page": "2"})
+	testPath(t, tree, "/2014/5", "/:year/:month",
+		map[string]string{"year": "2014", "month": "5"})
+	testPath(t, tree, "/2014/month", "/:year/month",
+		map[string]string{"year": "2014"})
+	testPath(t, tree, "/2014/5/abc", "/:year/:month/abc",
+		map[string]string{"year": "2014", "month": "5"})
+	testPath(t, tree, "/2014/5/def", "/:year/:month/:post",
+		map[string]string{"year": "2014", "month": "5", "post": "def"})
+	testPath(t, tree, "/2014/5/def/hij", "/:year/:month/*post",
+		map[string]string{"year": "2014", "month": "5", "post": "def/hij"})
+	testPath(t, tree, "/2014/5/def/hij/", "/:year/:month/*post",
+		map[string]string{"year": "2014", "month": "5", "post": "def/hij/"})
+	testPath(t, tree, "/ima/bcd", "", nil)
+	testPath(t, tree, "/2014/05/abc/def", "", nil)
+
+	t.Log("Test retrieval of duplicate paths")
+	params := make(map[string]string)
+	p := ":year/:month/abc"
+	n := tree.addPath(p)
+	if n == nil {
+		t.Errorf("Duplicate add of %s didn't return a node", p)
+	} else {
+		handler, ok := n.leafHandler["GET"]
+		matchPath := ""
+		if ok {
+			handler(nil, nil, params)
+			matchPath = params["path"]
+		}
+
+		if matchPath[1:] != p {
+			t.Errorf("Duplicate add of %s returned node for %s\n%s", p, matchPath,
+				n.dumpTree(""))
+
+		}
+	}
+
+	t.Log(tree.dumpTree(""))
+}
+
+func TestPanics(t *testing.T) {
+	sawPanic := false
+
+	panicHandler := func() {
+		if err := recover(); err != nil {
+			sawPanic = true
+		}
+	}
+
+	func() {
+		sawPanic = false
+		defer panicHandler()
+		tree := &node{path: "/"}
+		tree.addPath("abc/*path/")
+	}()
+	if !sawPanic {
+		t.Error("Expected panic with slash after catch-all")
+	}
+
+}
