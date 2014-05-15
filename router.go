@@ -16,6 +16,7 @@ type TreeMux struct {
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
 }
 
+// Dump returns a text representation of the routing tree.
 func (t *TreeMux) Dump() string {
 	return t.root.dumpTree("")
 }

@@ -133,6 +133,14 @@ func TestPanic(t *testing.T) {
 	if !sawPanic {
 		t.Errorf("Custom panic handler was not called")
 	}
+
+	// Assume this does the right thing. Just a sanity test.
+	router.PanicHandler = ShowErrorsPanicHandler
+	router.ServeHTTP(w, r)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected code %d from ShowErrorsPanicHandler, saw %d",
+			http.StatusInternalServerError, w.Code)
+	}
 }
 
 func TestRedirect(t *testing.T) {
