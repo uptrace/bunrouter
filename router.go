@@ -14,6 +14,10 @@ type TreeMux struct {
 
 	PanicHandler    PanicHandler
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
+	// HeadCanUseGet allows the router to use the GET handler to respond to
+	// HEAD requests if no explicit HEAD handler has been added for the
+	// matching pattern. This is true by default.
+	HeadCanUseGet bool
 }
 
 // Dump returns a text representation of the routing tree.
@@ -59,6 +63,11 @@ func (t *TreeMux) PATCH(path string, handler HandlerFunc) {
 	t.Handle("PATCH", path, handler)
 }
 
+func (t *TreeMux) HEAD(path string, handler HandlerFunc) {
+	// TODO Test this
+	t.Handle("HEAD", path, handler)
+}
+
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if t.PanicHandler != nil {
@@ -79,6 +88,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	n := t.root.search(path[1:], params)
 	if n == nil {
 		// Path was not found. Try cleaning it up and search again.
+		// TODO Test this
 		cleanPath := httppath.Clean(path)
 		n := t.root.search(cleanPath[1:], params)
 		if n == nil {
@@ -90,8 +100,15 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	handler, ok := n.leafHandler[r.Method]
 	if !ok {
-		t.NotFoundHandler(w, r)
-		return
+		if r.Method == "HEAD" && t.HeadCanUseGet {
+			// TODO Test this
+			handler, ok = n.leafHandler["GET"]
+		}
+
+		if !ok {
+			t.NotFoundHandler(w, r)
+			return
+		}
 	}
 
 	if pathLen > 1 && trailingSlash != n.addSlash {
@@ -113,5 +130,6 @@ func New() *TreeMux {
 	root := &node{path: "/"}
 	return &TreeMux{root: root,
 		NotFoundHandler: http.NotFound,
-		PanicHandler:    SimplePanicHandler}
+		PanicHandler:    SimplePanicHandler,
+		HeadCanUseGet:   true}
 }
