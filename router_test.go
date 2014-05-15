@@ -45,12 +45,10 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 
 func TestMethods(t *testing.T) {
 	var result string
-	var param string
 
 	makeHandler := func(method string) HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 			result = method
-			param = method
 		}
 	}
 
@@ -61,26 +59,39 @@ func TestMethods(t *testing.T) {
 	router.PUT("/user/:param", makeHandler("PUT"))
 	router.DELETE("/user/:param", makeHandler("DELETE"))
 
-	testMethod := func(method string) {
+	testMethod := func(method, expect string) {
 		result = ""
-		param = ""
-		w := new(mockResponseWriter)
+		w := httptest.NewRecorder()
 		r, _ := http.NewRequest(method, "/user/"+method, nil)
 		router.ServeHTTP(w, r)
-		if result != method {
-			t.Errorf("Method %s got result %s", method, result)
+		if expect == "" && w.Code != http.StatusNotFound {
+			t.Errorf("Method %s not expected to match")
 		}
 
-		if param != method {
-			t.Errorf("Method %s got result %s", param, result)
+		if result != expect {
+			t.Errorf("Method %s got result %s", method, result)
 		}
 	}
 
-	testMethod("GET")
-	testMethod("POST")
-	testMethod("PATCH")
-	testMethod("PUT")
-	testMethod("DELETE")
+	testMethod("GET", "GET")
+	testMethod("POST", "POST")
+	testMethod("PATCH", "PATCH")
+	testMethod("PUT", "PUT")
+	testMethod("DELETE", "DELETE")
+	t.Log("Test HeadCanUseGet = true")
+	testMethod("HEAD", "GET")
+
+	router.HeadCanUseGet = false
+	t.Log("Test HeadCanUseGet = false")
+	testMethod("HEAD", "")
+
+	router.HEAD("/user/:param", makeHandler("HEAD"))
+
+	t.Log("Test HeadCanUseGet = false with explicit HEAD handler")
+	testMethod("HEAD", "HEAD")
+	router.HeadCanUseGet = true
+	t.Log("Test HeadCanUseGet = true with explicit HEAD handler")
+	testMethod("HEAD", "HEAD")
 }
 
 func TestNotFound(t *testing.T) {

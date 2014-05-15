@@ -64,7 +64,6 @@ func (t *TreeMux) PATCH(path string, handler HandlerFunc) {
 }
 
 func (t *TreeMux) HEAD(path string, handler HandlerFunc) {
-	// TODO Test this
 	t.Handle("HEAD", path, handler)
 }
 
@@ -101,7 +100,6 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler, ok := n.leafHandler[r.Method]
 	if !ok {
 		if r.Method == "HEAD" && t.HeadCanUseGet {
-			// TODO Test this
 			handler, ok = n.leafHandler["GET"]
 		}
 
