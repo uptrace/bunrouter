@@ -11,7 +11,7 @@ The handler is a simple function with the prototype `func(w http.ResponseWriter,
 ## Routing Rules
 The syntax here is also modeled after httprouter. Each variable in a path may match on ones segment only, except for an optional catch-all variable at the end of the URL.
 
-Some examples of valid URL pattens are:
+Some examples of valid URL patterns are:
 * /post/all
 * /post/:postid
 * /post/:postid/page/:page
