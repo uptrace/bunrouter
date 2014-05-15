@@ -38,7 +38,7 @@ router.GET("/:page", pageHandler)
 router.GET("/:year/:month/:post", postHandler)
 router.GET("/:year/:month", archiveHandler)
 router.GET("/images/*path", staticHandler)
-router.GET("/favicon.ico", "staticHandler)
+router.GET("/favicon.ico", staticHandler)
 
 /abc will match /:page
 /2014/05 will match /:year/:month
