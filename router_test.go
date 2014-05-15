@@ -64,8 +64,8 @@ func TestMethods(t *testing.T) {
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest(method, "/user/"+method, nil)
 		router.ServeHTTP(w, r)
-		if expect == "" && w.Code != http.StatusNotFound {
-			t.Errorf("Method %s not expected to match")
+		if expect == "" && w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("Method %s not expected to match but saw code %d", w.Code)
 		}
 
 		if result != expect {
@@ -118,6 +118,34 @@ func TestNotFound(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !calledNotFound {
 		t.Error("Custom not found handler was not called")
+	}
+}
+
+func TestMethodNotAllowedHandler(t *testing.T) {
+	calledNotAllowed := false
+
+	notAllowedHandler := func(w http.ResponseWriter, r *http.Request) {
+		calledNotAllowed = true
+	}
+
+	router := New()
+	router.GET("/user/abc", simpleHandler)
+
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("POST", "/user/abc", nil)
+	router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected error %d from built-in not found handler but saw %d",
+			http.StatusMethodNotAllowed, w.Code)
+	}
+
+	// Now try with a custome handler.
+	router.MethodNotAllowedHandler = notAllowedHandler
+
+	router.ServeHTTP(w, r)
+	if !calledNotAllowed {
+		t.Error("Custom not allowed handler was not called")
 	}
 }
 
