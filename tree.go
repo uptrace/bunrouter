@@ -200,11 +200,14 @@ func (n *node) search(path string, params map[string]string) (found *node) {
 
 		thisToken := path[0:nextSlash]
 		nextToken := path[nextSlash:]
-		for _, child := range n.wildcardChild {
-			found = child.search(nextToken, params)
-			if found != nil {
-				params[child.path[1:]] = thisToken
-				return
+
+		if len(thisToken) > 0 { // Don't match on empty tokens.
+			for _, child := range n.wildcardChild {
+				found = child.search(nextToken, params)
+				if found != nil {
+					params[child.path[1:]] = thisToken
+					return
+				}
 			}
 		}
 	}

@@ -127,6 +127,12 @@ func TestTree(t *testing.T) {
 		map[string]string{"year": "2014", "month": "5", "post": "def/hij/"})
 	testPath(t, tree, "/ima/bcd", "", nil)
 	testPath(t, tree, "/2014/05/abc/def", "", nil)
+	testPath(t, tree, "/2014//month", "", nil)
+	testPath(t, tree, "/post//abc/page/2", "", nil)
+	testPath(t, tree, "/post/abc//page/2", "", nil)
+	testPath(t, tree, "/post/abc/page//2", "", nil)
+	testPath(t, tree, "//post/abc/page/2", "", nil)
+	testPath(t, tree, "//post//abc//page//2", "", nil)
 
 	t.Log("Test retrieval of duplicate paths")
 	params := make(map[string]string)
