@@ -24,7 +24,7 @@ func ShowErrorsPanicHandler(w http.ResponseWriter, r *http.Request, err interfac
 }
 
 func renderPrettyError(rw http.ResponseWriter, req *http.Request, err interface{}, stack []byte) {
-	_, filePath, line, _ := runtime.Caller(5)
+	_, filePath, line, _ := runtime.Caller(4)
 
 	data := map[string]interface{}{
 		"Error":    err,
