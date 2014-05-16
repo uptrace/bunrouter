@@ -20,6 +20,7 @@ func ShowErrorsPanicHandler(w http.ResponseWriter, r *http.Request, err interfac
 	const size = 4096
 	stack := make([]byte, size)
 	stack = stack[:runtime.Stack(stack, false)]
+	renderPrettyError(w, r, err, stack)
 }
 
 func renderPrettyError(rw http.ResponseWriter, req *http.Request, err interface{}, stack []byte) {

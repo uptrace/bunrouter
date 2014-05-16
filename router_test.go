@@ -175,6 +175,7 @@ func TestPanic(t *testing.T) {
 
 	// Assume this does the right thing. Just a sanity test.
 	router.PanicHandler = ShowErrorsPanicHandler
+	w = httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("Expected code %d from ShowErrorsPanicHandler, saw %d",
@@ -198,6 +199,7 @@ func TestRedirect(t *testing.T) {
 	}
 
 	r, _ = http.NewRequest("GET", "/noslash/", nil)
+	w = httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	if w.Code != http.StatusMovedPermanently {
 		t.Errorf("/noslash/ expected code 301, saw %d", w.Code)
