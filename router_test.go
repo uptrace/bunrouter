@@ -236,6 +236,23 @@ func TestRoot(t *testing.T) {
 	}
 }
 
+func TestSlash(t *testing.T) {
+	param := ""
+	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		param = params["param"]
+	}
+	router := New()
+	router.GET("/abc/:param", handler)
+
+	r := newRequest("GET", "/abc/de%2ff", nil)
+	w := new(mockResponseWriter)
+	router.ServeHTTP(w, r)
+
+	if param != "de/f" {
+		t.Errorf("Expected param de/f, saw %s", param)
+	}
+}
+
 func BenchmarkSimple(b *testing.B) {
 	router := New()
 
