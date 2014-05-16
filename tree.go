@@ -2,6 +2,7 @@ package httptreemux
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -205,7 +206,12 @@ func (n *node) search(path string, params map[string]string) (found *node) {
 			for _, child := range n.wildcardChild {
 				found = child.search(nextToken, params)
 				if found != nil {
-					params[child.path[1:]] = thisToken
+					unescaped, err := url.QueryUnescape(thisToken)
+					if err != nil {
+						panic(err)
+						unescaped = thisToken
+					}
+					params[child.path[1:]] = unescaped
 					return
 				}
 			}

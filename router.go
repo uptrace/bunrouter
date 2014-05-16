@@ -83,7 +83,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	path := r.URL.Path
+	path := r.RequestURI
 	pathLen := len(path)
 	trailingSlash := path[pathLen-1] == '/'
 	if pathLen > 1 && trailingSlash {

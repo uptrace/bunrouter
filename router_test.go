@@ -1,8 +1,10 @@
 package httptreemux
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -10,6 +12,13 @@ func simpleHandler(w http.ResponseWriter, r *http.Request, params map[string]str
 
 func panicHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	panic("test panic")
+}
+
+func newRequest(method, path string, body io.Reader) *http.Request {
+	unescaped, _ := url.QueryUnescape(path)
+	r, _ := http.NewRequest(method, unescaped, body)
+	r.RequestURI = path
+	return r
 }
 
 // This type and the benchRequest function are taken from go-http-routing-benchmark.
@@ -62,7 +71,7 @@ func TestMethods(t *testing.T) {
 	testMethod := func(method, expect string) {
 		result = ""
 		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(method, "/user/"+method, nil)
+		r := newRequest(method, "/user/"+method, nil)
 		router.ServeHTTP(w, r)
 		if expect == "" && w.Code != http.StatusMethodNotAllowed {
 			t.Errorf("Method %s not expected to match but saw code %d", w.Code)
@@ -105,7 +114,7 @@ func TestNotFound(t *testing.T) {
 	router.GET("/user/abc", simpleHandler)
 
 	w := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/abc/", nil)
+	r := newRequest("GET", "/abc/", nil)
 	router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusNotFound {
@@ -132,7 +141,7 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 	router.GET("/user/abc", simpleHandler)
 
 	w := httptest.NewRecorder()
-	r, _ := http.NewRequest("POST", "/user/abc", nil)
+	r := newRequest("POST", "/user/abc", nil)
 	router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
@@ -153,7 +162,7 @@ func TestPanic(t *testing.T) {
 
 	router := New()
 	router.GET("/abc", panicHandler)
-	r, _ := http.NewRequest("GET", "/abc", nil)
+	r := newRequest("GET", "/abc", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, r)
@@ -189,7 +198,7 @@ func TestRedirect(t *testing.T) {
 	router.GET("/noslash", simpleHandler)
 
 	w := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/slash", nil)
+	r := newRequest("GET", "/slash", nil)
 	router.ServeHTTP(w, r)
 	if w.Code != http.StatusMovedPermanently {
 		t.Errorf("/slash expected code 301, saw %d", w.Code)
@@ -198,7 +207,7 @@ func TestRedirect(t *testing.T) {
 		t.Errorf("/slash was not redirected to /slash/")
 	}
 
-	r, _ = http.NewRequest("GET", "/noslash/", nil)
+	r = newRequest("GET", "/noslash/", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	if w.Code != http.StatusMovedPermanently {
@@ -218,7 +227,7 @@ func TestRoot(t *testing.T) {
 	router := New()
 	router.GET("/", handler)
 
-	r, _ := http.NewRequest("GET", "/", nil)
+	r := newRequest("GET", "/", nil)
 	w := new(mockResponseWriter)
 	router.ServeHTTP(w, r)
 
@@ -233,7 +242,7 @@ func BenchmarkSimple(b *testing.B) {
 	router.GET("/", simpleHandler)
 	router.GET("/user/gordon", simpleHandler)
 
-	r, _ := http.NewRequest("GET", "/user/dimfeld", nil)
+	r := newRequest("GET", "/user/dimfeld", nil)
 
 	benchRequest(b, router, r)
 }
@@ -244,7 +253,7 @@ func BenchmarkParam(b *testing.B) {
 	router.GET("/", simpleHandler)
 	router.GET("/user/:name", simpleHandler)
 
-	r, _ := http.NewRequest("GET", "/user/dimfeld", nil)
+	r := newRequest("GET", "/user/dimfeld", nil)
 
 	benchRequest(b, router, r)
 }
