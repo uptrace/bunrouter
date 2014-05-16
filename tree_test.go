@@ -125,6 +125,12 @@ func TestTree(t *testing.T) {
 		map[string]string{"year": "2014", "month": "5", "post": "def/hij"})
 	testPath(t, tree, "/2014/5/def/hij/", "/:year/:month/*post",
 		map[string]string{"year": "2014", "month": "5", "post": "def/hij/"})
+
+	testPath(t, tree, "/2014/ab%2f", "/:year/:month",
+		map[string]string{"year": "2014", "month": "ab/"})
+	testPath(t, tree, "/post/ab%2fdef/page/2%2f", "/post/:post/page/:page",
+		map[string]string{"post": "ab/def", "page": "2/"})
+
 	testPath(t, tree, "/ima/bcd", "", nil)
 	testPath(t, tree, "/2014/05/abc/def", "", nil)
 	testPath(t, tree, "/2014//month", "", nil)

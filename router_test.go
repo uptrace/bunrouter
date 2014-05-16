@@ -240,9 +240,20 @@ func BenchmarkSimple(b *testing.B) {
 	router := New()
 
 	router.GET("/", simpleHandler)
-	router.GET("/user/gordon", simpleHandler)
+	router.GET("/user/dimfeld", simpleHandler)
 
 	r := newRequest("GET", "/user/dimfeld", nil)
+
+	benchRequest(b, router, r)
+}
+
+func BenchmarkRoot(b *testing.B) {
+	router := New()
+
+	router.GET("/", simpleHandler)
+	router.GET("/user/dimfeld", simpleHandler)
+
+	r := newRequest("GET", "/", nil)
 
 	benchRequest(b, router, r)
 }
