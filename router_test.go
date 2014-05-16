@@ -275,6 +275,18 @@ func BenchmarkRoot(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
+func BenchmarkRootWithoutPanicHandler(b *testing.B) {
+	router := New()
+	router.PanicHandler = nil
+
+	router.GET("/", simpleHandler)
+	router.GET("/user/dimfeld", simpleHandler)
+
+	r := newRequest("GET", "/", nil)
+
+	benchRequest(b, router, r)
+}
+
 func BenchmarkParam(b *testing.B) {
 	router := New()
 

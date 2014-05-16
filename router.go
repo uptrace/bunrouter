@@ -73,14 +73,16 @@ func (t *TreeMux) HEAD(path string, handler HandlerFunc) {
 	t.Handle("HEAD", path, handler)
 }
 
+func (t *TreeMux) serveHTTPPanic(w http.ResponseWriter, r *http.Request) {
+	if err := recover(); err != nil {
+		t.PanicHandler(w, r, err)
+	}
+}
+
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if t.PanicHandler != nil {
-		defer func() {
-			if err := recover(); err != nil {
-				t.PanicHandler(w, r, err)
-			}
-		}()
+		defer t.serveHTTPPanic(w, r)
 	}
 
 	path := r.RequestURI
@@ -115,7 +117,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if pathLen > 1 && trailingSlash != n.addSlash {
+	if trailingSlash != n.addSlash && pathLen > 1 {
 		if n.addSlash {
 			// Need to add a slash.
 			http.Redirect(w, r, path+"/", http.StatusMovedPermanently)

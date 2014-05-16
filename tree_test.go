@@ -228,3 +228,13 @@ func TestPanics(t *testing.T) {
 		t.Error("Expected panic with * in middle of path segment with existing path")
 	}
 }
+
+func BenchmarkTreeNullRequest(b *testing.B) {
+	tree := &node{path: "/"}
+	params := map[string]string{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree.search("", params)
+	}
+}
