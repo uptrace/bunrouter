@@ -31,13 +31,6 @@ Path elements starting with : indicate a wildcard in the path. A wildcard will o
 
 A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
 
-### Escaped Slashes
-Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
-
-For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, which is unescaped to `/post/abc/def`. The desired behavior is that it matches, and the `post` wildcard is set to `abc/def`.
-
-Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards are then unescaped, to give the desired behavior.
-
 ### Routing Priority
 The priority rules in the router are simple.
 
@@ -84,6 +77,14 @@ GET /posts will redirect to /posts/.
 GET /posts will match normally.
 POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
+### Escaped Slashes
+Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
+
+For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, which is unescaped to `/post/abc/def`. The desired behavior is that it matches, and the `post` wildcard is set to `abc/def`.
+
+Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
+
+Tl;DR: If a requested URL contains a %2f, ths router will still do the right thing.
 
 ## Error Handlers
 
