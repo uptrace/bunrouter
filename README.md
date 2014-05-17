@@ -1,15 +1,15 @@
 httptreemux  [![Build Status](https://travis-ci.org/dimfeld/httptreemux.png?branch=master)](https://travis-ci.org/dimfeld/httptreemux) [![GoDoc](http://godoc.org/github.com/dimfeld/httptreemux?status.png)](http://godoc.org/github.com/dimfeld/httptreemux)
 ===========
 
-Simple tree-based HTTP router for Go.
+High-speed, flexible, tree-based HTTP router for Go.
 
-This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/dimfeld/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter, except on purely static routing trees with no path variables, where httprouter is much faster than almost anything else.
+This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/dimfeld/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter.
 
 ## Why?
 There are a lot of good routers out there. But looking at the ones that were really lightweight, I couldn't quite get something that fit with the route patterns I wanted. The code itself is simple enough, so I spent an evening writing this.
 
 ## Handler
-The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
+The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
 
 ## Routing Rules
 The syntax here is also modeled after httprouter. Each variable in a path may match on ones segment only, except for an optional catch-all variable at the end of the URL.
@@ -30,13 +30,6 @@ Note that all of the above URL patterns may exist concurrently in the router.
 Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a single path segment. That is, the pattern `/post/:postid` will match on `/post/1` or `/post/1/`, but not `/post/1/2`.
 
 A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
-
-### Escaped Slashes
-Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
-
-For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, which is unescaped to `/post/abc/def`. The desired behavior is that it matches, and the `post` wildcard is set to `abc/def`.
-
-Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards are then unescaped, to give the desired behavior.
 
 ### Routing Priority
 The priority rules in the router are simple.
@@ -84,6 +77,14 @@ GET /posts will redirect to /posts/.
 GET /posts will match normally.
 POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
+### Escaped Slashes
+Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
+
+For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, which is unescaped to `/post/abc/def`. The desired behavior is that it matches, and the `post` wildcard is set to `abc/def`.
+
+Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
+
+Tl;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP routers may not due to [Go issue 3659](https://code.google.com/p/go/issues/detail?id=3659).
 
 ## Error Handlers
 
