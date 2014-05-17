@@ -166,7 +166,7 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 	return newNode, i
 }
 
-func (n *node) search(path string, params map[string]string) (found *node) {
+func (n *node) search(path string, params *map[string]string) (found *node) {
 	//test.Logf("Searching for %s in %s", path, n.dumpTree(""))
 	pathLen := len(path)
 	if pathLen == 0 {
@@ -208,20 +208,35 @@ func (n *node) search(path string, params map[string]string) (found *node) {
 				if found != nil {
 					unescaped, err := url.QueryUnescape(thisToken)
 					if err != nil {
-						panic(err)
 						unescaped = thisToken
 					}
-					params[child.path[1:]] = unescaped
+
+					if *params == nil {
+						*params = map[string]string{child.path[1:]: unescaped}
+					} else {
+						(*params)[child.path[1:]] = unescaped
+					}
+
 					return
 				}
 			}
 		}
 	}
 
-	if n.catchAllChild != nil {
+	catchAllChild := n.catchAllChild
+	if catchAllChild != nil {
 		// Hit the catchall, so just assign the whole remaining path.
-		params[n.catchAllChild.path[1:]] = path
-		return n.catchAllChild
+		unescaped, err := url.QueryUnescape(path)
+		if err != nil {
+			unescaped = path
+		}
+
+		if *params == nil {
+			*params = map[string]string{catchAllChild.path[1:]: unescaped}
+		} else {
+			(*params)[catchAllChild.path[1:]] = unescaped
+		}
+		return catchAllChild
 	}
 
 	return nil

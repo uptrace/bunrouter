@@ -24,8 +24,8 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		t.FailNow()
 	}
 	t.Log("Testing", path)
-	params := make(map[string]string)
-	n := tree.search(path[1:], params)
+	var params map[string]string
+	n := tree.search(path[1:], &params)
 	if expectPath != "" && n == nil {
 		t.Errorf("No match for %s, expected %s", path, expectPath)
 		return
@@ -230,33 +230,37 @@ func TestPanics(t *testing.T) {
 }
 
 func BenchmarkTreeNullRequest(b *testing.B) {
+	b.ReportAllocs()
 	tree := &node{path: "/"}
-	params := map[string]string{}
+	var params map[string]string
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("", params)
+		tree.search("", &params)
 	}
 }
 
 func BenchmarkTreeOneStatic(b *testing.B) {
+	b.ReportAllocs()
 	tree := &node{path: "/"}
 	tree.addPath("abc")
-	params := map[string]string{}
+	var params map[string]string
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("abc", params)
+		tree.search("abc", &params)
 	}
 }
 
 func BenchmarkTreeOneParam(b *testing.B) {
+	b.ReportAllocs()
 	tree := &node{path: "/"}
 	tree.addPath(":abc")
-	params := map[string]string{}
+	var params map[string]string
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("abc", params)
+		params = nil
+		tree.search("abc", &params)
 	}
 }

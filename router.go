@@ -99,13 +99,14 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if trailingSlash {
 		path = path[:pathLen-1]
 	}
-	params := make(map[string]string)
-	n := t.root.search(path[1:], params)
+	// params := make(map[string]string)
+	var params map[string]string
+	n := t.root.search(path[1:], &params)
 	if n == nil {
 		// Path was not found. Try cleaning it up and search again.
 		// TODO Test this
 		cleanPath := httppath.Clean(path)
-		n := t.root.search(cleanPath[1:], params)
+		n := t.root.search(cleanPath[1:], &params)
 		if n == nil {
 			// Still nothing found.
 			t.NotFoundHandler(w, r)
