@@ -238,3 +238,25 @@ func BenchmarkTreeNullRequest(b *testing.B) {
 		tree.search("", params)
 	}
 }
+
+func BenchmarkTreeOneStatic(b *testing.B) {
+	tree := &node{path: "/"}
+	tree.addPath("abc")
+	params := map[string]string{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree.search("abc", params)
+	}
+}
+
+func BenchmarkTreeOneParam(b *testing.B) {
+	tree := &node{path: "/"}
+	tree.addPath(":abc")
+	params := map[string]string{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree.search("abc", params)
+	}
+}
