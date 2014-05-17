@@ -84,7 +84,7 @@ For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, whi
 
 Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
 
-Tl;DR: If a requested URL contains a %2f, ths router will still do the right thing.
+Tl;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP routers may not due to [Go issue 3659](https://code.google.com/p/go/issues/detail?id=3659).
 
 ## Error Handlers
 
