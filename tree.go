@@ -9,6 +9,8 @@ import (
 type node struct {
 	path string
 
+	priority int
+
 	// The list of static children to check.
 	staticIndices []byte
 	staticChild   []*node
@@ -24,6 +26,21 @@ type node struct {
 	addSlash bool
 	// If this node is the end of the URL, then call the handler, if applicable.
 	leafHandler map[string]HandlerFunc
+}
+
+func (n *node) sortStaticChild(i int) {
+	for i > 0 && n.staticChild[i].priority > n.staticChild[i-1].priority {
+		n.staticChild[i], n.staticChild[i-1] = n.staticChild[i-1], n.staticChild[i]
+		n.staticIndices[i], n.staticIndices[i-1] = n.staticIndices[i-1], n.staticIndices[i]
+		i -= 1
+	}
+}
+
+func (n *node) sortWildcardChild(i int) {
+	for i > 0 && n.wildcardChild[i].priority > n.wildcardChild[i-1].priority {
+		n.wildcardChild[i], n.wildcardChild[i-1] = n.wildcardChild[i-1], n.wildcardChild[i]
+		i -= 1
+	}
 }
 
 func (n *node) setHandler(verb string, handler HandlerFunc) {
@@ -62,11 +79,12 @@ func (n *node) addPath(path string) *node {
 
 	if c == '*' {
 		// Token starts with a *, so it's a catch-all
+		thisToken = thisToken[1:]
 		if n.catchAllChild == nil {
 			n.catchAllChild = &node{path: thisToken}
 		}
 
-		if path != n.catchAllChild.path {
+		if path[1:] != n.catchAllChild.path {
 			panic(fmt.Sprintf("Catch-all name in %s doesn't match %s",
 				path, n.catchAllChild.path))
 		}
@@ -78,11 +96,14 @@ func (n *node) addPath(path string) *node {
 		return n.catchAllChild
 	} else if c == ':' {
 		// Token starts with a :
+		thisToken = thisToken[1:]
 		var child *node
-		for _, childNode := range n.wildcardChild {
+		for i, childNode := range n.wildcardChild {
 			// Find a wildcard node with the same name as this one.
 			if childNode.path == thisToken {
 				child = childNode
+				child.priority++
+				n.sortWildcardChild(i)
 				break
 			}
 		}
@@ -108,8 +129,10 @@ func (n *node) addPath(path string) *node {
 			if c == index {
 				// Yes. Split it based on the common prefix of the existing
 				// node and the new one.
-				child, i := n.splitCommonPrefix(i, thisToken)
-				return child.addPath(path[i:])
+				child, prefixSplit := n.splitCommonPrefix(i, thisToken)
+				child.priority++
+				n.sortStaticChild(i)
+				return child.addPath(path[prefixSplit:])
 			}
 		}
 
@@ -156,7 +179,8 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 	// Create a new intermediary node in the place of the existing node, with
 	// the existing node as a child.
 	newNode := &node{
-		path: commonPrefix,
+		path:     commonPrefix,
+		priority: childNode.priority,
 		// Index is the first letter of the non-common part of the path.
 		staticIndices: []byte{childNode.path[0]},
 		staticChild:   []*node{childNode},
@@ -184,11 +208,11 @@ func (n *node) search(path string, params *map[string]string) (found *node) {
 		if staticIndex == firstChar {
 			child := n.staticChild[i]
 			childPathLen := len(child.path)
-			if pathLen >= childPathLen &&
-				child.path == path[:childPathLen] {
+			if pathLen >= childPathLen && child.path == path[:childPathLen] {
 				nextPath := path[childPathLen:]
 				return child.search(nextPath, params)
 			}
+			break
 		}
 	}
 
@@ -212,9 +236,9 @@ func (n *node) search(path string, params *map[string]string) (found *node) {
 					}
 
 					if *params == nil {
-						*params = map[string]string{child.path[1:]: unescaped}
+						*params = map[string]string{child.path: unescaped}
 					} else {
-						(*params)[child.path[1:]] = unescaped
+						(*params)[child.path] = unescaped
 					}
 
 					return
@@ -232,9 +256,9 @@ func (n *node) search(path string, params *map[string]string) (found *node) {
 		}
 
 		if *params == nil {
-			*params = map[string]string{catchAllChild.path[1:]: unescaped}
+			*params = map[string]string{catchAllChild.path: unescaped}
 		} else {
-			(*params)[catchAllChild.path[1:]] = unescaped
+			(*params)[catchAllChild.path] = unescaped
 		}
 		return catchAllChild
 	}
@@ -242,18 +266,18 @@ func (n *node) search(path string, params *map[string]string) (found *node) {
 	return nil
 }
 
-func (n *node) dumpTree(prefix string) string {
-	line := fmt.Sprintf("%s%s [%d] %v\n", prefix, n.path,
+func (n *node) dumpTree(prefix, nodeType string) string {
+	line := fmt.Sprintf("%s %02d %s%s [%d] %v\n", prefix, n.priority, nodeType, n.path,
 		len(n.staticChild)+len(n.wildcardChild), n.leafHandler)
 	prefix += "  "
 	for _, node := range n.staticChild {
-		line += node.dumpTree(prefix)
+		line += node.dumpTree(prefix, "")
 	}
 	for _, node := range n.wildcardChild {
-		line += node.dumpTree(prefix)
+		line += node.dumpTree(prefix, ":")
 	}
 	if n.catchAllChild != nil {
-		line += n.catchAllChild.dumpTree(prefix)
+		line += n.catchAllChild.dumpTree(prefix, "*")
 	}
 	return line
 }

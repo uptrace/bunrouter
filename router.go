@@ -28,7 +28,7 @@ type TreeMux struct {
 
 // Dump returns a text representation of the routing tree.
 func (t *TreeMux) Dump() string {
-	return t.root.dumpTree("")
+	return t.root.dumpTree("", "")
 }
 
 func (t *TreeMux) Handle(verb, path string, handler HandlerFunc) {

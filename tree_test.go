@@ -20,7 +20,7 @@ func addPath(t *testing.T, tree *node, path string) {
 
 func testPath(t *testing.T, tree *node, path string, expectPath string, expectedParams map[string]string) {
 	if t.Failed() {
-		t.Log(tree.dumpTree(""))
+		t.Log(tree.dumpTree("", " "))
 		t.FailNow()
 	}
 	t.Log("Testing", path)
@@ -31,7 +31,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		return
 	} else if expectPath == "" && n != nil {
 		t.Errorf("Expected no match for %s but got %v", path, n)
-		t.Error("Node and subtree was\n" + n.dumpTree(""))
+		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
 		return
 	}
 
@@ -42,7 +42,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 	handler, ok := n.leafHandler["GET"]
 	if !ok {
 		t.Errorf("Path %s returned node without handler", path)
-		t.Error("Node and subtree was\n" + n.dumpTree(""))
+		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
 		return
 	}
 
@@ -52,7 +52,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 	if matchedPath != expectPath {
 		t.Errorf("Path %s matched %s, expected %s", path, matchedPath, expectPath)
-		t.Error("Node and subtree was\n" + n.dumpTree(""))
+		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
 	}
 
 	if expectedParams == nil {
@@ -90,6 +90,9 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/images1")
 	addPath(t, tree, "/images2")
 	addPath(t, tree, "/apples")
+	addPath(t, tree, "/apples1")
+	addPath(t, tree, "/appeasement")
+	addPath(t, tree, "/appealing")
 	addPath(t, tree, "/:year/:month")
 	addPath(t, tree, "/:year/month")
 	addPath(t, tree, "/:year/:month/abc")
@@ -156,12 +159,12 @@ func TestTree(t *testing.T) {
 
 		if matchPath[1:] != p {
 			t.Errorf("Duplicate add of %s returned node for %s\n%s", p, matchPath,
-				n.dumpTree(""))
+				n.dumpTree("", " "))
 
 		}
 	}
 
-	t.Log(tree.dumpTree(""))
+	t.Log(tree.dumpTree("", " "))
 }
 
 func TestPanics(t *testing.T) {

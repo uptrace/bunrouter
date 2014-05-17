@@ -41,14 +41,11 @@ func (m *mockResponseWriter) WriteHeader(int) {}
 
 func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	w := new(mockResponseWriter)
-	u := r.URL
-	rq := u.RawQuery
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		u.RawQuery = rq
 		router.ServeHTTP(w, r)
 	}
 }
@@ -243,8 +240,12 @@ func TestSlash(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		param = params["param"]
 	}
+	ymHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		param = params["year"] + " " + params["month"]
+	}
 	router := New()
 	router.GET("/abc/:param", handler)
+	router.GET("/year/:year/month/:month", ymHandler)
 
 	r := newRequest("GET", "/abc/de%2ff", nil)
 	w := new(mockResponseWriter)
@@ -252,6 +253,13 @@ func TestSlash(t *testing.T) {
 
 	if param != "de/f" {
 		t.Errorf("Expected param de/f, saw %s", param)
+	}
+
+	r = newRequest("GET", "/year/de%2f/month/fg%2f", nil)
+	router.ServeHTTP(w, r)
+
+	if param != "de/ fg/" {
+		t.Errorf("Expected param de/ fg/, saw %s", param)
 	}
 }
 
@@ -287,7 +295,7 @@ func TestQueryString(t *testing.T) {
 	}
 }
 
-func BenchmarkSimple(b *testing.B) {
+func BenchmarkRouterSimple(b *testing.B) {
 	router := New()
 
 	router.GET("/", simpleHandler)
@@ -298,7 +306,7 @@ func BenchmarkSimple(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
-func BenchmarkRootWithPanicHandler(b *testing.B) {
+func BenchmarkRouterRootWithPanicHandler(b *testing.B) {
 	router := New()
 	router.PanicHandler = SimplePanicHandler
 
@@ -310,7 +318,7 @@ func BenchmarkRootWithPanicHandler(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
-func BenchmarkRootWithoutPanicHandler(b *testing.B) {
+func BenchmarkRouterRootWithoutPanicHandler(b *testing.B) {
 	router := New()
 	router.PanicHandler = nil
 
@@ -322,7 +330,7 @@ func BenchmarkRootWithoutPanicHandler(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
-func BenchmarkParam(b *testing.B) {
+func BenchmarkRouterParam(b *testing.B) {
 	router := New()
 
 	router.GET("/", simpleHandler)
