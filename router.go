@@ -153,6 +153,5 @@ func New() *TreeMux {
 	return &TreeMux{root: root,
 		NotFoundHandler:         http.NotFound,
 		MethodNotAllowedHandler: MethodNotAllowedHandler,
-		PanicHandler:            SimplePanicHandler,
 		HeadCanUseGet:           true}
 }

@@ -162,6 +162,7 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 func TestPanic(t *testing.T) {
 
 	router := New()
+	router.PanicHandler = SimplePanicHandler
 	router.GET("/abc", panicHandler)
 	r := newRequest("GET", "/abc", nil)
 	w := httptest.NewRecorder()
@@ -297,8 +298,9 @@ func BenchmarkSimple(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
-func BenchmarkRoot(b *testing.B) {
+func BenchmarkRootWithPanicHandler(b *testing.B) {
 	router := New()
+	router.PanicHandler = SimplePanicHandler
 
 	router.GET("/", simpleHandler)
 	router.GET("/user/dimfeld", simpleHandler)
