@@ -90,6 +90,7 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/images1")
 	addPath(t, tree, "/images2")
 	addPath(t, tree, "/apples")
+	addPath(t, tree, "/app/les")
 	addPath(t, tree, "/apples1")
 	addPath(t, tree, "/appeasement")
 	addPath(t, tree, "/appealing")
@@ -112,6 +113,7 @@ func TestTree(t *testing.T) {
 		map[string]string{"path": "even/longer/path"})
 	testPath(t, tree, "/ima", "/ima", nil)
 	testPath(t, tree, "/apples", "/apples", nil)
+	testPath(t, tree, "/app/les", "/app/les", nil)
 	testPath(t, tree, "/abc", "/:page",
 		map[string]string{"page": "abc"})
 	testPath(t, tree, "/post/a/page/2", "/post/:post/page/:page",
