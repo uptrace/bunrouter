@@ -15,8 +15,9 @@ func panicHandler(w http.ResponseWriter, r *http.Request, params map[string]stri
 }
 
 func newRequest(method, path string, body io.Reader) *http.Request {
-	unescaped, _ := url.QueryUnescape(path)
-	r, _ := http.NewRequest(method, unescaped, body)
+	r, _ := http.NewRequest(method, path, body)
+	u, _ := url.Parse(path)
+	r.URL = u
 	r.RequestURI = path
 	return r
 }
@@ -250,6 +251,38 @@ func TestSlash(t *testing.T) {
 
 	if param != "de/f" {
 		t.Errorf("Expected param de/f, saw %s", param)
+	}
+}
+
+func TestQueryString(t *testing.T) {
+	param := ""
+	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		param = params["param"]
+	}
+	router := New()
+	router.GET("/static", handler)
+	router.GET("/wildcard/:param", handler)
+	router.GET("/catchall/*param", handler)
+
+	r := newRequest("GET", "/static?abc=def&ghi=jkl", nil)
+	w := new(mockResponseWriter)
+
+	param = "nomatch"
+	router.ServeHTTP(w, r)
+	if param != "" {
+		t.Error("No match on", r.RequestURI)
+	}
+
+	r = newRequest("GET", "/wildcard/aaa?abc=def", nil)
+	router.ServeHTTP(w, r)
+	if param != "aaa" {
+		t.Error("Expected wildcard to match aaa, saw", param)
+	}
+
+	r = newRequest("GET", "/catchall/bbb?abc=def", nil)
+	router.ServeHTTP(w, r)
+	if param != "bbb" {
+		t.Error("Expected wildcard to match bbb, saw", param)
 	}
 }
 

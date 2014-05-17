@@ -86,9 +86,17 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := r.RequestURI
+
+	rawQueryLen := len(r.URL.RawQuery)
 	pathLen := len(path)
-	trailingSlash := path[pathLen-1] == '/'
-	if pathLen > 1 && trailingSlash {
+	if rawQueryLen != 0 || path[pathLen-1] == '?' {
+		// Remove any query string and the ?.
+		path = path[:pathLen-rawQueryLen-1]
+		pathLen = len(path)
+	}
+
+	trailingSlash := path[pathLen-1] == '/' && pathLen > 1
+	if trailingSlash {
 		path = path[:pathLen-1]
 	}
 	params := make(map[string]string)
@@ -117,7 +125,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if trailingSlash != n.addSlash && pathLen > 1 {
+	if trailingSlash != n.addSlash {
 		if n.addSlash {
 			// Need to add a slash.
 			http.Redirect(w, r, path+"/", http.StatusMovedPermanently)
