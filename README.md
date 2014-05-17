@@ -3,7 +3,7 @@ httptreemux  [![Build Status](https://travis-ci.org/dimfeld/httptreemux.png?bran
 
 High-speed, flexible, tree-based HTTP router for Go.
 
-This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/dimfeld/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter, except on purely static routing trees with no path variables, where httprouter is much faster than almost anything else.
+This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed to allow wildcards and static tokens in a path segment. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/dimfeld/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter.
 
 ## Why?
 There are a lot of good routers out there. But looking at the ones that were really lightweight, I couldn't quite get something that fit with the route patterns I wanted. The code itself is simple enough, so I spent an evening writing this.
