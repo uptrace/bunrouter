@@ -93,7 +93,7 @@ TreeMux.NotFoundHandler can be set to provide custom 404-error handling. The def
 
 ### MethodNotAllowedHandler
 If a pattern matches, but the pattern does not have an associated handler for the requested method, the router calls the MethodNotAllowedHandler. The default
-version of this handler just writes the status code `http.StatusMethodNotAllowed`.
+version of this handler just writes the status code `http.StatusMethodNotAllowed` and sets the response header's `Allowed` field appropriately.
 
 ### Panic Handling
 TreeMux.PanicHandler can be set to provide custom panic handling. The `SimplePanicHandler` just writes the status code `http.StatusInternalServerError`. The function `ShowErrorsPanicHandler`, adapted from [gocraft/web](https://github.com/gocraft/web), will print panic errors to the browser in an easily-readable format.
