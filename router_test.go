@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -131,12 +133,30 @@ func TestNotFound(t *testing.T) {
 func TestMethodNotAllowedHandler(t *testing.T) {
 	calledNotAllowed := false
 
-	notAllowedHandler := func(w http.ResponseWriter, r *http.Request) {
+	notAllowedHandler := func(w http.ResponseWriter, r *http.Request,
+		methods map[string]HandlerFunc) {
+
 		calledNotAllowed = true
+
+		expected := []string{"GET", "PUT", "DELETE"}
+		allowed := make([]string, 0)
+		for m := range methods {
+			allowed = append(allowed, m)
+		}
+
+		sort.Strings(expected)
+		sort.Strings(allowed)
+
+		if !reflect.DeepEqual(expected, allowed) {
+			t.Errorf("Custom handler expected map %v, saw %v",
+				expected, allowed)
+		}
 	}
 
 	router := New()
 	router.GET("/user/abc", simpleHandler)
+	router.PUT("/user/abc", simpleHandler)
+	router.DELETE("/user/abc", simpleHandler)
 
 	w := httptest.NewRecorder()
 	r := newRequest("POST", "/user/abc", nil)
@@ -147,7 +167,17 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 			http.StatusMethodNotAllowed, w.Code)
 	}
 
-	// Now try with a custome handler.
+	allowed := w.Header()["Allow"]
+	sort.Strings(allowed)
+	expected := []string{"DELETE", "GET", "PUT"}
+	sort.Strings(expected)
+
+	if !reflect.DeepEqual(allowed, expected) {
+		t.Errorf("Expected Allow header %v, saw %v",
+			expected, allowed)
+	}
+
+	// Now try with a custom handler.
 	router.MethodNotAllowedHandler = notAllowedHandler
 
 	router.ServeHTTP(w, r)

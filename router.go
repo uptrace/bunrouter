@@ -18,8 +18,12 @@ type TreeMux struct {
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
 	// MethodNotAllowedHandler is called when a pattern matches, but that
 	// pattern does not have a handler for the requested method. The default
-	// handler just writes the status code http.StatusMethodNotAllowed.
-	MethodNotAllowedHandler func(w http.ResponseWriter, r *http.Request)
+	// handler just writes the status code http.StatusMethodNotAllowed and adds
+	// the required Allowed header.
+	// The methods parameter contains the map of each method to the corresponding
+	// handler function.
+	MethodNotAllowedHandler func(w http.ResponseWriter, r *http.Request,
+		methods map[string]HandlerFunc)
 	// HeadCanUseGet allows the router to use the GET handler to respond to
 	// HEAD requests if no explicit HEAD handler has been added for the
 	// matching pattern. This is true by default.
@@ -121,7 +125,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !ok {
-			t.MethodNotAllowedHandler(w, r)
+			t.MethodNotAllowedHandler(w, r, n.leafHandler)
 			return
 		}
 	}
@@ -144,7 +148,13 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // MethodNotAllowedHandler is the default handler for
 // TreeMux.MethodNotAllowedHandler. It writes the status code
 // http.StatusMethodNotAllowed, and nothing else.
-func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
+func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request,
+	methods map[string]HandlerFunc) {
+
+	for m := range methods {
+		w.Header().Add("Allow", m)
+	}
+
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
