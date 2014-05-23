@@ -110,12 +110,15 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Path was not found. Try cleaning it up and search again.
 		// TODO Test this
 		cleanPath := httppath.Clean(path)
-		n := t.root.search(cleanPath[1:], &params)
+		n = t.root.search(cleanPath[1:], &params)
 		if n == nil {
 			// Still nothing found.
 			t.NotFoundHandler(w, r)
-			return
+		} else {
+			// Redirect to the actual path
+			http.Redirect(w, r, cleanPath, http.StatusMovedPermanently)
 		}
+		return
 	}
 
 	handler, ok := n.leafHandler[r.Method]

@@ -243,7 +243,17 @@ func TestRedirect(t *testing.T) {
 		t.Errorf("/noslash/ expected code 301, saw %d", w.Code)
 	}
 	if w.Header().Get("Location") != "/noslash" {
-		t.Errorf("/noslash/ was not redirected to /noslash/")
+		t.Errorf("/noslash/ was not redirected to /noslash")
+	}
+
+	r = newRequest("GET", "//noslash/", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	if w.Code != http.StatusMovedPermanently {
+		t.Errorf("//noslash/ expected code 301, saw %d", w.Code)
+	}
+	if w.Header().Get("Location") != "/noslash" {
+		t.Errorf("//noslash/ was not redirected to /noslash")
 	}
 
 }
