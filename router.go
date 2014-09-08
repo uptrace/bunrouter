@@ -77,6 +77,10 @@ func (t *TreeMux) HEAD(path string, handler HandlerFunc) {
 	t.Handle("HEAD", path, handler)
 }
 
+func (t *TreeMux) OPTIONS(path string, handler HandlerFunc) {
+	t.Handle("OPTIONS", path, handler)
+}
+
 func (t *TreeMux) serveHTTPPanic(w http.ResponseWriter, r *http.Request) {
 	if err := recover(); err != nil {
 		t.PanicHandler(w, r, err)
