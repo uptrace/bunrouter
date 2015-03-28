@@ -74,7 +74,7 @@ router.POST("/posts", postFormHandler)
 GET /about will match normally.
 GET /about/ will redirect to /about.
 GET /posts will redirect to /posts/.
-GET /posts will match normally.
+GET /posts/ will match normally.
 POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
 ### Escaped Slashes
