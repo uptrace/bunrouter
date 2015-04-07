@@ -28,6 +28,17 @@ type TreeMux struct {
 	// HEAD requests if no explicit HEAD handler has been added for the
 	// matching pattern. This is true by default.
 	HeadCanUseGet bool
+
+	// RedirectCleanPath allows router to try clean the current request path,
+	// if no handler is registered for it.
+	// It tries to fix the path using CleanPath from github.com/dimfeld/httppath
+	// This is true by default.
+	RedirectCleanPath bool
+
+	// This enables automatic redirection in case router doesn't find a matching route
+	// for the current request path but a handler for the path with or without the trailing
+	// slash exists. This is true by default.
+	RedirectTrailingSlash bool
 }
 
 // Dump returns a text representation of the routing tree.
@@ -41,7 +52,7 @@ func (t *TreeMux) Handle(verb, path string, handler HandlerFunc) {
 	}
 
 	addSlash := false
-	if len(path) > 1 && path[len(path)-1] == '/' {
+	if len(path) > 1 && path[len(path)-1] == '/' && t.RedirectTrailingSlash {
 		addSlash = true
 		path = path[:len(path)-1]
 	}
@@ -104,25 +115,30 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	trailingSlash := path[pathLen-1] == '/' && pathLen > 1
-	if trailingSlash {
+	if trailingSlash && t.RedirectTrailingSlash {
 		path = path[:pathLen-1]
 	}
 	// params := make(map[string]string)
 	var params map[string]string
 	n := t.root.search(path[1:], &params)
 	if n == nil {
-		// Path was not found. Try cleaning it up and search again.
-		// TODO Test this
-		cleanPath := httppath.Clean(path)
-		n = t.root.search(cleanPath[1:], &params)
-		if n == nil {
-			// Still nothing found.
-			t.NotFoundHandler(w, r)
+		if t.RedirectCleanPath {
+			// Path was not found. Try cleaning it up and search again.
+			// TODO Test this
+			cleanPath := httppath.Clean(path)
+			n = t.root.search(cleanPath[1:], &params)
+			if n == nil {
+				// Still nothing found.
+				t.NotFoundHandler(w, r)
+			} else {
+				// Redirect to the actual path
+				http.Redirect(w, r, cleanPath, http.StatusMovedPermanently)
+			}
+			return
 		} else {
-			// Redirect to the actual path
-			http.Redirect(w, r, cleanPath, http.StatusMovedPermanently)
+			t.NotFoundHandler(w, r)
+			return
 		}
-		return
 	}
 
 	handler, ok := n.leafHandler[r.Method]
@@ -137,7 +153,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if trailingSlash != n.addSlash {
+	if trailingSlash != n.addSlash && t.RedirectTrailingSlash {
 		if n.addSlash {
 			// Need to add a slash.
 			http.Redirect(w, r, path+"/", http.StatusMovedPermanently)
@@ -170,5 +186,8 @@ func New() *TreeMux {
 	return &TreeMux{root: root,
 		NotFoundHandler:         http.NotFound,
 		MethodNotAllowedHandler: MethodNotAllowedHandler,
-		HeadCanUseGet:           true}
+		HeadCanUseGet:           true,
+		RedirectTrailingSlash:   true,
+		RedirectCleanPath:       true,
+	}
 }

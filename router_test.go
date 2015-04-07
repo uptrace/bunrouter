@@ -258,6 +258,35 @@ func TestRedirect(t *testing.T) {
 
 }
 
+func TestSkipRedirect(t *testing.T) {
+	router := New()
+	router.RedirectTrailingSlash = false
+	router.RedirectCleanPath = false
+	router.GET("/slash/", simpleHandler)
+	router.GET("/noslash", simpleHandler)
+
+	w := httptest.NewRecorder()
+	r := newRequest("GET", "/slash", nil)
+	router.ServeHTTP(w, r)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("/slash expected code 404, saw %d", w.Code)
+	}
+
+	r = newRequest("GET", "/noslash/", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("/noslash/ expected code 404, saw %d", w.Code)
+	}
+
+	r = newRequest("GET", "//noslash", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("//noslash expected code 404, saw %d", w.Code)
+	}
+}
+
 func TestRoot(t *testing.T) {
 	handlerCalled := false
 	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
