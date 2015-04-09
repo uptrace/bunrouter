@@ -12,7 +12,7 @@ There are a lot of good routers out there. But looking at the ones that were rea
 The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
 
 ## Routing Rules
-The syntax here is also modeled after httprouter. Each variable in a path may match on ones segment only, except for an optional catch-all variable at the end of the URL.
+The syntax here is also modeled after httprouter. Each variable in a path may match on one segment only, except for an optional catch-all variable at the end of the URL.
 
 Some examples of valid URL patterns are:
 * /post/all
