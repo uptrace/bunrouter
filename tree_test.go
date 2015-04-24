@@ -18,6 +18,8 @@ func addPath(t *testing.T, tree *node, path string) {
 	n.setHandler("GET", handler)
 }
 
+var test *testing.T
+
 func testPath(t *testing.T, tree *node, path string, expectPath string, expectedParams map[string]string) {
 	if t.Failed() {
 		t.Log(tree.dumpTree("", " "))
@@ -30,7 +32,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		t.Errorf("No match for %s, expected %s", path, expectPath)
 		return
 	} else if expectPath == "" && n != nil {
-		t.Errorf("Expected no match for %s but got %v", path, n)
+		t.Errorf("Expected no match for %s but got %v with params %v", path, n, expectedParams)
 		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
 		return
 	}
@@ -79,6 +81,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 }
 
 func TestTree(t *testing.T) {
+	test = t
 	tree := &node{path: "/"}
 
 	addPath(t, tree, "/")
@@ -87,6 +90,7 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/images/:imgname")
 	addPath(t, tree, "/images/*path")
 	addPath(t, tree, "/ima")
+	addPath(t, tree, "/ima/:par")
 	addPath(t, tree, "/images1")
 	addPath(t, tree, "/images2")
 	addPath(t, tree, "/apples")
@@ -94,14 +98,18 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/apples1")
 	addPath(t, tree, "/appeasement")
 	addPath(t, tree, "/appealing")
-	addPath(t, tree, "/:year/:month")
-	addPath(t, tree, "/:year/month")
-	addPath(t, tree, "/:year/:month/abc")
-	addPath(t, tree, "/:year/:month/:post")
-	addPath(t, tree, "/:year/:month/*post")
+	addPath(t, tree, "/date/:year/:month")
+	addPath(t, tree, "/date/:year/month")
+	addPath(t, tree, "/date/:year/:month/abc")
+	addPath(t, tree, "/date/:year/:month/:post")
+	addPath(t, tree, "/date/:year/:month/*post")
 	addPath(t, tree, "/:page")
+	addPath(t, tree, "/:page/:index")
 	addPath(t, tree, "/post/:post/page/:page")
+	addPath(t, tree, "/plaster")
 
+	testPath(t, tree, "/paper", "/:page",
+		map[string]string{"page": "paper"})
 	testPath(t, tree, "/", "/", nil)
 	testPath(t, tree, "/images", "/images", nil)
 	testPath(t, tree, "/images/abc.jpg", "/images/abc.jpg", nil)
@@ -116,29 +124,30 @@ func TestTree(t *testing.T) {
 	testPath(t, tree, "/app/les", "/app/les", nil)
 	testPath(t, tree, "/abc", "/:page",
 		map[string]string{"page": "abc"})
+	testPath(t, tree, "/abc/100", "/:page/:index",
+		map[string]string{"page": "abc", "index": "100"})
 	testPath(t, tree, "/post/a/page/2", "/post/:post/page/:page",
 		map[string]string{"post": "a", "page": "2"})
-	testPath(t, tree, "/2014/5", "/:year/:month",
+	testPath(t, tree, "/date/2014/5", "/date/:year/:month",
 		map[string]string{"year": "2014", "month": "5"})
-	testPath(t, tree, "/2014/month", "/:year/month",
+	testPath(t, tree, "/date/2014/month", "/date/:year/month",
 		map[string]string{"year": "2014"})
-	testPath(t, tree, "/2014/5/abc", "/:year/:month/abc",
+	testPath(t, tree, "/date/2014/5/abc", "/date/:year/:month/abc",
 		map[string]string{"year": "2014", "month": "5"})
-	testPath(t, tree, "/2014/5/def", "/:year/:month/:post",
+	testPath(t, tree, "/date/2014/5/def", "/date/:year/:month/:post",
 		map[string]string{"year": "2014", "month": "5", "post": "def"})
-	testPath(t, tree, "/2014/5/def/hij", "/:year/:month/*post",
+	testPath(t, tree, "/date/2014/5/def/hij", "/date/:year/:month/*post",
 		map[string]string{"year": "2014", "month": "5", "post": "def/hij"})
-	testPath(t, tree, "/2014/5/def/hij/", "/:year/:month/*post",
+	testPath(t, tree, "/date/2014/5/def/hij/", "/date/:year/:month/*post",
 		map[string]string{"year": "2014", "month": "5", "post": "def/hij/"})
 
-	testPath(t, tree, "/2014/ab%2f", "/:year/:month",
+	testPath(t, tree, "/date/2014/ab%2f", "/date/:year/:month",
 		map[string]string{"year": "2014", "month": "ab/"})
 	testPath(t, tree, "/post/ab%2fdef/page/2%2f", "/post/:post/page/:page",
 		map[string]string{"post": "ab/def", "page": "2/"})
 
-	testPath(t, tree, "/ima/bcd", "", nil)
-	testPath(t, tree, "/2014/05/abc/def", "", nil)
-	testPath(t, tree, "/2014//month", "", nil)
+	testPath(t, tree, "/ima/bcd/fgh", "", nil)
+	testPath(t, tree, "/date/2014//month", "", nil)
 	testPath(t, tree, "/post//abc/page/2", "", nil)
 	testPath(t, tree, "/post/abc//page/2", "", nil)
 	testPath(t, tree, "/post/abc/page//2", "", nil)
@@ -147,7 +156,7 @@ func TestTree(t *testing.T) {
 
 	t.Log("Test retrieval of duplicate paths")
 	params := make(map[string]string)
-	p := ":year/:month/abc"
+	p := "date/:year/:month/abc"
 	n := tree.addPath(p)
 	if n == nil {
 		t.Errorf("Duplicate add of %s didn't return a node", p)
@@ -159,7 +168,7 @@ func TestTree(t *testing.T) {
 			matchPath = params["path"]
 		}
 
-		if matchPath[1:] != p {
+		if len(matchPath) < 2 || matchPath[1:] != p {
 			t.Errorf("Duplicate add of %s returned node for %s\n%s", p, matchPath,
 				n.dumpTree("", " "))
 

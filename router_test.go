@@ -304,6 +304,52 @@ func TestRoot(t *testing.T) {
 	}
 }
 
+func TestWildcardAtSplitNode(t *testing.T) {
+	var suppliedParam string
+	simpleHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		suppliedParam, _ = params["slug"]
+	}
+
+	router := New()
+	router.GET("/pumpkin", simpleHandler)
+	router.GET("/passing", simpleHandler)
+	router.GET("/:slug", simpleHandler)
+	router.GET("/:slug/abc", simpleHandler)
+
+	r := newRequest("GET", "/patch", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	if suppliedParam != "patch" {
+		t.Errorf("Expected param patch, saw %s", suppliedParam)
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200 for path /patch, saw %d", w.Code)
+	}
+
+	suppliedParam = ""
+	r = newRequest("GET", "/patch/abc", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	if suppliedParam != "patch" {
+		t.Errorf("Expected param patch, saw %s", suppliedParam)
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200 for path /patch/abc, saw %d", w.Code)
+	}
+
+	r = newRequest("GET", "/patch/def", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Expected status 404 for path /patch/def, saw %d", w.Code)
+	}
+}
+
 func TestSlash(t *testing.T) {
 	param := ""
 	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {

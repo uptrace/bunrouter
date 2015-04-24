@@ -191,7 +191,9 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 }
 
 func (n *node) search(path string, params *map[string]string) (found *node) {
-	//test.Logf("Searching for %s in %s", path, n.dumpTree(""))
+	// if test != nil {
+	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
+	// }
 	pathLen := len(path)
 	if pathLen == 0 {
 		if len(n.leafHandler) == 0 {
@@ -210,10 +212,14 @@ func (n *node) search(path string, params *map[string]string) (found *node) {
 			childPathLen := len(child.path)
 			if pathLen >= childPathLen && child.path == path[:childPathLen] {
 				nextPath := path[childPathLen:]
-				return child.search(nextPath, params)
+				found = child.search(nextPath, params)
 			}
 			break
 		}
+	}
+
+	if found != nil {
+		return found
 	}
 
 	if len(n.wildcardChild) != 0 {
