@@ -148,6 +148,7 @@ func TestTree(t *testing.T) {
 
 	testPath(t, tree, "/ima/bcd/fgh", "", nil)
 	testPath(t, tree, "/date/2014//month", "", nil)
+	testPath(t, tree, "/date/2014/05/", "", nil) // Empty catchall should not match
 	testPath(t, tree, "/post//abc/page/2", "", nil)
 	testPath(t, tree, "/post/abc//page/2", "", nil)
 	testPath(t, tree, "/post/abc/page//2", "", nil)
