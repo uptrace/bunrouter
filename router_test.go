@@ -222,40 +222,108 @@ func TestPanic(t *testing.T) {
 }
 
 func TestRedirect(t *testing.T) {
+	t.Log("Testing with all 301")
+	testRedirect(t, Redirect301, Redirect301, Redirect301, false)
+	t.Log("Testing with all UseHandler")
+	testRedirect(t, UseHandler, UseHandler, UseHandler, false)
+	t.Log("Testing with default 301, GET 307, POST UseHandler")
+	testRedirect(t, Redirect301, Redirect307, UseHandler, true)
+	t.Log("Testing with default UseHandler, GET 301, POST 308")
+	testRedirect(t, UseHandler, Redirect301, Redirect308, true)
+}
+
+func behaviorToCode(b RedirectBehavior) int {
+	switch b {
+	case Redirect301:
+		return http.StatusMovedPermanently
+	case Redirect307:
+		return http.StatusTemporaryRedirect
+	case Redirect308:
+		return 308
+	case UseHandler:
+		// Not normally, but the handler in the below test returns this.
+		return http.StatusNoContent
+	}
+
+	panic("Unhandled behavior!")
+}
+
+func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior RedirectBehavior, customMethods bool) {
+	var redirHandler = func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		// Returning this instead of 200 makes it easy to verify that the handler is actually getting called.
+		w.WriteHeader(http.StatusNoContent)
+	}
+
 	router := New()
-	router.GET("/slash/", simpleHandler)
-	router.GET("/noslash", simpleHandler)
+	router.RedirectBehavior = defaultBehavior
 
-	w := httptest.NewRecorder()
-	r := newRequest("GET", "/slash", nil)
-	router.ServeHTTP(w, r)
-	if w.Code != http.StatusMovedPermanently {
-		t.Errorf("/slash expected code 301, saw %d", w.Code)
-	}
-	if w.Header().Get("Location") != "/slash/" {
-		t.Errorf("/slash was not redirected to /slash/")
-	}
+	var expectedCodeMap = map[string]int{"PUT": behaviorToCode(defaultBehavior)}
 
-	r = newRequest("GET", "/noslash/", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if w.Code != http.StatusMovedPermanently {
-		t.Errorf("/noslash/ expected code 301, saw %d", w.Code)
-	}
-	if w.Header().Get("Location") != "/noslash" {
-		t.Errorf("/noslash/ was not redirected to /noslash")
+	if customMethods {
+		router.RedirectMethodBehavior["GET"] = getBehavior
+		router.RedirectMethodBehavior["POST"] = postBehavior
+		expectedCodeMap["GET"] = behaviorToCode(getBehavior)
+		expectedCodeMap["POST"] = behaviorToCode(postBehavior)
+	} else {
+		expectedCodeMap["GET"] = expectedCodeMap["PUT"]
+		expectedCodeMap["POST"] = expectedCodeMap["PUT"]
 	}
 
-	r = newRequest("GET", "//noslash/", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if w.Code != http.StatusMovedPermanently {
-		t.Errorf("//noslash/ expected code 301, saw %d", w.Code)
-	}
-	if w.Header().Get("Location") != "/noslash" {
-		t.Errorf("//noslash/ was not redirected to /noslash")
-	}
+	router.GET("/slash/", redirHandler)
+	router.GET("/noslash", redirHandler)
+	router.POST("/slash/", redirHandler)
+	router.POST("/noslash", redirHandler)
+	router.PUT("/slash/", redirHandler)
+	router.PUT("/noslash", redirHandler)
 
+	for method, expectedCode := range expectedCodeMap {
+		t.Logf("Testing method %s, expecting code %d", method, expectedCode)
+
+		w := httptest.NewRecorder()
+		r := newRequest(method, "/slash", nil)
+		router.ServeHTTP(w, r)
+		if w.Code != expectedCode {
+			t.Errorf("/slash expected code %d, saw %d", expectedCode, w.Code)
+		}
+		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/slash/" {
+			t.Errorf("/slash was not redirected to /slash/")
+		}
+
+		r = newRequest(method, "/noslash/", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != expectedCode {
+			t.Errorf("/noslash/ expected code %d, saw %d", expectedCode, w.Code)
+		}
+		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
+			t.Errorf("/noslash/ was not redirected to /noslash")
+		}
+
+		r = newRequest(method, "//noslash/", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != expectedCode {
+			t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
+		}
+		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
+			t.Errorf("//noslash/ was not redirected to /noslash")
+		}
+
+		// Test nonredirect cases
+		r = newRequest(method, "/noslash", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+		}
+
+		r = newRequest(method, "/slash/", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+		}
+	}
 }
 
 func TestSkipRedirect(t *testing.T) {

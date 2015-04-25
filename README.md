@@ -78,6 +78,25 @@ GET /posts will redirect to /posts/.
 GET /posts/ will match normally.
 POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 ```
+
+### Custom Redirects
+
+RedirectBehavior sets the behavior when the router redirects the request to the canonical version of the requested URL using RedirectTrailingSlash or RedirectClean. The default behavior is to return a 301 status, redirecting the browser to the version of the URL that matches the given pattern. 
+
+These are the values accepted for RedirectBehavior. You may also add these values to the RedirectMethodBehavior map to define custom per-method redirect behavior.
+
+* Redirect301 - HTTP 301 Moved Permanently; this is the default.
+* Redirect307 - HTTP/1.1 Temporary Redirect
+* Redirect308 - RFC7538 Permanent Redirect
+* UseHandler - Don't redirect to the canonical path. Just call the handler instead.
+
+#### Rationale/Usage
+On a POST request, most browsers that receive a 301 will submit a GET request to the redirected URL, meaning that any data will likely be lost. If you want to handle and avoid this behavior, you may use Redirect307, which causes most browsers to resubmit the request using the original method and request body.
+
+Since 307 is supposed to be a temporary redirect, the new 308 status code has been proposed, which is treated the same, except it indicates correctly that the redirection is permanent. The big caveat here is that the RFC is relatively recent, and older or non-compliant browsers will not handle it. Therefore its use is not recommended unless you really know what you're doing.
+
+Finally, the UseHandler value will simply call the handler function for the pattern, without redirecting to the canonical version of the URL.
+
 ### Escaped Slashes
 Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
 

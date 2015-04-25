@@ -177,6 +177,7 @@ func TestTree(t *testing.T) {
 	}
 
 	t.Log(tree.dumpTree("", " "))
+	test = nil
 }
 
 func TestPanics(t *testing.T) {

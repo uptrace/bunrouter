@@ -9,6 +9,32 @@ import (
 type HandlerFunc func(http.ResponseWriter, *http.Request, map[string]string)
 type PanicHandler func(http.ResponseWriter, *http.Request, interface{})
 
+// RedirectBehavior sets the behavior when the router redirects the request to the
+// canonical version of the requested URL using RedirectTrailingSlash or RedirectClean.
+// The default behavior is to return a 301 status, redirecting the browser to the version
+// of the URL that matches the given pattern.
+//
+// On a POST request, most browsers that receive a 301 will submit a GET request to
+// the redirected URL, meaning that any data will likely be lost. If you want to handle
+// and avoid this behavior, you may use Redirect307, which causes most browsers to
+// resubmit the request using the original method and request body.
+//
+// Since 307 is supposed to be a temporary redirect, the new 308 status code has been
+// proposed, which is treated the same, except it indicates correctly that the redirection
+// is permanent. The big caveat here is that the RFC is relatively recent, and older
+// browsers will not know what to do with it. Therefore its use is not recommended
+// unless you really know what you're doing.
+//
+// Finally, the UseHandler value will simply call the handler function for the pattern.
+type RedirectBehavior int
+
+const (
+	Redirect301 RedirectBehavior = iota // Return 301 Moved Permanently
+	Redirect307                         // Return 307 HTTP/1.1 Temporary Redirect
+	Redirect308                         // Return a 308 RFC7538 Permanent Redirect
+	UseHandler                          // Just call the handler function
+)
+
 type TreeMux struct {
 	root *node
 
@@ -29,16 +55,23 @@ type TreeMux struct {
 	// matching pattern. This is true by default.
 	HeadCanUseGet bool
 
-	// RedirectCleanPath allows router to try clean the current request path,
-	// if no handler is registered for it.
-	// It tries to fix the path using CleanPath from github.com/dimfeld/httppath
+	// RedirectCleanPath allows the router to try clean the current request path,
+	// if no handler is registered for it, using CleanPath from github.com/dimfeld/httppath.
 	// This is true by default.
 	RedirectCleanPath bool
 
-	// This enables automatic redirection in case router doesn't find a matching route
+	// RedirectTrailingSlash enables automatic redirection in case router doesn't find a matching route
 	// for the current request path but a handler for the path with or without the trailing
 	// slash exists. This is true by default.
 	RedirectTrailingSlash bool
+
+	// RedirectBehavior sets the default redirect behavior when RedirectTrailingSlash or
+	// RedirectCleanPath are true. The default value is Redirect301.
+	RedirectBehavior RedirectBehavior
+
+	// RedirectMethodBehavior overrides the default behavior for a particular HTTP method.
+	// The key is the method name, and the value is the behavior to use for that method.
+	RedirectMethodBehavior map[string]RedirectBehavior
 }
 
 // Dump returns a text representation of the routing tree.
@@ -98,6 +131,28 @@ func (t *TreeMux) serveHTTPPanic(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
+	var behavior RedirectBehavior
+	var ok bool
+	if behavior, ok = t.RedirectMethodBehavior[method]; !ok {
+		behavior = t.RedirectBehavior
+	}
+	switch behavior {
+	case Redirect301:
+		return http.StatusMovedPermanently, true
+	case Redirect307:
+		return http.StatusTemporaryRedirect, true
+	case Redirect308:
+		// Go doesn't have a constant for this yet. Yet another sign
+		// that you probably shouldn't use it.
+		return 308, true
+	case UseHandler:
+		return 0, false
+	default:
+		return http.StatusMovedPermanently, true
+	}
+}
+
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if t.PanicHandler != nil {
@@ -130,11 +185,14 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if n == nil {
 				// Still nothing found.
 				t.NotFoundHandler(w, r)
+				return
 			} else {
-				// Redirect to the actual path
-				http.Redirect(w, r, cleanPath, http.StatusMovedPermanently)
+				if statusCode, ok := t.redirectStatusCode(r.Method); ok {
+					// Redirect to the actual path
+					http.Redirect(w, r, cleanPath, statusCode)
+					return
+				}
 			}
-			return
 		} else {
 			t.NotFoundHandler(w, r)
 			return
@@ -154,15 +212,17 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if trailingSlash != n.addSlash && t.RedirectTrailingSlash {
-		if n.addSlash {
-			// Need to add a slash.
-			http.Redirect(w, r, path+"/", http.StatusMovedPermanently)
-		} else if path != "/" {
-			// We need to remove the slash. This was already done at the
-			// beginning of the function.
-			http.Redirect(w, r, path, http.StatusMovedPermanently)
+		if statusCode, ok := t.redirectStatusCode(r.Method); ok {
+			if n.addSlash {
+				// Need to add a slash.
+				http.Redirect(w, r, path+"/", statusCode)
+			} else if path != "/" {
+				// We need to remove the slash. This was already done at the
+				// beginning of the function.
+				http.Redirect(w, r, path, statusCode)
+			}
+			return
 		}
-		return
 	}
 
 	handler(w, r, params)
@@ -189,5 +249,7 @@ func New() *TreeMux {
 		HeadCanUseGet:           true,
 		RedirectTrailingSlash:   true,
 		RedirectCleanPath:       true,
+		RedirectBehavior:        Redirect301,
+		RedirectMethodBehavior:  make(map[string]RedirectBehavior),
 	}
 }
