@@ -65,6 +65,10 @@ type TreeMux struct {
 	// slash exists. This is true by default.
 	RedirectTrailingSlash bool
 
+	// RemoveCatchAllTrailingSlash removes the trailing slash when a catch-all pattern
+	// is matched, if set to true. By default, catch-all paths are never redirected.
+	RemoveCatchAllTrailingSlash bool
+
 	// RedirectBehavior sets the default redirect behavior when RedirectTrailingSlash or
 	// RedirectCleanPath are true. The default value is Redirect301.
 	RedirectBehavior RedirectBehavior
@@ -211,17 +215,19 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if trailingSlash != n.addSlash && t.RedirectTrailingSlash {
-		if statusCode, ok := t.redirectStatusCode(r.Method); ok {
-			if n.addSlash {
-				// Need to add a slash.
-				http.Redirect(w, r, path+"/", statusCode)
-			} else if path != "/" {
-				// We need to remove the slash. This was already done at the
-				// beginning of the function.
-				http.Redirect(w, r, path, statusCode)
+	if !n.isCatchAll || t.RemoveCatchAllTrailingSlash {
+		if trailingSlash != n.addSlash && t.RedirectTrailingSlash {
+			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
+				if n.addSlash {
+					// Need to add a slash.
+					http.Redirect(w, r, path+"/", statusCode)
+				} else if path != "/" {
+					// We need to remove the slash. This was already done at the
+					// beginning of the function.
+					http.Redirect(w, r, path, statusCode)
+				}
+				return
 			}
-			return
 		}
 	}
 

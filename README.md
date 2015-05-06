@@ -66,6 +66,8 @@ The router has special handling for paths with trailing slashes. If a pattern is
 The trailing slash flag is only stored once for a pattern. That is, if a pattern is added for a method with a trailing slash, all other methods for that pattern will also be considered to have a trailing slash, regardless of whether or not it is specified for those methods too.
 However this behavior can be turned off by setting TreeMux.RedirectTrailingSlash to false. By default it is set to true.
 
+One exception to this rule is catch-all patterns. By default, trailing slash redirection is disabled on catch-all patterns, since the structure of the entire URL and the desired patterns can not be predicted. If trailing slash removal is desired on catch-all patterns, set TreeMux.RemoveCatchAllTrailingSlash to true.
+
 ```go
 router = httptreemux.New()
 router.GET("/about", pageHandler)

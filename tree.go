@@ -23,7 +23,8 @@ type node struct {
 
 	// Data for the node is below.
 
-	addSlash bool
+	addSlash   bool
+	isCatchAll bool
 	// If this node is the end of the URL, then call the handler, if applicable.
 	leafHandler map[string]HandlerFunc
 }
@@ -81,7 +82,7 @@ func (n *node) addPath(path string) *node {
 		// Token starts with a *, so it's a catch-all
 		thisToken = thisToken[1:]
 		if n.catchAllChild == nil {
-			n.catchAllChild = &node{path: thisToken}
+			n.catchAllChild = &node{path: thisToken, isCatchAll: true}
 		}
 
 		if path[1:] != n.catchAllChild.path {

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -353,6 +354,48 @@ func TestSkipRedirect(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Errorf("//noslash expected code 404, saw %d", w.Code)
 	}
+}
+
+func TestCatchAllTrailingSlashRedirect(t *testing.T) {
+	router := New()
+	redirectSettings := []bool{false, true}
+
+	router.GET("/abc/*path", simpleHandler)
+
+	testPath := func(path string) {
+		r := newRequest("GET", "/abc/"+path, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		endingSlash := strings.HasSuffix(path, "/")
+
+		var expectedCode int
+		if endingSlash && router.RedirectTrailingSlash && router.RemoveCatchAllTrailingSlash {
+			expectedCode = http.StatusMovedPermanently
+		} else {
+			expectedCode = http.StatusOK
+		}
+
+		if w.Code != expectedCode {
+			t.Errorf("Path %s with RedirectTrailingSlash %v, RemoveCatchAllTrailingSlash %v "+
+				" expected code %d but saw %d", path,
+				router.RedirectTrailingSlash, router.RemoveCatchAllTrailingSlash,
+				expectedCode, w.Code)
+		}
+	}
+
+	for _, redirectSetting := range redirectSettings {
+		for _, removeCatchAllSlash := range redirectSettings {
+			router.RemoveCatchAllTrailingSlash = removeCatchAllSlash
+			router.RedirectTrailingSlash = redirectSetting
+
+			testPath("apples")
+			testPath("apples/")
+			testPath("apples/bananas")
+			testPath("apples/bananas/")
+		}
+	}
+
 }
 
 func TestRoot(t *testing.T) {

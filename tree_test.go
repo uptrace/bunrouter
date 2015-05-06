@@ -2,6 +2,7 @@ package httptreemux
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,9 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		t.Log(tree.dumpTree("", " "))
 		t.FailNow()
 	}
+
+	expectCatchAll := strings.Contains(expectPath, "/*")
+
 	t.Log("Testing", path)
 	var params map[string]string
 	n := tree.search(path[1:], &params)
@@ -39,6 +43,10 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 	if n == nil {
 		return
+	}
+
+	if expectCatchAll != n.isCatchAll {
+		t.Errorf("For path %s expectCatchAll %v but saw %v", path, expectCatchAll, n.isCatchAll)
 	}
 
 	handler, ok := n.leafHandler["GET"]
