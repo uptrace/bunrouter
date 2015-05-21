@@ -33,7 +33,7 @@ type TestScenario struct {
 
 var scenarios = []TestScenario{
 	TestScenario{newRequest, "Test with RequestURI"},
-	TestScenario{newRequest, "Test with URL.Path"},
+	TestScenario{http.NewRequest, "Test with URL.Path"},
 }
 
 // This type and the benchRequest function are taken from go-http-routing-benchmark.
@@ -324,13 +324,15 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		}
 
 		r, _ = newRequest(method, "//noslash/", nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
-		if w.Code != expectedCode {
-			t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
-		}
-		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
-			t.Errorf("//noslash/ was not redirected to /noslash")
+		if r.RequestURI == "//noslash/" { // http.NewRequest parses this out differently
+			w = httptest.NewRecorder()
+			router.ServeHTTP(w, r)
+			if w.Code != expectedCode {
+				t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
+			}
+			if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
+				t.Errorf("//noslash/ was not redirected to /noslash")
+			}
 		}
 
 		// Test nonredirect cases
@@ -386,7 +388,7 @@ func TestCatchAllTrailingSlashRedirect(t *testing.T) {
 	router.GET("/abc/*path", simpleHandler)
 
 	testPath := func(path string) {
-		r := newRequest("GET", "/abc/"+path, nil)
+		r, _ := newRequest("GET", "/abc/"+path, nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, r)
 
