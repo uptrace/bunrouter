@@ -164,12 +164,19 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := r.RequestURI
-
-	rawQueryLen := len(r.URL.RawQuery)
 	pathLen := len(path)
-	if rawQueryLen != 0 || path[pathLen-1] == '?' {
-		// Remove any query string and the ?.
-		path = path[:pathLen-rawQueryLen-1]
+	if pathLen > 0 {
+		rawQueryLen := len(r.URL.RawQuery)
+
+		if rawQueryLen != 0 || path[pathLen-1] == '?' {
+			// Remove any query string and the ?.
+			path = path[:pathLen-rawQueryLen-1]
+			pathLen = len(path)
+		}
+	} else {
+		// In testing with http.NewRequest,
+		// RequestURI is not set so just grab URL.Path instead.
+		path = r.URL.Path
 		pathLen = len(path)
 	}
 
