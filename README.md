@@ -99,14 +99,20 @@ Since 307 is supposed to be a temporary redirect, the new 308 status code has be
 
 Finally, the UseHandler value will simply call the handler function for the pattern, without redirecting to the canonical version of the URL.
 
-### Escaped Slashes
+### RequestURI vs. URL.Path
+
+#### Escaped Slashes
 Go automatically processes escaped characters in a URL, converting + to a space and %XX to the corresponding character. This can present issues when the URL contains a %2f, which is unescaped to '/'. This isn't an issue for most applications, but it will prevent the router from correctly matching paths and wildcards.
 
 For example, the pattern `/post/:post` would not match on `/post/abc%2fdef`, which is unescaped to `/post/abc/def`. The desired behavior is that it matches, and the `post` wildcard is set to `abc/def`.
 
-Therefore, this router works with the raw URL, stored in the Request.RequestURI variable. Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
+Therefore, this router defaults to using the raw URL, stored in the Request.RequestURI variable. Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
 
 TL;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP routers may not due to [Go issue 3659](https://code.google.com/p/go/issues/detail?id=3659).
+
+#### http Package Utility Functions
+
+Although using RequestURI avoids the issue described above, certain utility functions such as `http.StripPrefix` modify URL.Path, and expect that the underlying router is using that field to make its decision. If you are using some of these functions, set the router's `PathSource` member to `URLPath`. This will give up the proper handling of escaped slashes described above, while allowing the router to work properly with these utility functions.
 
 ## Error Handlers
 

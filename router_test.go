@@ -552,6 +552,44 @@ func TestQueryString(t *testing.T) {
 	}
 }
 
+func TestPathSource(t *testing.T) {
+	var called string
+
+	appleHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		called = "apples"
+	}
+
+	bananaHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		called = "bananas"
+	}
+	router := New()
+	router.GET("/apples", appleHandler)
+	router.GET("/bananas", bananaHandler)
+
+	// Set up a request with different values in URL and RequestURI.
+	r, _ := newRequest("GET", "/apples", nil)
+	r.RequestURI = "/bananas"
+	w := new(mockResponseWriter)
+
+	// Default setting should be RequestURI
+	router.ServeHTTP(w, r)
+	if called != "bananas" {
+		t.Error("Using default, expected bananas but saw", called)
+	}
+
+	router.PathSource = URLPath
+	router.ServeHTTP(w, r)
+	if called != "apples" {
+		t.Error("Using URLPath, expected apples but saw", called)
+	}
+
+	router.PathSource = RequestURI
+	router.ServeHTTP(w, r)
+	if called != "bananas" {
+		t.Error("Using RequestURI, expected bananas but saw", called)
+	}
+}
+
 func BenchmarkRouterSimple(b *testing.B) {
 	router := New()
 
