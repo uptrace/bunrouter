@@ -12,7 +12,7 @@ func dummyHandler(w http.ResponseWriter, r *http.Request, urlParams map[string]s
 
 func addPath(t *testing.T, tree *node, path string) {
 	t.Logf("Adding path %s", path)
-	n := tree.addPath(path[1:])
+	n := tree.addPath(path[1:], nil)
 	handler := func(w http.ResponseWriter, r *http.Request, urlParams map[string]string) {
 		urlParams["path"] = path
 	}
@@ -30,8 +30,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 	expectCatchAll := strings.Contains(expectPath, "/*")
 
 	t.Log("Testing", path)
-	var params map[string]string
-	n := tree.search(path[1:], &params)
+	n, paramList := tree.search(path[1:])
 	if expectPath != "" && n == nil {
 		t.Errorf("No match for %s, expected %s", path, expectPath)
 		return
@@ -66,10 +65,21 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 	}
 
 	if expectedParams == nil {
-		if len(params) != 0 {
-			t.Errorf("Path %p expected no parameters, saw %v", path, params)
+		if len(paramList) != 0 {
+			t.Errorf("Path %p expected no parameters, saw %v", path, paramList)
 		}
 	} else {
+		if len(paramList) != len(n.leafWildcardNames) {
+			t.Errorf("Got %d params back but node specifies %d",
+				len(paramList), len(n.leafWildcardNames))
+		}
+
+		params := map[string]string{}
+		for i := 0; i < len(paramList); i++ {
+			params[n.leafWildcardNames[len(paramList)-i-1]] = paramList[i]
+		}
+		t.Log("\tGot params", params)
+
 		for key, val := range expectedParams {
 			sawVal, ok := params[key]
 			if !ok {
@@ -88,11 +98,22 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 }
 
+func checkHandlerNodes(t *testing.T, n *node) {
+	hasHandlers := len(n.leafHandler) != 0
+	hasWildcards := len(n.leafWildcardNames) != 0
+
+	if hasWildcards && !hasHandlers {
+		t.Errorf("Node %s has wildcards without handlers", n.path)
+	}
+}
+
 func TestTree(t *testing.T) {
 	test = t
 	tree := &node{path: "/"}
 
 	addPath(t, tree, "/")
+	addPath(t, tree, "/i")
+	addPath(t, tree, "/i/:aaa")
 	addPath(t, tree, "/images")
 	addPath(t, tree, "/images/abc.jpg")
 	addPath(t, tree, "/images/:imgname")
@@ -115,10 +136,26 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/:page/:index")
 	addPath(t, tree, "/post/:post/page/:page")
 	addPath(t, tree, "/plaster")
+	addPath(t, tree, "/users/:pk/:related")
+	addPath(t, tree, "/users/:id/updatePassword")
+	addPath(t, tree, "/:something/abc")
+	addPath(t, tree, "/:something/def")
+
+	testPath(t, tree, "/users/abc/updatePassword", "/users/:id/updatePassword",
+		map[string]string{"id": "abc"})
+	testPath(t, tree, "/users/all/something", "/users/:pk/:related",
+		map[string]string{"pk": "all", "related": "something"})
+
+	testPath(t, tree, "/aaa/abc", "/:something/abc",
+		map[string]string{"something": "aaa"})
+	testPath(t, tree, "/aaa/def", "/:something/def",
+		map[string]string{"something": "aaa"})
 
 	testPath(t, tree, "/paper", "/:page",
 		map[string]string{"page": "paper"})
+
 	testPath(t, tree, "/", "/", nil)
+	testPath(t, tree, "/i", "/i", nil)
 	testPath(t, tree, "/images", "/images", nil)
 	testPath(t, tree, "/images/abc.jpg", "/images/abc.jpg", nil)
 	testPath(t, tree, "/images/something", "/images/:imgname",
@@ -166,7 +203,7 @@ func TestTree(t *testing.T) {
 	t.Log("Test retrieval of duplicate paths")
 	params := make(map[string]string)
 	p := "date/:year/:month/abc"
-	n := tree.addPath(p)
+	n := tree.addPath(p, nil)
 	if n == nil {
 		t.Errorf("Duplicate add of %s didn't return a node", p)
 	} else {
@@ -183,6 +220,8 @@ func TestTree(t *testing.T) {
 
 		}
 	}
+
+	checkHandlerNodes(t, tree)
 
 	t.Log(tree.dumpTree("", " "))
 	test = nil
@@ -202,7 +241,7 @@ func TestPanics(t *testing.T) {
 		defer panicHandler()
 		tree := &node{path: "/"}
 		for _, path := range p {
-			tree.addPath(path)
+			tree.addPath(path, nil)
 		}
 	}
 
@@ -251,40 +290,48 @@ func TestPanics(t *testing.T) {
 	if !sawPanic {
 		t.Error("Expected panic with * in middle of path segment with existing path")
 	}
+
+	twoPathPanic := func(first, second string) {
+		addPathPanic(first, second)
+		if !sawPanic {
+			t.Errorf("Expected panic with ambiguous wildcards on paths %s and %s", first, second)
+		}
+	}
+
+	twoPathPanic("abc/:ab/def/:cd", "abc/:ad/def/:cd")
+	twoPathPanic("abc/:ab/def/:cd", "abc/:ab/def/:ef")
+	twoPathPanic(":abc", ":def")
+	twoPathPanic(":abc/ggg", ":def/ggg")
 }
 
 func BenchmarkTreeNullRequest(b *testing.B) {
 	b.ReportAllocs()
 	tree := &node{path: "/"}
-	var params map[string]string
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("", &params)
+		tree.search("")
 	}
 }
 
 func BenchmarkTreeOneStatic(b *testing.B) {
 	b.ReportAllocs()
 	tree := &node{path: "/"}
-	tree.addPath("abc")
-	var params map[string]string
+	tree.addPath("abc", nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("abc", &params)
+		tree.search("abc")
 	}
 }
 
 func BenchmarkTreeOneParam(b *testing.B) {
 	b.ReportAllocs()
 	tree := &node{path: "/"}
-	tree.addPath(":abc")
-	var params map[string]string
+	tree.addPath(":abc", nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		params = nil
-		tree.search("abc", &params)
+		tree.search("abc")
 	}
 }

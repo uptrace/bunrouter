@@ -176,7 +176,7 @@ func (t *TreeMux) Handle(method, path string, handler HandlerFunc) {
 		path = path[:len(path)-1]
 	}
 
-	node := t.root.addPath(path[1:])
+	node := t.root.addPath(path[1:], nil)
 	if addSlash {
 		node.addSlash = true
 	}
@@ -273,15 +273,13 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if trailingSlash && t.RedirectTrailingSlash {
 		path = path[:pathLen-1]
 	}
-	// params := make(map[string]string)
-	var params map[string]string
-	n := t.root.search(path[1:], &params)
+	n, params := t.root.search(path[1:])
 	if n == nil {
 		if t.RedirectCleanPath {
 			// Path was not found. Try cleaning it up and search again.
 			// TODO Test this
 			cleanPath := httppath.Clean(path)
-			n = t.root.search(cleanPath[1:], &params)
+			n, params = t.root.search(cleanPath[1:])
 			if n == nil {
 				// Still nothing found.
 				t.NotFoundHandler(w, r)
@@ -327,7 +325,22 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	handler(w, r, params)
+	var paramMap map[string]string
+	if len(params) != 0 {
+		if len(params) != len(n.leafWildcardNames) {
+			// Need better behavior here. Should this be a panic?
+			panic(fmt.Sprintf("httptreemux parameter list length mismatch: %v, %v",
+				params, n.leafWildcardNames))
+		}
+
+		paramMap = make(map[string]string)
+		numParams := len(params)
+		for index := 0; index < numParams; index++ {
+			paramMap[n.leafWildcardNames[numParams-index-1]] = params[index]
+		}
+	}
+
+	handler(w, r, paramMap)
 }
 
 // MethodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,

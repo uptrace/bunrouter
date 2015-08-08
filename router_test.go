@@ -446,6 +446,7 @@ func TestRoot(t *testing.T) {
 func TestWildcardAtSplitNode(t *testing.T) {
 	var suppliedParam string
 	simpleHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		t.Log(params)
 		suppliedParam, _ = params["slug"]
 	}
 
@@ -454,6 +455,8 @@ func TestWildcardAtSplitNode(t *testing.T) {
 	router.GET("/passing", simpleHandler)
 	router.GET("/:slug", simpleHandler)
 	router.GET("/:slug/abc", simpleHandler)
+
+	t.Log(router.root.dumpTree("", " "))
 
 	r, _ := newRequest("GET", "/patch", nil)
 	w := httptest.NewRecorder()
