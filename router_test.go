@@ -331,7 +331,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 				t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
 			}
 			if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
-				t.Errorf("//noslash/ was not redirected to /noslash")
+				t.Errorf("//noslash/ was redirected to %s, expected /noslash", w.Header().Get("Location"))
 			}
 		}
 
@@ -343,11 +343,46 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
+		r, _ = newRequest(method, "/noslash?a=1&b=2", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+		}
+
 		r, _ = newRequest(method, "/slash/", nil)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, r)
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+		}
+
+		r, _ = newRequest(method, "/slash/?a=1&b=2", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+		}
+
+		// Test querystring and fragment cases
+		r, _ = newRequest(method, "/slash?a=1&b=2", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != expectedCode {
+			t.Errorf("/slash?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
+		}
+		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/slash/?a=1&b=2" {
+			t.Errorf("/slash?a=1&b=2 was redirected to %s", w.Header().Get("Location"))
+		}
+
+		r, _ = newRequest(method, "/noslash/?a=1&b=2", nil)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		if w.Code != expectedCode {
+			t.Errorf("/noslash/?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
+		}
+		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash?a=1&b=2" {
+			t.Errorf("/noslash/?a=1&b=2 was redirected to %s", w.Header().Get("Location"))
 		}
 	}
 }

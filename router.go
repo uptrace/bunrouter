@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/dimfeld/httppath"
 	"net/http"
+	"net/url"
 )
 
 // The params argument contains the parameters parsed from wildcards and catch-alls in the URL.
@@ -246,6 +247,15 @@ func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 	}
 }
 
+func redirect(w http.ResponseWriter, r *http.Request, newPath string, statusCode int) {
+	newURL := url.URL{
+		Path:     newPath,
+		RawQuery: r.URL.RawQuery,
+		Fragment: r.URL.Fragment,
+	}
+	http.Redirect(w, r, newURL.String(), statusCode)
+}
+
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if t.PanicHandler != nil {
@@ -287,7 +297,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} else {
 				if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 					// Redirect to the actual path
-					http.Redirect(w, r, cleanPath, statusCode)
+					redirect(w, r, cleanPath, statusCode)
 					return
 				}
 			}
@@ -314,11 +324,11 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				if n.addSlash {
 					// Need to add a slash.
-					http.Redirect(w, r, path+"/", statusCode)
+					redirect(w, r, path+"/", statusCode)
 				} else if path != "/" {
 					// We need to remove the slash. This was already done at the
 					// beginning of the function.
-					http.Redirect(w, r, path, statusCode)
+					redirect(w, r, path, statusCode)
 				}
 				return
 			}
