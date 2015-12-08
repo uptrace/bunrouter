@@ -205,6 +205,81 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 	}
 }
 
+func TestOptionsHandler(t *testing.T) {
+	optionsHandler := func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+	customOptionsHandler := func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		w.Header().Set("Access-Control-Allow-Origin", "httptreemux.com")
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	router := New()
+	router.GET("/user/abc", simpleHandler)
+	router.PUT("/user/abc", simpleHandler)
+	router.DELETE("/user/abc", simpleHandler)
+	router.OPTIONS("/user/abc/options", customOptionsHandler)
+
+	// test without an OPTIONS handler
+	w := httptest.NewRecorder()
+	r, _ := newRequest("OPTIONS", "/user/abc", nil)
+	router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected error %d from built-in not found handler but saw %d",
+			http.StatusMethodNotAllowed, w.Code)
+	}
+
+	// Now try with a global options handler.
+	router.OptionsHandler = optionsHandler
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	if !(w.Code == http.StatusNoContent && w.Header()["Access-Control-Allow-Origin"][0] == "*") {
+		t.Error("global options handler was not called")
+	}
+
+	// Now see if a custom handler overwrites the global options handler.
+	w = httptest.NewRecorder()
+	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
+	router.ServeHTTP(w, r)
+	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "httptreemux.com") {
+		t.Error("custom options handler did not overwrite global handler")
+	}
+
+	// Now see if a custom handler works with the global options handler set to nil.
+	router.OptionsHandler = nil
+	w = httptest.NewRecorder()
+	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
+	router.ServeHTTP(w, r)
+	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "httptreemux.com") {
+		t.Error("custom options handler did not overwrite global handler")
+	}
+
+	// Make sure that the MethodNotAllowedHandler works when OptionsHandler is set
+	router.OptionsHandler = optionsHandler
+	w = httptest.NewRecorder()
+	r, _ = newRequest("POST", "/user/abc", nil)
+	router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected error %d from built-in not found handler but saw %d",
+			http.StatusMethodNotAllowed, w.Code)
+	}
+
+	allowed := w.Header()["Allow"]
+	sort.Strings(allowed)
+	expected := []string{"DELETE", "GET", "PUT"}
+	sort.Strings(expected)
+
+	if !reflect.DeepEqual(allowed, expected) {
+		t.Errorf("Expected Allow header %v, saw %v",
+			expected, allowed)
+	}
+}
+
 func TestPanic(t *testing.T) {
 
 	router := New()

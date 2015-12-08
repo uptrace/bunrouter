@@ -6,9 +6,10 @@ package httptreemux
 
 import (
 	"fmt"
-	"github.com/dimfeld/httppath"
 	"net/http"
 	"net/url"
+
+	"github.com/dimfeld/httppath"
 )
 
 // The params argument contains the parameters parsed from wildcards and catch-alls in the URL.
@@ -51,8 +52,14 @@ type TreeMux struct {
 
 	// The default PanicHandler just returns a 500 code.
 	PanicHandler PanicHandler
+
 	// The default NotFoundHandler is http.NotFound.
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
+
+	// Any OPTIONS request that matches a path without its own OPTIONS handler will use this handler,
+	// if set, instead of calling MethodNotAllowedHandler.
+	OptionsHandler HandlerFunc
+
 	// MethodNotAllowedHandler is called when a pattern matches, but that
 	// pattern does not have a handler for the requested method. The default
 	// handler just writes the status code http.StatusMethodNotAllowed and adds
@@ -61,6 +68,7 @@ type TreeMux struct {
 	// handler function.
 	MethodNotAllowedHandler func(w http.ResponseWriter, r *http.Request,
 		methods map[string]HandlerFunc)
+
 	// HeadCanUseGet allows the router to use the GET handler to respond to
 	// HEAD requests if no explicit HEAD handler has been added for the
 	// matching pattern. This is true by default.
@@ -311,6 +319,9 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		if r.Method == "HEAD" && t.HeadCanUseGet {
 			handler, ok = n.leafHandler["GET"]
+		} else if r.Method == "OPTIONS" && t.OptionsHandler != nil {
+			handler = t.OptionsHandler
+			ok = true
 		}
 
 		if !ok {
