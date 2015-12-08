@@ -60,6 +60,8 @@ If TreeMux.HeadCanUseGet is set to true, the router will call the GET handler fo
 
 Go's http.ServeContent and related functions already handle the HEAD method correctly by sending only the header, so in most cases your handlers will not need any special cases for it.
 
+By default TreeMux.OptionsHandler is a null handler that doesn't affect your routing. If you set the handler, it will be called on OPTIONS requests to a path already registered by another method. If you set a path specific handler by using `router.OPTIONS`, it will override the global Options Handler for that path.
+
 ### Trailing Slashes
 The router has special handling for paths with trailing slashes. If a pattern is added to the router with a trailing slash, any matches on that pattern without a trailing slash will be redirected to the version with the slash. If a pattern does not have a trailing slash, matches on that pattern with a trailing slash will be redirected to the version without.
 
@@ -83,7 +85,7 @@ POST /posts will redirect to /posts/, because the GET method used a trailing sla
 
 ### Custom Redirects
 
-RedirectBehavior sets the behavior when the router redirects the request to the canonical version of the requested URL using RedirectTrailingSlash or RedirectClean. The default behavior is to return a 301 status, redirecting the browser to the version of the URL that matches the given pattern. 
+RedirectBehavior sets the behavior when the router redirects the request to the canonical version of the requested URL using RedirectTrailingSlash or RedirectClean. The default behavior is to return a 301 status, redirecting the browser to the version of the URL that matches the given pattern.
 
 These are the values accepted for RedirectBehavior. You may also add these values to the RedirectMethodBehavior map to define custom per-method redirect behavior.
 

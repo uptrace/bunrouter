@@ -56,8 +56,8 @@ type TreeMux struct {
 	// The default NotFoundHandler is http.NotFound.
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
 
-	// The default OptionsHandler is nil. If set, the handler will run on any OPTIONS requests
-	// without an explicit match.
+	// Any OPTIONS request that matches a path without its own OPTIONS handler will use this handler,
+	// if set, instead of calling MethodNotAllowedHandler.
 	OptionsHandler HandlerFunc
 
 	// MethodNotAllowedHandler is called when a pattern matches, but that
