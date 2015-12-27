@@ -31,7 +31,7 @@ Path elements starting with : indicate a wildcard in the path. A wildcard will o
 
 A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
 
-## Routing Groups
+### Routing Groups
 Lets you create a new group of routes with a given path prefix.  Makes it easier to create clusters of paths like:
 * /api/v1/foo
 * /api/v1/bar
