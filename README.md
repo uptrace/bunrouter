@@ -40,7 +40,7 @@ To use this you do:
 ```go
 router = httptreemux.New()
 api := router.NewGroup("/api/v1")
-api.GET("/foo", fooHanler) // becomes /api/v1/foo
+api.GET("/foo", fooHandler) // becomes /api/v1/foo
 api.GET("/bar", barHandler) // becomes /api/v1/bar
 ```
 
