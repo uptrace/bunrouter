@@ -11,8 +11,8 @@ type Group struct {
 
 // Add a sub-group to this group
 func (g *Group) NewGroup(path string) *Group {
-	path = g.path + path
 	checkPath(path)
+	path = g.path + path
 	//Don't want trailing slash as all sub-paths start with slash
 	if path[len(path)-1] == '/' {
 		path = path[:len(path)-1]
@@ -83,8 +83,8 @@ func (g *Group) NewGroup(path string) *Group {
 // 	GET /posts/ will match normally.
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
-	path = g.path + path
 	checkPath(path)
+	path = g.path + path
 
 	addSlash := false
 	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.RedirectTrailingSlash {
