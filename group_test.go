@@ -13,6 +13,15 @@ func TestGroupMethods(t *testing.T) {
 	}
 }
 
+func TestInvalidHandle(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("Bad handle path should have caused a panic")
+		}
+	}()
+	New().NewGroup("/foo").GET("bar", nil)
+}
+
 func TestInvalidSubPath(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
