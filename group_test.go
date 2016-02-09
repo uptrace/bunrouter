@@ -13,6 +13,24 @@ func TestGroupMethods(t *testing.T) {
 	}
 }
 
+func TestInvalidSubPath(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("Bad sub-path should have caused a panic")
+		}
+	}()
+	New().NewGroup("/foo").NewGroup("bar")
+}
+
+func TestInvalidPath(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("Bad path should have caused a panic")
+		}
+	}()
+	New().NewGroup("foo")
+}
+
 //Liberally borrowed from router_test
 func testGroupMethods(t *testing.T, reqGen RequestCreator) {
 	var result string

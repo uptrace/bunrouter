@@ -11,8 +11,8 @@ type Group struct {
 
 // Add a sub-group to this group
 func (g *Group) NewGroup(path string) *Group {
-	path = g.path + path
 	checkPath(path)
+	path = g.path + path
 	//Don't want trailing slash as all sub-paths start with slash
 	if path[len(path)-1] == '/' {
 		path = path[:len(path)-1]
