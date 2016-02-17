@@ -6,6 +6,19 @@ import (
 	"testing"
 )
 
+func TestMapMethodToRoot(t *testing.T) {
+	called := false
+	r := New()
+	r.NewGroup("/foo").GET("/", func(_ http.ResponseWriter, _ *http.Request, _ map[string]string) {
+		called = true
+	})
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	r.ServeHTTP(httptest.NewRecorder(), req)
+	if !called {
+		t.Error("Root of subgroup should map to subgroup's URL and NOT redirect you to GROUP/")
+	}
+}
+
 func TestGroupMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)

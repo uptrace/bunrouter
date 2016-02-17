@@ -84,11 +84,11 @@ func (g *Group) NewGroup(path string) *Group {
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	checkPath(path)
-	if path == "/" && len(g.path) > 0 {
+
+	if path == "/" && len(g.path) > 0 { // root of subgroup should map to subgroup's path
 		path = g.path
 	} else {
 		path = g.path + path
-
 	}
 
 	addSlash := false
