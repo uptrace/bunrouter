@@ -84,7 +84,12 @@ func (g *Group) NewGroup(path string) *Group {
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	checkPath(path)
-	path = g.path + path
+	if path == "/" && len(g.path) > 0 {
+		path = g.path
+	} else {
+		path = g.path + path
+
+	}
 
 	addSlash := false
 	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.RedirectTrailingSlash {
