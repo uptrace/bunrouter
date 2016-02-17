@@ -11,6 +11,10 @@ type Group struct {
 
 // Add a sub-group to this group
 func (g *Group) NewGroup(path string) *Group {
+	if len(path) < 1 {
+		panic("Group path must not be empty")
+	}
+
 	checkPath(path)
 	path = g.path + path
 	//Don't want trailing slash as all sub-paths start with slash
@@ -84,13 +88,10 @@ func (g *Group) NewGroup(path string) *Group {
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	checkPath(path)
-
-	if path == "/" && len(g.path) > 0 { // root of subgroup should map to subgroup's path
-		path = g.path
-	} else {
-		path = g.path + path
+	path = g.path + path
+	if len(path) == 0 {
+		panic("Cannot map an empty path")
 	}
-
 	addSlash := false
 	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.RedirectTrailingSlash {
 		addSlash = true
@@ -140,7 +141,8 @@ func (g *Group) OPTIONS(path string, handler HandlerFunc) {
 }
 
 func checkPath(path string) {
-	if path[0] != '/' {
+	// All non-empty paths must start with a slash
+	if len(path) > 0 && path[0] != '/' {
 		panic(fmt.Sprintf("Path %s must start with slash", path))
 	}
 }

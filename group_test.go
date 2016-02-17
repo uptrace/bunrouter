@@ -6,16 +6,50 @@ import (
 	"testing"
 )
 
-func TestMapMethodToRoot(t *testing.T) {
-	called := false
+func TestEmptyGroupAndMapping(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			//everything is good, it paniced
+		} else {
+			t.Error(`Expected NewGroup("")`)
+		}
+	}()
+	New().GET("", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {})
+}
+func TestSubGroupSlashMapping(t *testing.T) {
 	r := New()
-	r.NewGroup("/foo").GET("/", func(_ http.ResponseWriter, _ *http.Request, _ map[string]string) {
-		called = true
+	r.NewGroup("/foo").GET("/", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+		w.WriteHeader(200)
+	})
+
+	var req *http.Request
+	var recorder *httptest.ResponseRecorder
+
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	if recorder.Code != 301 { //should get redirected
+		t.Error(`/foo on NewGroup("/foo").GET("/") should result in 301 response, got:`, recorder.Code)
+	}
+
+	req, _ = http.NewRequest("GET", "/foo/", nil)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	if recorder.Code != 200 {
+		t.Error(`/foo/ on NewGroup("/foo").GET("/"") should result in 200 response, got:`, recorder.Code)
+	}
+}
+
+func TestSubGroupEmptyMapping(t *testing.T) {
+	r := New()
+	r.NewGroup("/foo").GET("", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+		w.WriteHeader(200)
 	})
 	req, _ := http.NewRequest("GET", "/foo", nil)
-	r.ServeHTTP(httptest.NewRecorder(), req)
-	if !called {
-		t.Error("Root of subgroup should map to subgroup's URL and NOT redirect you to GROUP/")
+	recorder := httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	if recorder.Code != 200 {
+		t.Error(`/foo on NewGroup("/foo").GET("") should result in 200 response, got:`, recorder.Code)
 	}
 }
 
