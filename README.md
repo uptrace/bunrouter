@@ -15,15 +15,15 @@ The handler is a simple function with the prototype `func(w http.ResponseWriter,
 The syntax here is also modeled after httprouter. Each variable in a path may match on one segment only, except for an optional catch-all variable at the end of the URL.
 
 Some examples of valid URL patterns are:
-* /post/all
-* /post/:postid
-* /post/:postid/page/:page
-* /post/:postid/:page
-* /images/*path
-* /favicon.ico
-* /:year/:month/
-* /:year/:month/:post
-* /:page
+* `/post/all`
+* `/post/:postid`
+* `/post/:postid/page/:page`
+* `/post/:postid/:page`
+* `/images/*path`
+* `/favicon.ico`
+* `/:year/:month/`
+* `/:year/:month/:post`
+* `/:page`
 
 Note that all of the above URL patterns may exist concurrently in the router.
 
@@ -33,8 +33,8 @@ A path element starting with * is a catch-all, whose value will be a string cont
 
 ### Routing Groups
 Lets you create a new group of routes with a given path prefix.  Makes it easier to create clusters of paths like:
-* /api/v1/foo
-* /api/v1/bar
+* `/api/v1/foo`
+* `/api/v1/bar`
 
 To use this you do:
 ```go
@@ -140,6 +140,21 @@ version of this handler just writes the status code `http.StatusMethodNotAllowed
 
 ### Panic Handling
 TreeMux.PanicHandler can be set to provide custom panic handling. The `SimplePanicHandler` just writes the status code `http.StatusInternalServerError`. The function `ShowErrorsPanicHandler`, adapted from [gocraft/web](https://github.com/gocraft/web), will print panic errors to the browser in an easily-readable format.
+
+## Unexpected Differences from Other Routers
+
+This router is intentionally light on features in the name of simplicity and
+performance. When coming from another router that does heavier processing behind
+the scenes, you may encounter some unexpected behavior. This list is by no means
+exhaustive, but covers some nonobvious cases that users have encountered.
+
+### gorilla/pat query string modifications
+
+When matching on parameters in a route, the `gorilla/pat` router will modify
+`Request.URL.RawQuery` to make it appear like the parameters were in the
+query string. `httptreemux` does not do this. See [Issue #26](https://github.com/dimfeld/httptreemux/issues/26) for more details and a
+code snippet that can perform this transformation for you, should you want it.
+
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
