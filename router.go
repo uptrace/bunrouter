@@ -178,13 +178,13 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if trailingSlash && t.RedirectTrailingSlash {
 		path = path[:pathLen-1]
 	}
-	n, params := t.root.search(path[1:])
+	n, handler, params := t.root.search(r.Method, path[1:])
 	if n == nil {
 		if t.RedirectCleanPath {
 			// Path was not found. Try cleaning it up and search again.
 			// TODO Test this
 			cleanPath := httppath.Clean(path)
-			n, params = t.root.search(cleanPath[1:])
+			n, handler, params = t.root.search(r.Method, cleanPath[1:])
 			if n == nil {
 				// Still nothing found.
 				t.NotFoundHandler(w, r)
@@ -202,16 +202,12 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	handler, ok := n.leafHandler[r.Method]
-	if !ok {
-		if r.Method == "HEAD" && t.HeadCanUseGet {
-			handler, ok = n.leafHandler["GET"]
-		} else if r.Method == "OPTIONS" && t.OptionsHandler != nil {
+	if handler == nil {
+		if r.Method == "OPTIONS" && t.OptionsHandler != nil {
 			handler = t.OptionsHandler
-			ok = true
 		}
 
-		if !ok {
+		if handler == nil {
 			t.MethodNotAllowedHandler(w, r, n.leafHandler)
 			return
 		}

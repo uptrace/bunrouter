@@ -67,11 +67,12 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 func TestMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
-		testMethods(t, scenario.RequestCreator)
+		testMethods(t, scenario.RequestCreator, true)
+		testMethods(t, scenario.RequestCreator, false)
 	}
 }
 
-func testMethods(t *testing.T, newRequest RequestCreator) {
+func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool) {
 	var result string
 
 	makeHandler := func(method string) HandlerFunc {
@@ -81,6 +82,7 @@ func testMethods(t *testing.T, newRequest RequestCreator) {
 	}
 
 	router := New()
+	router.HeadCanUseGet = headCanUseGet
 	router.GET("/user/:param", makeHandler("GET"))
 	router.POST("/user/:param", makeHandler("POST"))
 	router.PATCH("/user/:param", makeHandler("PATCH"))
@@ -93,7 +95,7 @@ func testMethods(t *testing.T, newRequest RequestCreator) {
 		r, _ := newRequest(method, "/user/"+method, nil)
 		router.ServeHTTP(w, r)
 		if expect == "" && w.Code != http.StatusMethodNotAllowed {
-			t.Errorf("Method %s not expected to match but saw code %d", w.Code)
+			t.Errorf("Method %s not expected to match but saw code %d", method, w.Code)
 		}
 
 		if result != expect {
@@ -106,19 +108,15 @@ func testMethods(t *testing.T, newRequest RequestCreator) {
 	testMethod("PATCH", "PATCH")
 	testMethod("PUT", "PUT")
 	testMethod("DELETE", "DELETE")
-	t.Log("Test HeadCanUseGet = true")
-	testMethod("HEAD", "GET")
-
-	router.HeadCanUseGet = false
-	t.Log("Test HeadCanUseGet = false")
-	testMethod("HEAD", "")
+	if headCanUseGet {
+		t.Log("Test implicit HEAD with HeadCanUseGet = true")
+		testMethod("HEAD", "GET")
+	} else {
+		t.Log("Test implicit HEAD with HeadCanUseGet = false")
+		testMethod("HEAD", "")
+	}
 
 	router.HEAD("/user/:param", makeHandler("HEAD"))
-
-	t.Log("Test HeadCanUseGet = false with explicit HEAD handler")
-	testMethod("HEAD", "HEAD")
-	router.HeadCanUseGet = true
-	t.Log("Test HeadCanUseGet = true with explicit HEAD handler")
 	testMethod("HEAD", "HEAD")
 }
 
@@ -157,7 +155,7 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 
 		calledNotAllowed = true
 
-		expected := []string{"GET", "PUT", "DELETE"}
+		expected := []string{"GET", "PUT", "DELETE", "HEAD"}
 		allowed := make([]string, 0)
 		for m := range methods {
 			allowed = append(allowed, m)
@@ -188,7 +186,7 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 
 	allowed := w.Header()["Allow"]
 	sort.Strings(allowed)
-	expected := []string{"DELETE", "GET", "PUT"}
+	expected := []string{"DELETE", "GET", "PUT", "HEAD"}
 	sort.Strings(expected)
 
 	if !reflect.DeepEqual(allowed, expected) {
@@ -271,7 +269,7 @@ func TestOptionsHandler(t *testing.T) {
 
 	allowed := w.Header()["Allow"]
 	sort.Strings(allowed)
-	expected := []string{"DELETE", "GET", "PUT"}
+	expected := []string{"DELETE", "GET", "PUT", "HEAD"}
 	sort.Strings(expected)
 
 	if !reflect.DeepEqual(allowed, expected) {

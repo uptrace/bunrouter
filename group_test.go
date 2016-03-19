@@ -56,7 +56,8 @@ func TestSubGroupEmptyMapping(t *testing.T) {
 func TestGroupMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
-		testGroupMethods(t, scenario.RequestCreator)
+		testGroupMethods(t, scenario.RequestCreator, false)
+		testGroupMethods(t, scenario.RequestCreator, true)
 	}
 }
 
@@ -88,7 +89,7 @@ func TestInvalidPath(t *testing.T) {
 }
 
 //Liberally borrowed from router_test
-func testGroupMethods(t *testing.T, reqGen RequestCreator) {
+func testGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 	var result string
 	makeHandler := func(method string) HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -96,6 +97,7 @@ func testGroupMethods(t *testing.T, reqGen RequestCreator) {
 		}
 	}
 	router := New()
+	router.HeadCanUseGet = headCanUseGet
 	// Testing with a sub-group of a group as that will test everything at once
 	g := router.NewGroup("/base").NewGroup("/user")
 	g.GET("/:param", makeHandler("GET"))
@@ -110,7 +112,7 @@ func testGroupMethods(t *testing.T, reqGen RequestCreator) {
 		r, _ := reqGen(method, "/base/user/"+method, nil)
 		router.ServeHTTP(w, r)
 		if expect == "" && w.Code != http.StatusMethodNotAllowed {
-			t.Errorf("Method %s not expected to match but saw code %d", w.Code)
+			t.Errorf("Method %s not expected to match but saw code %d", method, w.Code)
 		}
 
 		if result != expect {
@@ -123,18 +125,43 @@ func testGroupMethods(t *testing.T, reqGen RequestCreator) {
 	testMethod("PATCH", "PATCH")
 	testMethod("PUT", "PUT")
 	testMethod("DELETE", "DELETE")
-	t.Log("Test HeadCanUseGet = true")
-	testMethod("HEAD", "GET")
-
-	router.HeadCanUseGet = false
-	t.Log("Test HeadCanUseGet = false")
-	testMethod("HEAD", "")
+	if headCanUseGet {
+		t.Log("Test implicit HEAD with HeadCanUseGet = true")
+		testMethod("HEAD", "GET")
+	} else {
+		t.Log("Test implicit HEAD with HeadCanUseGet = false")
+		testMethod("HEAD", "")
+	}
 
 	router.HEAD("/base/user/:param", makeHandler("HEAD"))
+	testMethod("HEAD", "HEAD")
+}
 
-	t.Log("Test HeadCanUseGet = false with explicit HEAD handler")
-	testMethod("HEAD", "HEAD")
+// Ensure that setting a GET handler doesn't overwrite an explciit HEAD handler.
+func TestSetGetAfterHead(t *testing.T) {
+	var result string
+	makeHandler := func(method string) HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			result = method
+		}
+	}
+
+	router := New()
 	router.HeadCanUseGet = true
-	t.Log("Test HeadCanUseGet = true with explicit HEAD handler")
+	router.HEAD("/abc", makeHandler("HEAD"))
+	router.GET("/abc", makeHandler("GET"))
+
+	testMethod := func(method, expect string) {
+		result = ""
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(method, "/abc", nil)
+		router.ServeHTTP(w, r)
+
+		if result != expect {
+			t.Errorf("Method %s got result %s", method, result)
+		}
+	}
+
 	testMethod("HEAD", "HEAD")
+	testMethod("GET", "GET")
 }

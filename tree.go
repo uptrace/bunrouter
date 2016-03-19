@@ -25,6 +25,8 @@ type node struct {
 
 	addSlash   bool
 	isCatchAll bool
+	// If true, the head handler was set implicitly, so let it also be set explicitly.
+	implicitHead bool
 	// If this node is the end of the URL, then call the handler, if applicable.
 	leafHandler map[string]HandlerFunc
 
@@ -40,15 +42,19 @@ func (n *node) sortStaticChild(i int) {
 	}
 }
 
-func (n *node) setHandler(verb string, handler HandlerFunc) {
+func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
 	if n.leafHandler == nil {
 		n.leafHandler = make(map[string]HandlerFunc)
 	}
 	_, ok := n.leafHandler[verb]
-	if ok {
+	if ok && (verb != "HEAD" || !n.implicitHead) {
 		panic(fmt.Sprintf("%s already handles %s", n.path, verb))
 	}
 	n.leafHandler[verb] = handler
+
+	if verb == "HEAD" {
+		n.implicitHead = implicitHead
+	}
 }
 
 func (n *node) addPath(path string, wildcards []string) *node {
@@ -103,7 +109,7 @@ func (n *node) addPath(path string, wildcards []string) *node {
 		}
 
 		if path[1:] != n.catchAllChild.path {
-			panic(fmt.Sprintf("Catch-all name in %s doesn't match %s",
+			panic(fmt.Sprintf("Catch-all name in %s doesn't match %s. You probably tried to define overlapping catchalls",
 				path, n.catchAllChild.path))
 		}
 
@@ -206,16 +212,16 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 	return newNode, i
 }
 
-func (n *node) search(path string) (found *node, params []string) {
+func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []string) {
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
 	pathLen := len(path)
 	if pathLen == 0 {
 		if len(n.leafHandler) == 0 {
-			return nil, nil
+			return nil, nil, nil
 		} else {
-			return n, nil
+			return n, n.leafHandler[method], nil
 		}
 	}
 
@@ -227,13 +233,15 @@ func (n *node) search(path string) (found *node, params []string) {
 			childPathLen := len(child.path)
 			if pathLen >= childPathLen && child.path == path[:childPathLen] {
 				nextPath := path[childPathLen:]
-				found, params = child.search(nextPath)
+				found, handler, params = child.search(method, nextPath)
 			}
 			break
 		}
 	}
 
-	if found != nil {
+	// If we found a node and it had a valid handler, then return here. Otherwise
+	// let's remember that we found this one, but look for a better match.
+	if handler != nil {
 		return
 	}
 
@@ -248,36 +256,52 @@ func (n *node) search(path string) (found *node, params []string) {
 		nextToken := path[nextSlash:]
 
 		if len(thisToken) > 0 { // Don't match on empty tokens.
-			found, params = n.wildcardChild.search(nextToken)
-			if found != nil {
+			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken)
+			if wcHandler != nil || (found == nil && wcNode != nil) {
 				unescaped, err := url.QueryUnescape(thisToken)
 				if err != nil {
 					unescaped = thisToken
 				}
 
-				if params == nil {
-					params = []string{unescaped}
+				if wcParams == nil {
+					wcParams = []string{unescaped}
 				} else {
-					params = append(params, unescaped)
+					wcParams = append(wcParams, unescaped)
 				}
 
-				return
+				if wcHandler != nil {
+					return wcNode, wcHandler, wcParams
+				}
+
+				// Didn't actually find a handler here, so remember that we
+				// found a node but also see if we can fall through to the
+				// catchall.
+				found = wcNode
+				handler = wcHandler
+				params = wcParams
 			}
 		}
 	}
 
 	catchAllChild := n.catchAllChild
 	if catchAllChild != nil {
-		// Hit the catchall, so just assign the whole remaining path.
-		unescaped, err := url.QueryUnescape(path)
-		if err != nil {
-			unescaped = path
+		// Hit the catchall, so just assign the whole remaining path if it
+		// has a matching handler.
+		handler = catchAllChild.leafHandler[method]
+		// Found a handler, or we found a catchall node without a handler.
+		// Either way, return it since there's nothing left to check after this.
+		if handler != nil || found == nil {
+			unescaped, err := url.QueryUnescape(path)
+			if err != nil {
+				unescaped = path
+			}
+
+			return catchAllChild, handler, []string{unescaped}
 		}
 
-		return catchAllChild, []string{unescaped}
 	}
 
-	return nil, nil
+	return found, handler, params
 }
 
 func (n *node) dumpTree(prefix, nodeType string) string {

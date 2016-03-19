@@ -16,7 +16,7 @@ func addPath(t *testing.T, tree *node, path string) {
 	handler := func(w http.ResponseWriter, r *http.Request, urlParams map[string]string) {
 		urlParams["path"] = path
 	}
-	n.setHandler("GET", handler)
+	n.setHandler("GET", handler, false)
 }
 
 var test *testing.T
@@ -30,7 +30,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 	expectCatchAll := strings.Contains(expectPath, "/*")
 
 	t.Log("Testing", path)
-	n, paramList := tree.search(path[1:])
+	n, foundHandler, paramList := tree.search("GET", path[1:])
 	if expectPath != "" && n == nil {
 		t.Errorf("No match for %s, expected %s", path, expectPath)
 		return
@@ -55,6 +55,12 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		return
 	}
 
+	if foundHandler == nil {
+		t.Errorf("Path %s returned valid node but foundHandler was false", path)
+		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
+		return
+	}
+
 	pathMap := make(map[string]string)
 	handler(nil, nil, pathMap)
 	matchedPath := pathMap["path"]
@@ -66,7 +72,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 	if expectedParams == nil {
 		if len(paramList) != 0 {
-			t.Errorf("Path %p expected no parameters, saw %v", path, paramList)
+			t.Errorf("Path %s expected no parameters, saw %v", path, paramList)
 		}
 	} else {
 		if len(paramList) != len(n.leafWildcardNames) {
@@ -264,8 +270,8 @@ func TestPanics(t *testing.T) {
 		sawPanic = false
 		defer panicHandler()
 		tree := &node{path: "/"}
-		tree.setHandler("GET", dummyHandler)
-		tree.setHandler("GET", dummyHandler)
+		tree.setHandler("GET", dummyHandler, false)
+		tree.setHandler("GET", dummyHandler, false)
 	}()
 	if !sawPanic {
 		t.Error("Expected panic when adding a duplicate handler for a pattern")
@@ -306,32 +312,47 @@ func TestPanics(t *testing.T) {
 
 func BenchmarkTreeNullRequest(b *testing.B) {
 	b.ReportAllocs()
-	tree := &node{path: "/"}
+	tree := &node{
+		path: "/",
+		leafHandler: map[string]HandlerFunc{
+			"GET": dummyHandler,
+		},
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("")
+		tree.search("GET", "")
 	}
 }
 
 func BenchmarkTreeOneStatic(b *testing.B) {
 	b.ReportAllocs()
-	tree := &node{path: "/"}
+	tree := &node{
+		path: "/",
+		leafHandler: map[string]HandlerFunc{
+			"GET": dummyHandler,
+		},
+	}
 	tree.addPath("abc", nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("abc")
+		tree.search("GET", "abc")
 	}
 }
 
 func BenchmarkTreeOneParam(b *testing.B) {
+	tree := &node{
+		path: "/",
+		leafHandler: map[string]HandlerFunc{
+			"GET": dummyHandler,
+		},
+	}
 	b.ReportAllocs()
-	tree := &node{path: "/"}
 	tree.addPath(":abc", nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree.search("abc")
+		tree.search("GET", "abc")
 	}
 }

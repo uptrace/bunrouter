@@ -102,7 +102,11 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	if addSlash {
 		node.addSlash = true
 	}
-	node.setHandler(method, handler)
+	node.setHandler(method, handler, false)
+
+	if g.mux.HeadCanUseGet && method == "GET" && node.leafHandler["HEAD"] == nil {
+		node.setHandler("HEAD", handler, true)
+	}
 }
 
 // Syntactic sugar for Handle("GET", path, handler)
