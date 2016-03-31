@@ -57,7 +57,7 @@ func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
 	}
 }
 
-func (n *node) addPath(path string, wildcards []string) *node {
+func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *node {
 	leaf := len(path) == 0
 	if leaf {
 		if wildcards != nil {
@@ -90,6 +90,7 @@ func (n *node) addPath(path string, wildcards []string) *node {
 	var tokenEnd int
 
 	if c == '/' {
+		// Done processing the previous token, so reset inStaticToken to false.
 		thisToken = "/"
 		tokenEnd = 1
 	} else if nextSlash == -1 {
@@ -101,7 +102,7 @@ func (n *node) addPath(path string, wildcards []string) *node {
 	}
 	remainingPath := path[tokenEnd:]
 
-	if c == '*' {
+	if c == '*' && !inStaticToken {
 		// Token starts with a *, so it's a catch-all
 		thisToken = thisToken[1:]
 		if n.catchAllChild == nil {
@@ -125,7 +126,7 @@ func (n *node) addPath(path string, wildcards []string) *node {
 		n.catchAllChild.leafWildcardNames = wildcards
 
 		return n.catchAllChild
-	} else if c == ':' {
+	} else if c == ':' && !inStaticToken {
 		// Token starts with a :
 		thisToken = thisToken[1:]
 
@@ -139,12 +140,26 @@ func (n *node) addPath(path string, wildcards []string) *node {
 			n.wildcardChild = &node{path: "wildcard"}
 		}
 
-		return n.wildcardChild.addPath(remainingPath, wildcards)
+		return n.wildcardChild.addPath(remainingPath, wildcards, false)
 
 	} else {
-		if strings.ContainsAny(thisToken, ":*") {
-			panic("* or : in middle of path component " + path)
+		// if strings.ContainsAny(thisToken, ":*") {
+		// 	panic("* or : in middle of path component " + path)
+		// }
+
+		unescaped := false
+		if len(thisToken) >= 2 && !inStaticToken {
+			if thisToken[0] == '\\' && (thisToken[1] == '*' || thisToken[1] == ':' || thisToken[1] == '\\') {
+				// The token starts with a character escaped by a backslash. Drop the backslash.
+				c = thisToken[1]
+				thisToken = thisToken[1:]
+				unescaped = true
+			}
 		}
+
+		// Set inStaticToken to ensure that the rest of this token is not mistaken
+		// for a wildcard if a prefix split occurs at a '*' or ':'.
+		inStaticToken = (c != '/')
 
 		// Do we have an existing node that starts with the same letter?
 		for i, index := range n.staticIndices {
@@ -152,9 +167,14 @@ func (n *node) addPath(path string, wildcards []string) *node {
 				// Yes. Split it based on the common prefix of the existing
 				// node and the new one.
 				child, prefixSplit := n.splitCommonPrefix(i, thisToken)
+
 				child.priority++
 				n.sortStaticChild(i)
-				return child.addPath(path[prefixSplit:], wildcards)
+				if unescaped {
+					// Account for the removed backslash.
+					prefixSplit++
+				}
+				return child.addPath(path[prefixSplit:], wildcards, inStaticToken)
 			}
 		}
 
@@ -168,7 +188,7 @@ func (n *node) addPath(path string, wildcards []string) *node {
 			n.staticIndices = append(n.staticIndices, c)
 			n.staticChild = append(n.staticChild, child)
 		}
-		return child.addPath(remainingPath, wildcards)
+		return child.addPath(remainingPath, wildcards, inStaticToken)
 	}
 }
 

@@ -98,7 +98,7 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 		path = path[:len(path)-1]
 	}
 
-	node := g.mux.root.addPath(path[1:], nil)
+	node := g.mux.root.addPath(path[1:], nil, false)
 	if addSlash {
 		node.addSlash = true
 	}

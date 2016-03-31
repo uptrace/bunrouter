@@ -2,7 +2,6 @@ package httptreemux
 
 import (
 	"net/http"
-	"strings"
 	"testing"
 )
 
@@ -12,7 +11,7 @@ func dummyHandler(w http.ResponseWriter, r *http.Request, urlParams map[string]s
 
 func addPath(t *testing.T, tree *node, path string) {
 	t.Logf("Adding path %s", path)
-	n := tree.addPath(path[1:], nil)
+	n := tree.addPath(path[1:], nil, false)
 	handler := func(w http.ResponseWriter, r *http.Request, urlParams map[string]string) {
 		urlParams["path"] = path
 	}
@@ -27,8 +26,6 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		t.FailNow()
 	}
 
-	expectCatchAll := strings.Contains(expectPath, "/*")
-
 	t.Log("Testing", path)
 	n, foundHandler, paramList := tree.search("GET", path[1:])
 	if expectPath != "" && n == nil {
@@ -42,10 +39,6 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 	if n == nil {
 		return
-	}
-
-	if expectCatchAll != n.isCatchAll {
-		t.Errorf("For path %s expectCatchAll %v but saw %v", path, expectCatchAll, n.isCatchAll)
 	}
 
 	handler, ok := n.leafHandler["GET"]
@@ -123,6 +116,8 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/images")
 	addPath(t, tree, "/images/abc.jpg")
 	addPath(t, tree, "/images/:imgname")
+	addPath(t, tree, "/images/\\*path")
+	addPath(t, tree, "/images/\\*patch")
 	addPath(t, tree, "/images/*path")
 	addPath(t, tree, "/ima")
 	addPath(t, tree, "/ima/:par")
@@ -133,6 +128,7 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/apples1")
 	addPath(t, tree, "/appeasement")
 	addPath(t, tree, "/appealing")
+	addPath(t, tree, "/date/\\:year/\\:month")
 	addPath(t, tree, "/date/:year/:month")
 	addPath(t, tree, "/date/:year/month")
 	addPath(t, tree, "/date/:year/:month/abc")
@@ -146,6 +142,10 @@ func TestTree(t *testing.T) {
 	addPath(t, tree, "/users/:id/updatePassword")
 	addPath(t, tree, "/:something/abc")
 	addPath(t, tree, "/:something/def")
+	addPath(t, tree, "/apples/ab:cde/:fg/*hi")
+	addPath(t, tree, "/apples/ab*cde/:fg/*hi")
+	addPath(t, tree, "/apples/ab\\*cde/:fg/*hi")
+	addPath(t, tree, "/apples/ab*dde")
 
 	testPath(t, tree, "/users/abc/updatePassword", "/users/:id/updatePassword",
 		map[string]string{"id": "abc"})
@@ -197,6 +197,22 @@ func TestTree(t *testing.T) {
 	testPath(t, tree, "/post/ab%2fdef/page/2%2f", "/post/:post/page/:page",
 		map[string]string{"post": "ab/def", "page": "2/"})
 
+	// Test paths with escaped wildcard characters.
+	testPath(t, tree, "/images/*path", "/images/\\*path", nil)
+	testPath(t, tree, "/images/*patch", "/images/\\*patch", nil)
+	testPath(t, tree, "/date/:year/:month", "/date/\\:year/\\:month", nil)
+	testPath(t, tree, "/apples/ab*cde/lala/baba/dada", "/apples/ab*cde/:fg/*hi",
+		map[string]string{"fg": "lala", "hi": "baba/dada"})
+	testPath(t, tree, "/apples/ab\\*cde/lala/baba/dada", "/apples/ab\\*cde/:fg/*hi",
+		map[string]string{"fg": "lala", "hi": "baba/dada"})
+	testPath(t, tree, "/apples/ab:cde/:fg/*hi", "/apples/ab:cde/:fg/*hi",
+		map[string]string{"fg": ":fg", "hi": "*hi"})
+	testPath(t, tree, "/apples/ab*cde/:fg/*hi", "/apples/ab*cde/:fg/*hi",
+		map[string]string{"fg": ":fg", "hi": "*hi"})
+	testPath(t, tree, "/apples/ab*cde/one/two/three", "/apples/ab*cde/:fg/*hi",
+		map[string]string{"fg": "one", "hi": "two/three"})
+	testPath(t, tree, "/apples/ab*dde", "/apples/ab*dde", nil)
+
 	testPath(t, tree, "/ima/bcd/fgh", "", nil)
 	testPath(t, tree, "/date/2014//month", "", nil)
 	testPath(t, tree, "/date/2014/05/", "", nil) // Empty catchall should not match
@@ -209,7 +225,7 @@ func TestTree(t *testing.T) {
 	t.Log("Test retrieval of duplicate paths")
 	params := make(map[string]string)
 	p := "date/:year/:month/abc"
-	n := tree.addPath(p, nil)
+	n := tree.addPath(p, nil, false)
 	if n == nil {
 		t.Errorf("Duplicate add of %s didn't return a node", p)
 	} else {
@@ -247,7 +263,7 @@ func TestPanics(t *testing.T) {
 		defer panicHandler()
 		tree := &node{path: "/"}
 		for _, path := range p {
-			tree.addPath(path, nil)
+			tree.addPath(path, nil, false)
 		}
 	}
 
@@ -275,26 +291,6 @@ func TestPanics(t *testing.T) {
 	}()
 	if !sawPanic {
 		t.Error("Expected panic when adding a duplicate handler for a pattern")
-	}
-
-	addPathPanic("abc/ab:cd")
-	if !sawPanic {
-		t.Error("Expected panic with : in middle of path segment")
-	}
-
-	addPathPanic("abc/ab", "abc/ab:cd")
-	if !sawPanic {
-		t.Error("Expected panic with : in middle of path segment with existing path")
-	}
-
-	addPathPanic("abc/ab*cd")
-	if !sawPanic {
-		t.Error("Expected panic with * in middle of path segment")
-	}
-
-	addPathPanic("abc/ab", "abc/ab*cd")
-	if !sawPanic {
-		t.Error("Expected panic with * in middle of path segment with existing path")
 	}
 
 	twoPathPanic := func(first, second string) {
@@ -333,7 +329,7 @@ func BenchmarkTreeOneStatic(b *testing.B) {
 			"GET": dummyHandler,
 		},
 	}
-	tree.addPath("abc", nil)
+	tree.addPath("abc", nil, false)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -349,7 +345,7 @@ func BenchmarkTreeOneParam(b *testing.B) {
 		},
 	}
 	b.ReportAllocs()
-	tree.addPath(":abc", nil)
+	tree.addPath(":abc", nil, false)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

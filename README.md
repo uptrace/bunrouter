@@ -27,9 +27,20 @@ Some examples of valid URL patterns are:
 
 Note that all of the above URL patterns may exist concurrently in the router.
 
-Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a single path segment. That is, the pattern `/post/:postid` will match on `/post/1` or `/post/1/`, but not `/post/1/2`.
+Path elements starting with `:` indicate a wildcard in the path. A wildcard will only match on a single path segment. That is, the pattern `/post/:postid` will match on `/post/1` or `/post/1/`, but not `/post/1/2`.
 
-A path element starting with * is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
+A path element starting with `*` is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
+
+#### Using : and * in routing patterns
+
+The characters `:` and `*` can be used at the beginning of a path segment by escaping them with a backslash. A double backslash at the beginning of a segment is interpreted as a single backslash. These escapes are only checked at the very beginning of a path segment; they are not necessary or processed elsewhere in a token.
+
+```go
+router.GET("/foo/\\*starToken", handler) // matches /foo/*starToken
+router.GET("/foo/star*inTheMiddle", handler) // matches /foo/star*inTheMiddle
+router.GET("/foo/starBackslash\\*", handler) // matches /foo/starBackslash\*
+router.GET("/foo/\\\\*backslashWithStar") // matches /foo/\*backslashWithStar
+```
 
 ### Routing Groups
 Lets you create a new group of routes with a given path prefix.  Makes it easier to create clusters of paths like:
