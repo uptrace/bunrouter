@@ -701,6 +701,104 @@ func TestPathSource(t *testing.T) {
 	}
 }
 
+func TestEscapedRoutes(t *testing.T) {
+	type testcase struct {
+		Route      string
+		Path       string
+		Param      string
+		ParamValue string
+	}
+
+	testcases := []*testcase{
+		{"/abc/def", "/abc/def", "", ""},
+		{"/abc/*star", "/abc/defg", "star", "defg"},
+		{"/abc/extrapath/*star", "/abc/extrapath/*lll", "star", "*lll"},
+		{"/abc/\\*def", "/abc/*def", "", ""},
+		{"/abc/\\\\*def", "/abc/\\*def", "", ""},
+		{"/:wild/def", "/*abcd/def", "wild", "*abcd"},
+		{"/\\:wild/def", "/:wild/def", "", ""},
+		{"/\\\\:wild/def", "/\\:wild/def", "", ""},
+		{"/\\*abc/def", "/*abc/def", "", ""},
+	}
+
+	escapeCases := []bool{false, true}
+
+	for _, escape := range escapeCases {
+		var foundTestCase *testcase
+		var foundParamKey string
+		var foundParamValue string
+
+		handleTestResponse := func(c *testcase, w http.ResponseWriter, r *http.Request, params map[string]string) {
+			foundTestCase = c
+			foundParamKey = ""
+			foundParamValue = ""
+			for key, val := range params {
+				foundParamKey = key
+				foundParamValue = val
+			}
+			t.Logf("RequestURI %s found test case %+v", r.RequestURI, c)
+		}
+
+		verify := func(c *testcase) {
+			t.Logf("Expecting test case %+v", c)
+			if c != foundTestCase {
+				t.Errorf("Incorrectly matched test case %+v", foundTestCase)
+			}
+
+			if c.Param != foundParamKey {
+				t.Errorf("Expected param key %s but saw %s", c.Param, foundParamKey)
+			}
+
+			if c.ParamValue != foundParamValue {
+				t.Errorf("Expected param key %s but saw %s", c.Param, foundParamKey)
+			}
+		}
+
+		t.Log("Recreating router")
+		router := New()
+		router.EscapeAddedRoutes = escape
+
+		for _, c := range testcases {
+			t.Logf("Adding route %s", c.Route)
+			theCase := c
+			router.GET(c.Route, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+				handleTestResponse(theCase, w, r, params)
+			})
+		}
+
+		for _, c := range testcases {
+			escapedPath := (&url.URL{Path: c.Path}).EscapedPath()
+			escapedIsSame := escapedPath == c.Path
+
+			r, _ := newRequest("GET", c.Path, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, r)
+			if w.Code != 200 {
+				t.Errorf("Escape %v test case %v saw code %d", escape, c, w.Code)
+			}
+			verify(c)
+
+			if !escapedIsSame {
+				r, _ := newRequest("GET", escapedPath, nil)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, r)
+				if router.EscapeAddedRoutes {
+					// Expect a match
+					if w.Code != 200 {
+						t.Errorf("Escape %v test case %v saw code %d", escape, c, w.Code)
+					}
+					verify(c)
+				} else {
+					// Expect a non-match if the parameter isn't a wildcard.
+					if foundParamKey == "" && w.Code != 404 {
+						t.Errorf("Escape %v test case %v expected 404 saw %d", escape, c, w.Code)
+					}
+				}
+			}
+		}
+	}
+}
+
 func BenchmarkRouterSimple(b *testing.B) {
 	router := New()
 

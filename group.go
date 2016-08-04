@@ -2,6 +2,8 @@ package httptreemux
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 )
 
 type Group struct {
@@ -87,26 +89,43 @@ func (g *Group) NewGroup(path string) *Group {
 // 	GET /posts/ will match normally.
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
+	addSlash := false
+	addOne := func(thePath string) {
+		node := g.mux.root.addPath(thePath[1:], nil, false)
+		if addSlash {
+			node.addSlash = true
+		}
+		node.setHandler(method, handler, false)
+
+		if g.mux.HeadCanUseGet && method == "GET" && node.leafHandler["HEAD"] == nil {
+			node.setHandler("HEAD", handler, true)
+		}
+	}
+
 	checkPath(path)
 	path = g.path + path
 	if len(path) == 0 {
 		panic("Cannot map an empty path")
 	}
-	addSlash := false
+
 	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.RedirectTrailingSlash {
 		addSlash = true
 		path = path[:len(path)-1]
 	}
 
-	node := g.mux.root.addPath(path[1:], nil, false)
-	if addSlash {
-		node.addSlash = true
-	}
-	node.setHandler(method, handler, false)
+	if g.mux.EscapeAddedRoutes {
+		u, err := url.ParseRequestURI(path)
+		if err != nil {
+			panic("URL parsing error " + err.Error() + " on url " + path)
+		}
+		escapedPath := unescapeSpecial(u.String())
 
-	if g.mux.HeadCanUseGet && method == "GET" && node.leafHandler["HEAD"] == nil {
-		node.setHandler("HEAD", handler, true)
+		if escapedPath != path {
+			addOne(escapedPath)
+		}
 	}
+
+	addOne(path)
 }
 
 // Syntactic sugar for Handle("GET", path, handler)
@@ -149,4 +168,25 @@ func checkPath(path string) {
 	if len(path) > 0 && path[0] != '/' {
 		panic(fmt.Sprintf("Path %s must start with slash", path))
 	}
+}
+
+func unescapeSpecial(s string) string {
+	// Look for sequences of \*, *, and \: that were escaped, and undo some of that escaping.
+
+	// Unescape /* since it references a wildcard token.
+	s = strings.Replace(s, "/%2A", "/*", -1)
+
+	// Unescape /\: since it references a literal colon
+	s = strings.Replace(s, "/%5C:", "/\\:", -1)
+
+	// Replace escaped /\\: with /\:
+	s = strings.Replace(s, "/%5C%5C:", "/%5C:", -1)
+
+	// Replace escaped /\* with /*
+	s = strings.Replace(s, "/%5C%2A", "/%2A", -1)
+
+	// Replace escaped /\\* with /\*
+	s = strings.Replace(s, "/%5C%5C%2A", "/%5C%2A", -1)
+
+	return s
 }

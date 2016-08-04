@@ -107,6 +107,11 @@ type TreeMux struct {
 	// better compatibility with some utility functions in the http
 	// library that modify the Request before passing it to the router.
 	PathSource PathSource
+
+	// EscapeAddedRoutes controls URI escaping behavior when adding a route to the tree.
+	// If set to true, the router will add both the route as originally passed, and
+	// a version passed through URL.EscapedPath. This behavior is disabled by default.
+	EscapeAddedRoutes bool
 }
 
 // Dump returns a text representation of the routing tree.
@@ -271,6 +276,7 @@ func New() *TreeMux {
 		RedirectBehavior:        Redirect301,
 		RedirectMethodBehavior:  make(map[string]RedirectBehavior),
 		PathSource:              RequestURI,
+		EscapeAddedRoutes:       false,
 	}
 	tm.Group.mux = tm
 	return tm

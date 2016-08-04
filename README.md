@@ -138,6 +138,10 @@ Therefore, this router defaults to using the raw URL, stored in the Request.Requ
 
 TL;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP routers may not due to [Go issue 3659](https://code.google.com/p/go/issues/detail?id=3659).
 
+#### Escaped Characters
+
+As mentioned above, characters in the URL are not unescaped when using RequestURI to determine the matched route. If this is a problem for you and you are unable to switch to URL.Path for the above reasons, you may set `router.EscapeAddedRoutes` to `true`. This option will run each added route through the `URL.EscapedPath` function, and add an additional route if the escaped version differs.
+
 #### http Package Utility Functions
 
 Although using RequestURI avoids the issue described above, certain utility functions such as `http.StripPrefix` modify URL.Path, and expect that the underlying router is using that field to make its decision. If you are using some of these functions, set the router's `PathSource` member to `URLPath`. This will give up the proper handling of escaped slashes described above, while allowing the router to work properly with these utility functions.
