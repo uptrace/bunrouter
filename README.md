@@ -13,6 +13,18 @@ There are a lot of good routers out there. But looking at the ones that were rea
 ## Handler
 The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
 
+### Using http.HandlerFunc
+Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `httptreemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc):
+
+```go
+router := httptreemux.New()
+router.HandleWithContext("GET", "/hello/:name", func(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+    params := httptreemux.ContextParams(ctx)
+    fmt.Fprintf(w, "Hello, %s!", params["name"])
+})
+```
+
 ## Routing Rules
 The syntax here is also modeled after httprouter. Each variable in a path may match on one segment only, except for an optional catch-all variable at the end of the URL.
 
@@ -171,7 +183,6 @@ When matching on parameters in a route, the `gorilla/pat` router will modify
 `Request.URL.RawQuery` to make it appear like the parameters were in the
 query string. `httptreemux` does not do this. See [Issue #26](https://github.com/dimfeld/httptreemux/issues/26) for more details and a
 code snippet that can perform this transformation for you, should you want it.
-
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
