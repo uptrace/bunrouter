@@ -13,6 +13,28 @@ There are a lot of good routers out there. But looking at the ones that were rea
 ## Handler
 The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
 
+### Using http.HandlerFunc
+Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `httptreemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc):
+
+```go
+router := httptreemux.New()
+
+group := tree.NewGroup("/api")
+group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+    id := params["id"]
+    fmt.Fprintf(w, "GET /api/v1/%s", id)
+})
+
+ctxGroup := group.UsingContext() // sibling to 'group' node in tree
+ctxGroup.GET("/v2", func(w http.ResponseWriter, r *http.Request) {
+    params := httptreemux.ContextParams(r.Context())
+    id := params["id"]
+    fmt.Fprintf(w, "GET /api/v2/%s", id)
+})
+
+http.ListenAndServe(":8080", router)
+```
+
 ## Routing Rules
 The syntax here is also modeled after httprouter. Each variable in a path may match on one segment only, except for an optional catch-all variable at the end of the URL.
 
@@ -72,15 +94,17 @@ router.GET("/:year/:month/:post", postHandler)
 router.GET("/:year/:month", archiveHandler)
 router.GET("/images/*path", staticHandler)
 router.GET("/favicon.ico", staticHandler)
-
-/abc will match /:page
-/2014/05 will match /:year/:month
-/2014/05/really-great-blog-post will match /:year/:month/:post
-/images/CoolImage.gif will match /images/*path
-/images/2014/05/MayImage.jpg will also match /images/*path, with all the text after /images stored in the variable path.
-/favicon.ico will match /favicon.ico
 ```
 
+#### Example scenarios
+
+- `/abc` will match `/:page`
+- `/2014/05` will match `/:year/:month`
+- `/2014/05/really-great-blog-post` will match `/:year/:month/:post`
+- `/images/CoolImage.gif` will match `/images/*path`
+- `/images/2014/05/MayImage.jpg` will also match `/images/*path`, with all the text after `/images` stored in the variable path.
+- `/favicon.ico` will match `/favicon.ico`
+ 
 ### Special Method Behavior
 If TreeMux.HeadCanUseGet is set to true, the router will call the GET handler for a pattern when a HEAD request is processed, if no HEAD handler has been added for that pattern. This behavior is enabled by default.
 
@@ -171,7 +195,6 @@ When matching on parameters in a route, the `gorilla/pat` router will modify
 `Request.URL.RawQuery` to make it appear like the parameters were in the
 query string. `httptreemux` does not do this. See [Issue #26](https://github.com/dimfeld/httptreemux/issues/26) for more details and a
 code snippet that can perform this transformation for you, should you want it.
-
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
