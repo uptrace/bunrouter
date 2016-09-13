@@ -53,15 +53,15 @@ func testHandleWithContext(t *testing.T, reqGen RequestCreator, headCanUseGet bo
 		}
 	}
 
-	router := New()
-	router.HeadCanUseGet = headCanUseGet
+	router := New().UsingContext()
+	router.TreeMux().HeadCanUseGet = headCanUseGet
 
-	g := router.NewGroup("/base").NewGroup("/user")
-	g.HandleWithContext("GET", "/:param", makeHandler("GET"))
-	g.HandleWithContext("POST", "/:param", makeHandler("POST"))
-	g.HandleWithContext("PATCH", "/:param", makeHandler("PATCH"))
-	g.HandleWithContext("PUT", "/:param", makeHandler("PUT"))
-	g.HandleWithContext("DELETE", "/:param", makeHandler("DELETE"))
+	cg := router.NewContextGroup("/base").NewContextGroup("/user")
+	cg.GET("/:param", makeHandler("GET"))
+	cg.POST("/:param", makeHandler("POST"))
+	cg.PATCH("/:param", makeHandler("PATCH"))
+	cg.PUT("/:param", makeHandler("PUT"))
+	cg.DELETE("/:param", makeHandler("DELETE"))
 
 	testMethod := func(method, expect string) {
 		result = ""
@@ -91,6 +91,6 @@ func testHandleWithContext(t *testing.T, reqGen RequestCreator, headCanUseGet bo
 		testMethod("HEAD", "")
 	}
 
-	router.HandleWithContext("HEAD", "/base/user/:param", makeHandler("HEAD"))
+	router.Handle("HEAD", "/base/user/:param", makeHandler("HEAD"))
 	testMethod("HEAD", "HEAD")
 }
