@@ -24,15 +24,15 @@ func TestContextParams(t *testing.T) {
 
 }
 
-func TestHandleWithContext(t *testing.T) {
+func TestContextGroupMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
-		testHandleWithContext(t, scenario.RequestCreator, true)
-		testHandleWithContext(t, scenario.RequestCreator, false)
+		testContextGroupMethods(t, scenario.RequestCreator, true)
+		testContextGroupMethods(t, scenario.RequestCreator, false)
 	}
 }
 
-func testHandleWithContext(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
+func testContextGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 	var result string
 	makeHandler := func(method string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -53,10 +53,10 @@ func testHandleWithContext(t *testing.T, reqGen RequestCreator, headCanUseGet bo
 		}
 	}
 
-	router := New().UsingContext()
-	router.TreeMux().HeadCanUseGet = headCanUseGet
+	router := New()
+	router.HeadCanUseGet = headCanUseGet
 
-	cg := router.NewContextGroup("/base").NewContextGroup("/user")
+	cg := router.UsingContext().NewContextGroup("/base").NewContextGroup("/user")
 	cg.GET("/:param", makeHandler("GET"))
 	cg.POST("/:param", makeHandler("POST"))
 	cg.PATCH("/:param", makeHandler("PATCH"))
@@ -91,6 +91,44 @@ func testHandleWithContext(t *testing.T, reqGen RequestCreator, headCanUseGet bo
 		testMethod("HEAD", "")
 	}
 
-	router.Handle("HEAD", "/base/user/:param", makeHandler("HEAD"))
+	cg.HEAD("/:param", makeHandler("HEAD"))
 	testMethod("HEAD", "HEAD")
+}
+
+func TestNewContextGroup(t *testing.T) {
+	router := New()
+	group := router.NewGroup("/api")
+
+	group.GET("/v1", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		w.Write([]byte(`200 OK GET /api/v1`))
+	})
+
+	group.UsingContext().GET("/v2", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`200 OK GET /api/v2`))
+	})
+
+	tests := []struct {
+		uri, expected string
+	}{
+		{"/api/v1", "200 OK GET /api/v1"},
+		{"/api/v2", "200 OK GET /api/v2"},
+	}
+
+	for _, tc := range tests {
+		r, err := http.NewRequest("GET", tc.uri, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("GET %s: expected %d, but got %d", tc.uri, http.StatusOK, w.Code)
+		}
+		if got := w.Body.String(); got != tc.expected {
+			t.Errorf("GET %s : expected %q, but got %q", tc.uri, tc.expected, got)
+		}
+
+	}
 }

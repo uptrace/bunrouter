@@ -7,42 +7,44 @@ import (
 	"net/http"
 )
 
-type ContextTreeMux struct {
-	treemux       *TreeMux // cannot embed because TreeMux embeds Group, which prevents us from "overriding" Handle, which is also the reason we need a ContextTreeMux at all...
-	*ContextGroup          // embed because we want method inheritance
-}
-
-func (t *TreeMux) UsingContext() *ContextTreeMux {
-	return &ContextTreeMux{treemux: t, ContextGroup: &ContextGroup{group: &(t.Group)}}
-}
-
-func (ct *ContextTreeMux) TreeMux() *TreeMux {
-	return ct.treemux
-}
-
-func (ct *ContextTreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ct.TreeMux().ServeHTTP(w, r)
-}
-
+// ContextGroup is a wrapper around Group, with the purpose of mimicing its API, but with the use of http.HandlerFunc-based handlers.
+// Instead of passing a parameter map via the handler (i.e. httptreemux.HandlerFunc), the path parameters are accessed via the request
+// object's context.
 type ContextGroup struct {
-	group *Group // cannot embed Group because we want to "steal" its method signatures
+	group *Group
 }
 
+// UsingContext wraps the receiver to return a new instance of a ContextGroup.
+// The returned ContextGroup is a sibling to its wrapped Group, within the parent TreeMux.
+// The choice of using a *Group as the reciever, as opposed to a function parameter, allows chaining
+// while method calls between a TreeMux, Group, and ContextGroup. For example:
+//
+//              tree := httptreemux.New()
+//              group := tree.NewGroup("/api")
+//
+//              group.GET("/v1", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+//                  w.Write([]byte(`GET /api/v1`))
+//              })
+//
+//              group.UsingContext().GET("/v2", func(w http.ResponseWriter, r *http.Request) {
+//                  w.Write([]byte(`GET /api/v2`))
+//              })
+//
+//              http.ListenAndServe(":8080", tree)
+//
 func (g *Group) UsingContext() *ContextGroup {
 	return &ContextGroup{g}
 }
 
+// NewContextGroup adds a child context group to its path.
 func (cg *ContextGroup) NewContextGroup(path string) *ContextGroup {
-	return &ContextGroup{group: cg.Group().NewGroup(path)}
-}
-
-func (cg *ContextGroup) Group() *Group {
-	return cg.group
+	return &ContextGroup{cg.group.NewGroup(path)}
 }
 
 // Handle allows handling HTTP requests via an http.HandlerFunc, as opposed to an httptreemux.HandlerFunc.
+// Any parameters from the request URL are stored in via a map[string]string in the request's context.
 func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
-	cg.Group().Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	cg.group.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if params != nil {
 			r = r.WithContext(context.WithValue(r.Context(), ParamsContextKey, params))
 		}
@@ -50,37 +52,37 @@ func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
 	})
 }
 
-// Syntactic sugar for Handle("GET", path, handler)
+// GET is convenience method for handling GET requests on a context group.
 func (cg *ContextGroup) GET(path string, handler http.HandlerFunc) {
 	cg.Handle("GET", path, handler)
 }
 
-// Syntactic sugar for Handle("POST", path, handler)
+// POST is convenience method for handling POST requests on a context group.
 func (cg *ContextGroup) POST(path string, handler http.HandlerFunc) {
 	cg.Handle("POST", path, handler)
 }
 
-// Syntactic sugar for Handle("PUT", path, handler)
+// PUT is convenience method for handling PUT requests on a context group.
 func (cg *ContextGroup) PUT(path string, handler http.HandlerFunc) {
 	cg.Handle("PUT", path, handler)
 }
 
-// Syntactic sugar for Handle("DELETE", path, handler)
+// DELETE is convenience method for handling DELETE requests on a context group.
 func (cg *ContextGroup) DELETE(path string, handler http.HandlerFunc) {
 	cg.Handle("DELETE", path, handler)
 }
 
-// Syntactic sugar for Handle("PATCH", path, handler)
+// PATCH is convenience method for handling PATCH requests on a context group.
 func (cg *ContextGroup) PATCH(path string, handler http.HandlerFunc) {
 	cg.Handle("PATCH", path, handler)
 }
 
-// Syntactic sugar for Handle("HEAD", path, handler)
+// HEAD is convenience method for handling HEAD requests on a context group.
 func (cg *ContextGroup) HEAD(path string, handler http.HandlerFunc) {
 	cg.Handle("HEAD", path, handler)
 }
 
-// Syntactic sugar for Handle("OPTIONS", path, handler)
+// OPTIONS is convenience method for handling OPTIONS requests on a context group.
 func (cg *ContextGroup) OPTIONS(path string, handler http.HandlerFunc) {
 	cg.Handle("OPTIONS", path, handler)
 }

@@ -85,12 +85,14 @@ router.GET("/:year/:month", archiveHandler)
 router.GET("/images/*path", staticHandler)
 router.GET("/favicon.ico", staticHandler)
 
-/abc will match /:page
-/2014/05 will match /:year/:month
-/2014/05/really-great-blog-post will match /:year/:month/:post
-/images/CoolImage.gif will match /images/*path
-/images/2014/05/MayImage.jpg will also match /images/*path, with all the text after /images stored in the variable path.
-/favicon.ico will match /favicon.ico
+/* 
+    /abc will match /:page
+    /2014/05 will match /:year/:month
+    /2014/05/really-great-blog-post will match /:year/:month/:post
+    /images/CoolImage.gif will match /images/*path
+    /images/2014/05/MayImage.jpg will also match /images/*path, with all the text after /images stored in the variable path.
+    /favicon.ico will match /favicon.ico
+*/
 ```
 
 ### Special Method Behavior

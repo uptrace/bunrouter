@@ -47,6 +47,10 @@ const (
 	URLPath                      // Use r.URL.Path
 )
 
+type CGroup struct {
+	*Group
+}
+
 type TreeMux struct {
 	root *node
 
