@@ -844,3 +844,14 @@ func BenchmarkRouterParam(b *testing.B) {
 
 	benchRequest(b, router, r)
 }
+
+func BenchmarkRouterLongParams(b *testing.B) {
+	router := New()
+
+	router.GET("/", simpleHandler)
+	router.GET("/user/:name/:resource", simpleHandler)
+
+	r, _ := newRequest("GET", "/user/aaaabbbbccccddddeeeeffff/asdfghjkl", nil)
+
+	benchRequest(b, router, r)
+}

@@ -267,9 +267,9 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 
 	if n.wildcardChild != nil {
 		// Didn't find a static token, so check for a wildcard.
-		nextSlash := 0
-		for nextSlash < pathLen && path[nextSlash] != '/' {
-			nextSlash++
+		nextSlash := strings.IndexByte(path, '/')
+		if nextSlash < 0 {
+			nextSlash = pathLen
 		}
 
 		thisToken := path[0:nextSlash]

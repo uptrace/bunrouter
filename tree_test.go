@@ -352,3 +352,19 @@ func BenchmarkTreeOneParam(b *testing.B) {
 		tree.search("GET", "abc")
 	}
 }
+
+func BenchmarkTreeLongParams(b *testing.B) {
+	tree := &node{
+		path: "/",
+		leafHandler: map[string]HandlerFunc{
+			"GET": dummyHandler,
+		},
+	}
+	b.ReportAllocs()
+	tree.addPath(":abc/:def/:ghi", nil, false)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree.search("GET", "abcdefghijklmnop/aaaabbbbccccddddeeeeffffgggg/hijkl")
+	}
+}
