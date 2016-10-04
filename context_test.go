@@ -131,3 +131,46 @@ func TestNewContextGroup(t *testing.T) {
 
 	}
 }
+
+type ContextGroupHandler struct{}
+
+//	adhere to the http.Handler interface
+func (f ContextGroupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		w.Write([]byte(`200 OK GET /api/v1`))
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func TestNewContextGroupHandler(t *testing.T) {
+	router := New()
+	group := router.NewGroup("/api")
+
+	group.UsingContext().Handler("GET", "/v1", ContextGroupHandler{})
+
+	tests := []struct {
+		uri, expected string
+	}{
+		{"/api/v1", "200 OK GET /api/v1"},
+	}
+
+	for _, tc := range tests {
+		r, err := http.NewRequest("GET", tc.uri, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("GET %s: expected %d, but got %d", tc.uri, http.StatusOK, w.Code)
+		}
+		if got := w.Body.String(); got != tc.expected {
+			t.Errorf("GET %s : expected %q, but got %q", tc.uri, tc.expected, got)
+		}
+	}
+}
