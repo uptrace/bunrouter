@@ -174,3 +174,37 @@ func TestNewContextGroupHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultContext(t *testing.T) {
+	router := New()
+	ctx := context.WithValue(context.Background(), "abc", "def")
+	expectContext := false
+
+	router.GET("/abc", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		contextValue := r.Context().Value("abc")
+		if expectContext {
+			x, ok := contextValue.(string)
+			if !ok || x != "def" {
+				t.Errorf("Unexpected context key value: %+v", contextValue)
+			}
+		} else {
+			if contextValue != nil {
+				t.Errorf("Expected blank context but key had value %+v", contextValue)
+			}
+		}
+	})
+
+	r, err := http.NewRequest("GET", "/abc", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	t.Log("Testing without DefaultContext")
+	router.ServeHTTP(w, r)
+
+	router.DefaultContext = ctx
+	expectContext = true
+	w = httptest.NewRecorder()
+	t.Log("Testing with DefaultContext")
+	router.ServeHTTP(w, r)
+}
