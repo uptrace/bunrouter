@@ -73,7 +73,7 @@ type TreeMux struct {
 	EscapeAddedRoutes bool
 }
 
-func (t *TreeMux) SetDefaultRequestContext(r *http.Request) *http.Request {
+func (t *TreeMux) setDefaultRequestContext(r *http.Request) *http.Request {
 	// Nothing to do on Go 1.6 and before
 	return r
 }

@@ -77,7 +77,7 @@ type TreeMux struct {
 	DefaultContext context.Context
 }
 
-func (t *TreeMux) SetDefaultRequestContext(r *http.Request) *http.Request {
+func (t *TreeMux) setDefaultRequestContext(r *http.Request) *http.Request {
 	if t.DefaultContext != nil {
 		r = r.WithContext(t.DefaultContext)
 	}
