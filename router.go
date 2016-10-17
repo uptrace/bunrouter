@@ -95,7 +95,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer t.serveHTTPPanic(w, r)
 	}
 
-	r = t.SetDefaultRequestContext(r)
+	r = t.setDefaultRequestContext(r)
 
 	path := r.RequestURI
 	pathLen := len(path)
