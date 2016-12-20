@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"github.com/dimfeld/httppath"
 )
 
 // The params argument contains the parameters parsed from wildcards and catch-alls in the URL.
@@ -123,18 +121,17 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if t.RedirectCleanPath {
 			// Path was not found. Try cleaning it up and search again.
 			// TODO Test this
-			cleanPath := httppath.Clean(path)
+			cleanPath := Clean(path)
 			n, handler, params = t.root.search(r.Method, cleanPath[1:])
 			if n == nil {
 				// Still nothing found.
 				t.NotFoundHandler(w, r)
 				return
-			} else {
-				if statusCode, ok := t.redirectStatusCode(r.Method); ok {
-					// Redirect to the actual path
-					redirect(w, r, cleanPath, statusCode)
-					return
-				}
+			}
+			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
+				// Redirect to the actual path
+				redirect(w, r, cleanPath, statusCode)
+				return
 			}
 		} else {
 			t.NotFoundHandler(w, r)
