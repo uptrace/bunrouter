@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 type node struct {
@@ -13,6 +14,7 @@ type node struct {
 
 	// The list of static children to check.
 	staticIndices []byte
+	mu            sync.Mutex
 	staticChild   []*node
 
 	// If none of the above match, check the wildcard children
@@ -43,6 +45,8 @@ func (n *node) sortStaticChild(i int) {
 }
 
 func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	if n.leafHandler == nil {
 		n.leafHandler = make(map[string]HandlerFunc)
 	}
@@ -58,6 +62,8 @@ func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
 }
 
 func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *node {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	leaf := len(path) == 0
 	if leaf {
 		if wildcards != nil {
