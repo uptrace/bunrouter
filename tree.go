@@ -45,6 +45,8 @@ func (n *node) sortStaticChild(i int) {
 }
 
 func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	if n.leafHandler == nil {
 		n.leafHandler = make(map[string]HandlerFunc)
 	}
