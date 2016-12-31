@@ -87,14 +87,7 @@ func redirect(w http.ResponseWriter, r *http.Request, newPath string, statusCode
 	http.Redirect(w, r, newURL.String(), statusCode)
 }
 
-func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	if t.PanicHandler != nil {
-		defer t.serveHTTPPanic(w, r)
-	}
-
-	r = t.setDefaultRequestContext(r)
-
+func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, map[string]string) {
 	path := r.RequestURI
 	pathLen := len(path)
 	if pathLen > 0 && t.PathSource == RequestURI {
@@ -116,6 +109,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if trailingSlash && t.RedirectTrailingSlash {
 		path = path[:pathLen-1]
 	}
+
 	n, handler, params := t.root.search(r.Method, path[1:])
 	if n == nil {
 		if t.RedirectCleanPath {
@@ -126,16 +120,16 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if n == nil {
 				// Still nothing found.
 				t.NotFoundHandler(w, r)
-				return
+				return nil, nil
 			}
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				// Redirect to the actual path
 				redirect(w, r, cleanPath, statusCode)
-				return
+				return nil, nil
 			}
 		} else {
 			t.NotFoundHandler(w, r)
-			return
+			return nil, nil
 		}
 	}
 
@@ -146,7 +140,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if handler == nil {
 			t.MethodNotAllowedHandler(w, r, n.leafHandler)
-			return
+			return nil, nil
 		}
 	}
 
@@ -161,7 +155,7 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					// beginning of the function.
 					redirect(w, r, path, statusCode)
 				}
-				return
+				return nil, nil
 			}
 		}
 	}
@@ -181,7 +175,30 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	handler(w, r, paramMap)
+	return handler, paramMap
+}
+
+func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if t.PanicHandler != nil {
+		defer t.serveHTTPPanic(w, r)
+	}
+
+	if t.SafeAddRoutesWhileRunning {
+		// In concurrency safe mode, we acquire a read lock on the mutex for any access.
+		// This is optional to avoid potential performance loss in high-usage scenarios.
+		t.mutex.RLock()
+	}
+
+	handler, paramMap := t.lookup(w, r)
+
+	if t.SafeAddRoutesWhileRunning {
+		t.mutex.RUnlock()
+	}
+
+	if handler != nil {
+		r = t.setDefaultRequestContext(r)
+		handler(w, r, paramMap)
+	}
 }
 
 // MethodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,

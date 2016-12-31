@@ -4,10 +4,12 @@ package httptreemux
 
 import (
 	"net/http"
+	"sync"
 )
 
 type TreeMux struct {
-	root *node
+	root  *node
+	mutex sync.RWMutex
 
 	Group
 
@@ -71,6 +73,11 @@ type TreeMux struct {
 	// If set to true, the router will add both the route as originally passed, and
 	// a version passed through URL.EscapedPath. This behavior is disabled by default.
 	EscapeAddedRoutes bool
+
+	// SafeAddRoutesWhileRunning tells the router to protect all accesses to the tree with an RWMutex. This is only needed
+	// if you are going to add routes after the router has already begun serving requests. There is a potential
+	// performance penalty at high load.
+	SafeAddRoutesWhileRunning bool
 }
 
 func (t *TreeMux) setDefaultRequestContext(r *http.Request) *http.Request {

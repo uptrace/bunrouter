@@ -170,6 +170,12 @@ As mentioned above, characters in the URL are not unescaped when using RequestUR
 
 Although using RequestURI avoids the issue described above, certain utility functions such as `http.StripPrefix` modify URL.Path, and expect that the underlying router is using that field to make its decision. If you are using some of these functions, set the router's `PathSource` member to `URLPath`. This will give up the proper handling of escaped slashes described above, while allowing the router to work properly with these utility functions.
 
+## Concurrency
+
+The router contains an `RWMutex` that arbitrates access to the tree. This allows routes to be safely added from multiple goroutines at once.
+
+No concurrency controls are needed when only reading from the tree, so the default behavior is to not use the `RWMutex` when serving a request. This avoids a theoretical slowdown under high-usage scenarios from competing atomic integer operations inside the `RWMutex`. If your application adds routes to the router after it has begun serving requests, you should avoid potential race conditions by setting `router.SafeAddRoutesWhileRunning` to `true` to use the `RWMutex` when serving requests.
+
 ## Error Handlers
 
 ### NotFoundHandler

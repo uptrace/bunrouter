@@ -5,10 +5,12 @@ package httptreemux
 import (
 	"context"
 	"net/http"
+	"sync"
 )
 
 type TreeMux struct {
-	root *node
+	root  *node
+	mutex sync.RWMutex
 
 	Group
 
@@ -75,6 +77,11 @@ type TreeMux struct {
 
 	// If present, override the default context with this one.
 	DefaultContext context.Context
+
+	// SafeAddRoutesWhileRunning tells the router to protect all accesses to the tree with an RWMutex. This is only needed
+	// if you are going to add routes after the router has already begun serving requests. There is a potential
+	// performance penalty at high load.
+	SafeAddRoutesWhileRunning bool
 }
 
 func (t *TreeMux) setDefaultRequestContext(r *http.Request) *http.Request {

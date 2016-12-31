@@ -1,13 +1,16 @@
 package httptreemux
 
 import (
+	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -797,6 +800,154 @@ func TestEscapedRoutes(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Create a bunch of paths for testing.
+func createRoutes(numRoutes int) []string {
+	letters := "abcdefghijhklmnopqrstuvwxyz"
+	wordMap := map[string]bool{}
+	for i := 0; i < numRoutes/2; i += 1 {
+		length := (i % 4) + 4
+
+		wordBytes := make([]byte, length)
+		for charIndex := 0; charIndex < length; charIndex += 1 {
+			wordBytes[charIndex] = letters[(i*3+charIndex*4)%len(letters)]
+		}
+		wordMap[string(wordBytes)] = true
+	}
+
+	words := make([]string, 0, len(wordMap))
+	for word := range wordMap {
+		words = append(words, word)
+	}
+
+	routes := make([]string, 0, numRoutes)
+	createdRoutes := map[string]bool{}
+	rand.Seed(0)
+	for len(routes) < numRoutes {
+		first := words[rand.Int()%len(words)]
+		second := words[rand.Int()%len(words)]
+		third := words[rand.Int()%len(words)]
+		route := fmt.Sprintf("/%s/%s/%s", first, second, third)
+
+		if createdRoutes[route] {
+			continue
+		}
+		createdRoutes[route] = true
+		routes = append(routes, route)
+	}
+
+	return routes
+}
+
+// TestWriteConcurrency ensures that the router works with multiple goroutines adding
+// routes concurrently.
+func TestWriteConcurrency(t *testing.T) {
+	router := New()
+
+	// First create a bunch of routes
+	numRoutes := 10000
+	routes := createRoutes(numRoutes)
+
+	wg := sync.WaitGroup{}
+	addRoutes := func(base int, method string) {
+		for i := 0; i < len(routes); i += 1 {
+			route := routes[(i+base)%len(routes)]
+			// t.Logf("Adding %s %s", method, route)
+			router.Handle(method, route, simpleHandler)
+		}
+		wg.Done()
+	}
+
+	wg.Add(5)
+	go addRoutes(100, "GET")
+	go addRoutes(200, "POST")
+	go addRoutes(300, "PATCH")
+	go addRoutes(400, "PUT")
+	go addRoutes(500, "DELETE")
+	wg.Wait()
+
+	handleRequests := func(method string) {
+		for _, route := range routes {
+			// t.Logf("Serving %s %s", method, route)
+			r, _ := newRequest(method, route, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, r)
+
+			if w.Code != 200 {
+				t.Errorf("%s %s request failed", method, route)
+			}
+		}
+	}
+
+	handleRequests("GET")
+	handleRequests("POST")
+	handleRequests("PATCH")
+	handleRequests("PUT")
+	handleRequests("DELETE")
+}
+
+// TestReadWriteConcurrency ensures that when SafeAddRoutesWhileRunning is enabled,
+// the router is able to add routes while serving traffic.
+func TestReadWriteConcurrency(t *testing.T) {
+	router := New()
+	router.SafeAddRoutesWhileRunning = true
+
+	// First create a bunch of routes
+	numRoutes := 10000
+	routes := createRoutes(numRoutes)
+
+	wg := sync.WaitGroup{}
+	addRoutes := func(base int, method string, routes []string) {
+		for i := 0; i < len(routes); i += 1 {
+			route := routes[(i+base)%len(routes)]
+			// t.Logf("Adding %s %s", method, route)
+			router.Handle(method, route, simpleHandler)
+		}
+		wg.Done()
+	}
+
+	handleRequests := func(base int, method string, routes []string, requireFound bool) {
+		for i := 0; i < len(routes); i += 1 {
+			route := routes[(i+base)%len(routes)]
+			// t.Logf("Serving %s %s", method, route)
+			r, _ := newRequest(method, route, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, r)
+
+			if requireFound && w.Code != 200 {
+				t.Errorf("%s %s request failed", method, route)
+			}
+		}
+		wg.Done()
+	}
+
+	wg.Add(12)
+	initialRoutes := routes[0 : numRoutes/10]
+	addRoutes(0, "GET", initialRoutes)
+	handleRequests(0, "GET", initialRoutes, true)
+
+	concurrentRoutes := routes[numRoutes/10:]
+	go addRoutes(100, "GET", concurrentRoutes)
+	go addRoutes(200, "POST", concurrentRoutes)
+	go addRoutes(300, "PATCH", concurrentRoutes)
+	go addRoutes(400, "PUT", concurrentRoutes)
+	go addRoutes(500, "DELETE", concurrentRoutes)
+	go handleRequests(50, "GET", routes, false)
+	go handleRequests(150, "POST", routes, false)
+	go handleRequests(250, "PATCH", routes, false)
+	go handleRequests(350, "PUT", routes, false)
+	go handleRequests(450, "DELETE", routes, false)
+
+	wg.Wait()
+
+	// Finally check all the routes and make sure they exist.
+	wg.Add(5)
+	handleRequests(0, "GET", routes, true)
+	handleRequests(0, "POST", concurrentRoutes, true)
+	handleRequests(0, "PATCH", concurrentRoutes, true)
+	handleRequests(0, "PUT", concurrentRoutes, true)
+	handleRequests(0, "DELETE", concurrentRoutes, true)
 }
 
 func BenchmarkRouterSimple(b *testing.B) {
