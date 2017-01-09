@@ -26,7 +26,7 @@ group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[str
 })
 
 ctxGroup := group.UsingContext() // sibling to 'group' node in tree
-ctxGroup.GET("/v2", func(w http.ResponseWriter, r *http.Request) {
+ctxGroup.GET("/v2/:id", func(w http.ResponseWriter, r *http.Request) {
     params := httptreemux.ContextParams(r.Context())
     id := params["id"]
     fmt.Fprintf(w, "GET /api/v2/%s", id)
