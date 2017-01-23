@@ -19,7 +19,7 @@ Due to the inclusion of the [context](https://godoc.org/context) package as of G
 ```go
 router := httptreemux.New()
 
-group := tree.NewGroup("/api")
+group := router.NewGroup("/api")
 group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
     id := params["id"]
     fmt.Fprintf(w, "GET /api/v1/%s", id)
