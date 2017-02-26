@@ -9,6 +9,19 @@ import (
 	"testing"
 )
 
+type IContextGroup interface {
+	GET(path string, handler http.HandlerFunc)
+	POST(path string, handler http.HandlerFunc)
+	PUT(path string, handler http.HandlerFunc)
+	PATCH(path string, handler http.HandlerFunc)
+	DELETE(path string, handler http.HandlerFunc)
+	HEAD(path string, handler http.HandlerFunc)
+	OPTIONS(path string, handler http.HandlerFunc)
+
+	NewContextGroup(path string) *ContextGroup
+	NewGroup(path string) *ContextGroup
+}
+
 func TestContextParams(t *testing.T) {
 	m := map[string]string{"id": "123"}
 	ctx := context.WithValue(context.Background(), ParamsContextKey, m)
@@ -26,12 +39,16 @@ func TestContextParams(t *testing.T) {
 func TestContextGroupMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
-		testContextGroupMethods(t, scenario.RequestCreator, true)
-		testContextGroupMethods(t, scenario.RequestCreator, false)
+		testContextGroupMethods(t, scenario.RequestCreator, true, false)
+		testContextGroupMethods(t, scenario.RequestCreator, false, false)
+		testContextGroupMethods(t, scenario.RequestCreator, true, true)
+		testContextGroupMethods(t, scenario.RequestCreator, false, true)
 	}
 }
 
-func testContextGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
+func testContextGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool, useContextRouter bool) {
+	t.Logf("Running test: headCanUseGet %v, useContextRouter %v", headCanUseGet, useContextRouter)
+
 	var result string
 	makeHandler := func(method string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +59,7 @@ func testContextGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet 
 				t.Error("missing key 'param' in context")
 			}
 
-			if headCanUseGet && method == "GET" && v == "HEAD" {
+			if headCanUseGet && (method == "GET" || v == "HEAD") {
 				return
 			}
 
@@ -52,10 +69,23 @@ func testContextGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet 
 		}
 	}
 
-	router := New()
-	router.HeadCanUseGet = headCanUseGet
+	var router http.Handler
+	var rootGroup IContextGroup
 
-	cg := router.UsingContext().NewContextGroup("/base").NewContextGroup("/user")
+	if useContextRouter {
+		root := NewContextMux()
+		root.HeadCanUseGet = headCanUseGet
+		t.Log(root.TreeMux.HeadCanUseGet)
+		router = root
+		rootGroup = root
+	} else {
+		root := New()
+		root.HeadCanUseGet = headCanUseGet
+		router = root
+		rootGroup = root.UsingContext()
+	}
+
+	cg := rootGroup.NewGroup("/base").NewGroup("/user")
 	cg.GET("/:param", makeHandler("GET"))
 	cg.POST("/:param", makeHandler("POST"))
 	cg.PATCH("/:param", makeHandler("PATCH"))
@@ -181,6 +211,40 @@ func TestDefaultContext(t *testing.T) {
 	expectContext := false
 
 	router.GET("/abc", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		contextValue := r.Context().Value("abc")
+		if expectContext {
+			x, ok := contextValue.(string)
+			if !ok || x != "def" {
+				t.Errorf("Unexpected context key value: %+v", contextValue)
+			}
+		} else {
+			if contextValue != nil {
+				t.Errorf("Expected blank context but key had value %+v", contextValue)
+			}
+		}
+	})
+
+	r, err := http.NewRequest("GET", "/abc", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	t.Log("Testing without DefaultContext")
+	router.ServeHTTP(w, r)
+
+	router.DefaultContext = ctx
+	expectContext = true
+	w = httptest.NewRecorder()
+	t.Log("Testing with DefaultContext")
+	router.ServeHTTP(w, r)
+}
+
+func TestContextMuxSimple(t *testing.T) {
+	router := NewContextMux()
+	ctx := context.WithValue(context.Background(), "abc", "def")
+	expectContext := false
+
+	router.GET("/abc", func(w http.ResponseWriter, r *http.Request) {
 		contextValue := r.Context().Value("abc")
 		if expectContext {
 			x, ok := contextValue.(string)

@@ -14,7 +14,11 @@ There are a lot of good routers out there. But looking at the ones that were rea
 The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
 
 ### Using http.HandlerFunc
-Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `httptreemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc):
+Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `httptreemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc). There are two ways to enable this support.
+
+#### Adapting an Existing Router
+
+The `UsingContext` method will wrap the router or group in a new group at the same path, but adapted for use with `context` and `http.HandlerFunc`.
 
 ```go
 router := httptreemux.New()
@@ -25,6 +29,7 @@ group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[str
     fmt.Fprintf(w, "GET /api/v1/%s", id)
 })
 
+// UsingContext returns a version of the router or group with context support.
 ctxGroup := group.UsingContext() // sibling to 'group' node in tree
 ctxGroup.GET("/v2/:id", func(w http.ResponseWriter, r *http.Request) {
     params := httptreemux.ContextParams(r.Context())
@@ -34,6 +39,30 @@ ctxGroup.GET("/v2/:id", func(w http.ResponseWriter, r *http.Request) {
 
 http.ListenAndServe(":8080", router)
 ```
+
+#### New Router with Context Support
+
+The `NewContextMux` function returns a router preconfigured for use with `context` and `http.HandlerFunc`.
+
+```go
+router := httptreemux.NewContextMux()
+
+router.GET("/:page", func(w http.ResponseWriter, r *http.Request) {
+    params := httptreemux.ContextParams(r.Context())
+    fmt.Fprintf(w, "GET /%s", params["page"])
+})
+
+group := tree.NewGroup("/api")
+group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request) {
+    params := httptreemux.ContextParams(r.Context())
+    id := params["id"]
+    fmt.Fprintf(w, "GET /api/v1/%s", id)
+})
+
+http.ListenAndServe(":8080", router)
+```
+
+
 
 ## Routing Rules
 The syntax here is also modeled after httprouter. Each variable in a path may match on one segment only, except for an optional catch-all variable at the end of the URL.
@@ -104,7 +133,7 @@ router.GET("/favicon.ico", staticHandler)
 - `/images/CoolImage.gif` will match `/images/*path`
 - `/images/2014/05/MayImage.jpg` will also match `/images/*path`, with all the text after `/images` stored in the variable path.
 - `/favicon.ico` will match `/favicon.ico`
- 
+
 ### Special Method Behavior
 If TreeMux.HeadCanUseGet is set to true, the router will call the GET handler for a pattern when a HEAD request is processed, if no HEAD handler has been added for that pattern. This behavior is enabled by default.
 

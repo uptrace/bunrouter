@@ -16,7 +16,7 @@ type ContextGroup struct {
 
 // UsingContext wraps the receiver to return a new instance of a ContextGroup.
 // The returned ContextGroup is a sibling to its wrapped Group, within the parent TreeMux.
-// The choice of using a *Group as the reciever, as opposed to a function parameter, allows chaining
+// The choice of using a *Group as the receiver, as opposed to a function parameter, allows chaining
 // while method calls between a TreeMux, Group, and ContextGroup. For example:
 //
 //              tree := httptreemux.New()
@@ -39,6 +39,10 @@ func (g *Group) UsingContext() *ContextGroup {
 // NewContextGroup adds a child context group to its path.
 func (cg *ContextGroup) NewContextGroup(path string) *ContextGroup {
 	return &ContextGroup{cg.group.NewGroup(path)}
+}
+
+func (cg *ContextGroup) NewGroup(path string) *ContextGroup {
+	return cg.NewContextGroup(path)
 }
 
 // Handle allows handling HTTP requests via an http.HandlerFunc, as opposed to an httptreemux.HandlerFunc.
