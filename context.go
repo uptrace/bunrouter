@@ -50,7 +50,7 @@ func (cg *ContextGroup) NewGroup(path string) *ContextGroup {
 func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
 	cg.group.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if params != nil {
-			r = r.WithContext(context.WithValue(r.Context(), ParamsContextKey, params))
+			r = r.WithContext(context.WithValue(r.Context(), paramsContextKey, params))
 		}
 		handler(w, r)
 	})
@@ -61,7 +61,7 @@ func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
 func (cg *ContextGroup) Handler(method, path string, handler http.Handler) {
 	cg.group.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if params != nil {
-			r = r.WithContext(context.WithValue(r.Context(), ParamsContextKey, params))
+			r = r.WithContext(context.WithValue(r.Context(), paramsContextKey, params))
 		}
 		handler.ServeHTTP(w, r)
 	})
@@ -104,11 +104,13 @@ func (cg *ContextGroup) OPTIONS(path string, handler http.HandlerFunc) {
 
 // ContextParams returns the params map associated with the given context if one exists. Otherwise, an empty map is returned.
 func ContextParams(ctx context.Context) map[string]string {
-	if p, ok := ctx.Value(ParamsContextKey).(map[string]string); ok {
+	if p, ok := ctx.Value(paramsContextKey).(map[string]string); ok {
 		return p
 	}
 	return map[string]string{}
 }
 
-// ParamsContextKey is used to retrieve a path's params map from a request's context.
-const ParamsContextKey = "params.context.key"
+type contextKey int
+
+// paramsContextKey is used to retrieve a path's params map from a request's context.
+const paramsContextKey contextKey = 0

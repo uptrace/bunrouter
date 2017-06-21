@@ -24,7 +24,7 @@ type IContextGroup interface {
 
 func TestContextParams(t *testing.T) {
 	m := map[string]string{"id": "123"}
-	ctx := context.WithValue(context.Background(), ParamsContextKey, m)
+	ctx := context.WithValue(context.Background(), paramsContextKey, m)
 
 	params := ContextParams(ctx)
 	if params == nil {
