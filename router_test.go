@@ -31,30 +31,40 @@ func newRequest(method, path string, body io.Reader) (*http.Request, error) {
 type RequestCreator func(string, string, io.Reader) (*http.Request, error)
 type TestScenario struct {
 	RequestCreator RequestCreator
+	ServeStyle     bool
 	description    string
 }
 
 var scenarios = []TestScenario{
-	TestScenario{newRequest, "Test with RequestURI"},
-	TestScenario{http.NewRequest, "Test with URL.Path"},
+	TestScenario{newRequest, false, "Test with RequestURI and normal ServeHTTP"},
+	TestScenario{http.NewRequest, false, "Test with URL.Path and normal ServeHTTP"},
+	TestScenario{newRequest, true, "Test with RequestURI and LookupResult"},
+	TestScenario{http.NewRequest, true, "Test with URL.Path and LookupResult"},
 }
 
-// This type and the benchRequest function are taken from go-http-routing-benchmark.
-type mockResponseWriter struct{}
+// This type and the benchRequest function are modified from go-http-routing-benchmark.
+type mockResponseWriter struct {
+	code        int
+	calledWrite bool
+}
 
 func (m *mockResponseWriter) Header() (h http.Header) {
 	return http.Header{}
 }
 
 func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
+	m.calledWrite = true
 	return len(p), nil
 }
 
 func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
+	m.calledWrite = true
 	return len(s), nil
 }
 
-func (m *mockResponseWriter) WriteHeader(int) {}
+func (m *mockResponseWriter) WriteHeader(code int) {
+	m.code = code
+}
 
 func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	w := new(mockResponseWriter)
@@ -67,15 +77,26 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	}
 }
 
-func TestMethods(t *testing.T) {
-	for _, scenario := range scenarios {
-		t.Log(scenario.description)
-		testMethods(t, scenario.RequestCreator, true)
-		testMethods(t, scenario.RequestCreator, false)
+func serve(router *TreeMux, w http.ResponseWriter, r *http.Request, useLookup bool) bool {
+	if useLookup {
+		result, found := router.Lookup(w, r)
+		router.ServeLookupResult(w, r, result)
+		return found
+	} else {
+		router.ServeHTTP(w, r)
+		return true
 	}
 }
 
-func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool) {
+func TestMethods(t *testing.T) {
+	for _, scenario := range scenarios {
+		t.Log(scenario.description)
+		testMethods(t, scenario.RequestCreator, true, scenario.ServeStyle)
+		testMethods(t, scenario.RequestCreator, false, scenario.ServeStyle)
+	}
+}
+
+func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, useSeparateLookup bool) {
 	var result string
 
 	makeHandler := func(method string) HandlerFunc {
@@ -96,7 +117,12 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool) {
 		result = ""
 		w := httptest.NewRecorder()
 		r, _ := newRequest(method, "/user/"+method, nil)
-		router.ServeHTTP(w, r)
+		found := serve(router, w, r, useSeparateLookup)
+
+		if useSeparateLookup && expect == "" && found {
+			t.Errorf("Lookup unexpectedly succeeded for method %s", method)
+		}
+
 		if expect == "" && w.Code != http.StatusMethodNotAllowed {
 			t.Errorf("Method %s not expected to match but saw code %d", method, w.Code)
 		}
@@ -320,13 +346,13 @@ func TestRedirect(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
 		t.Log("Testing with all 301")
-		testRedirect(t, Redirect301, Redirect301, Redirect301, false, scenario.RequestCreator)
+		testRedirect(t, Redirect301, Redirect301, Redirect301, false, scenario.RequestCreator, scenario.ServeStyle)
 		t.Log("Testing with all UseHandler")
-		testRedirect(t, UseHandler, UseHandler, UseHandler, false, scenario.RequestCreator)
+		testRedirect(t, UseHandler, UseHandler, UseHandler, false, scenario.RequestCreator, scenario.ServeStyle)
 		t.Log("Testing with default 301, GET 307, POST UseHandler")
-		testRedirect(t, Redirect301, Redirect307, UseHandler, true, scenario.RequestCreator)
+		testRedirect(t, Redirect301, Redirect307, UseHandler, true, scenario.RequestCreator, scenario.ServeStyle)
 		t.Log("Testing with default UseHandler, GET 301, POST 308")
-		testRedirect(t, UseHandler, Redirect301, Redirect308, true, scenario.RequestCreator)
+		testRedirect(t, UseHandler, Redirect301, Redirect308, true, scenario.RequestCreator, scenario.ServeStyle)
 	}
 }
 
@@ -347,7 +373,7 @@ func behaviorToCode(b RedirectBehavior) int {
 }
 
 func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior RedirectBehavior, customMethods bool,
-	newRequest RequestCreator) {
+	newRequest RequestCreator, serveStyle bool) {
 
 	var redirHandler = func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		// Returning this instead of 200 makes it easy to verify that the handler is actually getting called.
@@ -381,7 +407,10 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		w := httptest.NewRecorder()
 		r, _ := newRequest(method, "/slash", nil)
-		router.ServeHTTP(w, r)
+		found := serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/slash: found returned false")
+		}
 		if w.Code != expectedCode {
 			t.Errorf("/slash expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -391,7 +420,10 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		r, _ = newRequest(method, "/noslash/", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/noslash: found returned false")
+		}
 		if w.Code != expectedCode {
 			t.Errorf("/noslash/ expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -402,7 +434,10 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		r, _ = newRequest(method, "//noslash/", nil)
 		if r.RequestURI == "//noslash/" { // http.NewRequest parses this out differently
 			w = httptest.NewRecorder()
-			router.ServeHTTP(w, r)
+			found = serve(router, w, r, serveStyle)
+			if found == false {
+				t.Errorf("//noslash/: found returned false")
+			}
 			if w.Code != expectedCode {
 				t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
 			}
@@ -414,36 +449,51 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		// Test nonredirect cases
 		r, _ = newRequest(method, "/noslash", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/noslash (non-redirect): found returned false")
+		}
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/noslash?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/noslash (non-redirect): found returned false")
+		}
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/slash/", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/slash/ (non-redirect): found returned false")
+		}
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/slash/?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/slash/?a=1&b=2: found returned false")
+		}
 		if w.Code != http.StatusNoContent {
-			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
+			t.Errorf("/slash/?a=1&b=2 expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		// Test querystring and fragment cases
 		r, _ = newRequest(method, "/slash?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/slash?a=1&b=2 : found returned false")
+		}
 		if w.Code != expectedCode {
 			t.Errorf("/slash?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -453,7 +503,10 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		r, _ = newRequest(method, "/noslash/?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		found = serve(router, w, r, serveStyle)
+		if found == false {
+			t.Errorf("/noslash/?a=1&b=2: found returned false")
+		}
 		if w.Code != expectedCode {
 			t.Errorf("/noslash/?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -546,7 +599,7 @@ func TestRoot(t *testing.T) {
 
 		r, _ := scenario.RequestCreator("GET", "/", nil)
 		w := new(mockResponseWriter)
-		router.ServeHTTP(w, r)
+		serve(router, w, r, scenario.ServeStyle)
 
 		if !handlerCalled {
 			t.Error("Handler not called for root path")
@@ -647,19 +700,19 @@ func TestQueryString(t *testing.T) {
 		w := new(mockResponseWriter)
 
 		param = "nomatch"
-		router.ServeHTTP(w, r)
+		serve(router, w, r, scenario.ServeStyle)
 		if param != "" {
 			t.Error("No match on", r.RequestURI)
 		}
 
 		r, _ = scenario.RequestCreator("GET", "/wildcard/aaa?abc=def", nil)
-		router.ServeHTTP(w, r)
+		serve(router, w, r, scenario.ServeStyle)
 		if param != "aaa" {
 			t.Error("Expected wildcard to match aaa, saw", param)
 		}
 
 		r, _ = scenario.RequestCreator("GET", "/catchall/bbb?abc=def", nil)
-		router.ServeHTTP(w, r)
+		serve(router, w, r, scenario.ServeStyle)
 		if param != "bbb" {
 			t.Error("Expected wildcard to match bbb, saw", param)
 		}
@@ -948,6 +1001,46 @@ func TestReadWriteConcurrency(t *testing.T) {
 	handleRequests(0, "PATCH", concurrentRoutes, true)
 	handleRequests(0, "PUT", concurrentRoutes, true)
 	handleRequests(0, "DELETE", concurrentRoutes, true)
+}
+
+func TestLookup(t *testing.T) {
+	router := New()
+	router.GET("/", simpleHandler)
+	router.GET("/user/dimfeld", simpleHandler)
+	router.POST("/user/dimfeld", simpleHandler)
+	router.GET("/abc/*", simpleHandler)
+	router.POST("/abc/*", simpleHandler)
+
+	var tryLookup = func(method, path string, expectFound bool, expectCode int) {
+		r, _ := newRequest(method, path, nil)
+		w := &mockResponseWriter{}
+		lr, found := router.Lookup(w, r)
+		if found != expectFound {
+			t.Errorf("%s %s expected found %v, saw %v", method, path, expectFound, found)
+		}
+
+		if lr.StatusCode != expectCode {
+			t.Errorf("%s %s expected status code %d, saw %d", method, path, expectCode, lr.StatusCode)
+		}
+
+		if w.code != 0 {
+			t.Errorf("%s %s unexpectedly wrote status %d", method, path, w.code)
+		}
+
+		if w.calledWrite {
+			t.Errorf("%s %s unexpectedly wrote data", method, path)
+		}
+	}
+
+	tryLookup("GET", "/", true, http.StatusOK)
+	tryLookup("GET", "/", true, http.StatusOK)
+	tryLookup("POST", "/user/dimfeld", true, http.StatusOK)
+	tryLookup("POST", "/user/dimfeld/", true, http.StatusMovedPermanently)
+	tryLookup("PATCH", "/user/dimfeld", false, http.StatusMethodNotAllowed)
+	tryLookup("GET", "/abc/def/ghi", true, http.StatusOK)
+
+	router.RedirectBehavior = Redirect307
+	tryLookup("POST", "/user/dimfeld/", true, http.StatusTemporaryRedirect)
 }
 
 func BenchmarkRouterSimple(b *testing.B) {
