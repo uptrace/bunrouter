@@ -1,4 +1,4 @@
-httptreemux  [![Build Status](https://travis-ci.org/dimfeld/httptreemux.png?branch=master)](https://travis-ci.org/dimfeld/httptreemux) [![GoDoc](http://godoc.org/github.com/dimfeld/httptreemux?status.png)](http://godoc.org/github.com/dimfeld/httptreemux)
+httptreemux  [![Build Status](https://travis-ci.org/dimfeld/httptreemux.png?branch=master)](https://travis-ci.org/dimfeld/httptreemux) [![GoDoc](https://godoc.org/github.com/dimfeld/httptreemux?status.svg)](https://godoc.org/github.com/dimfeld/httptreemux)
 ===========
 
 High-speed, flexible, tree-based HTTP router for Go.
