@@ -228,7 +228,15 @@ func (t *TreeMux) Lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, r *http.Request, lr LookupResult) {
 	if lr.handler == nil {
 		if lr.StatusCode == http.StatusMethodNotAllowed && lr.leafHandler != nil {
+			if t.SafeAddRoutesWhileRunning {
+				t.mutex.RLock()
+			}
+
 			t.MethodNotAllowedHandler(w, r, lr.leafHandler)
+
+			if t.SafeAddRoutesWhileRunning {
+				t.mutex.RUnlock()
+			}
 		} else {
 			t.NotFoundHandler(w, r)
 		}
