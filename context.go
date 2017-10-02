@@ -50,7 +50,7 @@ func (cg *ContextGroup) NewGroup(path string) *ContextGroup {
 func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
 	cg.group.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if params != nil {
-			r = r.WithContext(context.WithValue(r.Context(), paramsContextKey, params))
+			r = r.WithContext(AddParamsToContext(r.Context(), params))
 		}
 		handler(w, r)
 	})
@@ -61,7 +61,7 @@ func (cg *ContextGroup) Handle(method, path string, handler http.HandlerFunc) {
 func (cg *ContextGroup) Handler(method, path string, handler http.Handler) {
 	cg.group.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 		if params != nil {
-			r = r.WithContext(context.WithValue(r.Context(), paramsContextKey, params))
+			r = r.WithContext(AddParamsToContext(r.Context(), params))
 		}
 		handler.ServeHTTP(w, r)
 	})
@@ -108,6 +108,13 @@ func ContextParams(ctx context.Context) map[string]string {
 		return p
 	}
 	return map[string]string{}
+}
+
+// AddParamsToContext inserts a parameters map into a context using
+// the package's internal context key. Clients of this package should
+// really only use this for unit tests.
+func AddParamsToContext(ctx context.Context, params map[string]string) context.Context {
+	return context.WithValue(ctx, paramsContextKey, params)
 }
 
 type contextKey int
