@@ -22,7 +22,7 @@ func panicHandler(w http.ResponseWriter, r *http.Request, params map[string]stri
 
 func newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	r, _ := http.NewRequest(method, path, body)
-	u, _ := url.Parse(path)
+	u, _ := url.ParseRequestURI(path)
 	r.URL = u
 	r.RequestURI = path
 	return r, nil
@@ -428,7 +428,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 			t.Errorf("/noslash/ expected code %d, saw %d", expectedCode, w.Code)
 		}
 		if expectedCode != http.StatusNoContent && w.Header().Get("Location") != "/noslash" {
-			t.Errorf("/noslash/ was not redirected to /noslash")
+			t.Errorf("/noslash/ was redirected to `%s` instead of /noslash", w.Header().Get("Location"))
 		}
 
 		r, _ = newRequest(method, "//noslash/", nil)
@@ -1041,6 +1041,36 @@ func TestLookup(t *testing.T) {
 
 	router.RedirectBehavior = Redirect307
 	tryLookup("POST", "/user/dimfeld/", true, http.StatusTemporaryRedirect)
+}
+
+func TestRedirectEscapedPath(t *testing.T) {
+	router := New()
+
+	testHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {}
+
+	router.GET("/:escaped/", testHandler)
+
+	w := httptest.NewRecorder()
+	u, err := url.Parse("/Test P@th")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	r, _ := newRequest("GET", u.String(), nil)
+
+	router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusMovedPermanently {
+		t.Errorf("Expected status 301 but saw %d", w.Code)
+	}
+
+	path := w.Header().Get("Location")
+	expected := "/Test%20P@th/"
+	if path != expected {
+		t.Errorf("Given path wasn't escaped correctly.\n"+
+			"Expected: %q\nBut got: %q", expected, path)
+	}
 }
 
 func BenchmarkRouterSimple(b *testing.B) {
