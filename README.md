@@ -82,7 +82,7 @@ Note that all of the above URL patterns may exist concurrently in the router.
 
 Path elements starting with `:` indicate a wildcard in the path. A wildcard will only match on a single path segment. That is, the pattern `/post/:postid` will match on `/post/1` or `/post/1/`, but not `/post/1/2`.
 
-A path element starting with `*` is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`.
+A path element starting with `*` is a catch-all, whose value will be a string containing all text in the URL matched by the wildcards. For example, with a pattern of `/images/*path` and a requested URL `images/abc/def`, path would contain `abc/def`. A catch-all path will not match an empty string, so in this example a separate route would need to be installed if you also want to match `/images/`.
 
 #### Using : and * in routing patterns
 
@@ -230,6 +230,10 @@ When matching on parameters in a route, the `gorilla/pat` router will modify
 `Request.URL.RawQuery` to make it appear like the parameters were in the
 query string. `httptreemux` does not do this. See [Issue #26](https://github.com/dimfeld/httptreemux/issues/26) for more details and a
 code snippet that can perform this transformation for you, should you want it.
+
+### httprouter and catch-all parameters
+
+When using `httprouter`, a route with a catch-all parameter (e.g. `/images/*path`) will match on URLs like `/images/` where the catch-all parameter is empty. This router does not match on empty catch-all parameters, but the behavior can be duplicated by adding a route without the catch-all (e.g. `/images/`).
 
 ## Middleware
 This package provides no middleware. But there are a lot of great options out there and it's pretty easy to write your own.
