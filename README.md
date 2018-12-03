@@ -52,7 +52,7 @@ router.GET("/:page", func(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "GET /%s", params["page"])
 })
 
-group := tree.NewGroup("/api")
+group := router.NewGroup("/api")
 group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request) {
     params := httptreemux.ContextParams(r.Context())
     id := params["id"]
