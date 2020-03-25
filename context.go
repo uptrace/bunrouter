@@ -14,6 +14,11 @@ type ContextGroup struct {
 	group *Group
 }
 
+// Use appends a middleware handler to the Group middleware stack.
+func (cg *ContextGroup) Use(fn Middleware) {
+	cg.group.Use(fn)
+}
+
 // UsingContext wraps the receiver to return a new instance of a ContextGroup.
 // The returned ContextGroup is a sibling to its wrapped Group, within the parent TreeMux.
 // The choice of using a *Group as the receiver, as opposed to a function parameter, allows chaining

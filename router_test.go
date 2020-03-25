@@ -1073,6 +1073,130 @@ func TestRedirectEscapedPath(t *testing.T) {
 	}
 }
 
+func TestMiddleware(t *testing.T) {
+	var execLog []string
+
+	record := func(s string) {
+		execLog = append(execLog, s)
+	}
+
+	assertExecLog := func(wanted []string) {
+		if !reflect.DeepEqual(execLog, wanted) {
+			t.Fatalf("got %v, wanted %v", execLog, wanted)
+		}
+	}
+
+	newHandler := func(name string) HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			record(name)
+		}
+	}
+
+	newMiddleware := func(name string) Middleware {
+		return func(next HandlerFunc) HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+				record(name)
+				next(w, r, params)
+			}
+		}
+	}
+
+	router := New()
+	w := httptest.NewRecorder()
+
+	// No middlewares.
+	{
+		router.GET("/h1", newHandler("h1"))
+
+		req, _ := newRequest("GET", "/h1", nil)
+		router.ServeHTTP(w, req)
+
+		assertExecLog([]string{"h1"})
+	}
+
+	// Test route with and without middleware.
+	{
+		execLog = nil
+		router.Use(newMiddleware("m1"))
+		router.GET("/h2", newHandler("h2"))
+
+		req, _ := newRequest("GET", "/h1", nil)
+		router.ServeHTTP(w, req)
+
+		req, _ = newRequest("GET", "/h2", nil)
+		router.ServeHTTP(w, req)
+
+		assertExecLog([]string{"h1", "m1", "h2"})
+	}
+
+	// NewGroup inherits middlewares but has its own stack.
+	{
+		execLog = nil
+		g := router.NewGroup("/g1")
+		g.Use(newMiddleware("m2"))
+		g.GET("/h3", newHandler("h3"))
+
+		req, _ := newRequest("GET", "/h2", nil)
+		router.ServeHTTP(w, req)
+
+		req, _ = newRequest("GET", "/g1/h3", nil)
+		router.ServeHTTP(w, req)
+
+		assertExecLog([]string{"m1", "h2", "m1", "m2", "h3"})
+	}
+
+	// Middleware can modify params.
+	{
+		execLog = nil
+		g := router.NewGroup("/g2")
+		g.Use(func(next HandlerFunc) HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+				record("m4")
+				if params == nil {
+					params = make(map[string]string)
+				}
+				params["foo"] = "bar"
+				next(w, r, params)
+			}
+		})
+		g.GET("/h6", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			record("h6")
+			if params["foo"] != "bar" {
+				t.Fatalf("got %q, wanted %q", params["foo"], "bar")
+			}
+		})
+
+		req, _ := newRequest("GET", "/g2/h6", nil)
+		router.ServeHTTP(w, req)
+
+		assertExecLog([]string{"m1", "m4", "h6"})
+	}
+
+	// Middleware can serve request without calling next.
+	{
+		execLog = nil
+		router.Use(func(_ HandlerFunc) HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+				record("m3")
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("pong"))
+			}
+		})
+		router.GET("/h5", newHandler("h5"))
+
+		req, _ := newRequest("GET", "/h5", nil)
+		router.ServeHTTP(w, req)
+
+		assertExecLog([]string{"m1", "m3"})
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("got %d, wanted %d", w.Code, http.StatusBadRequest)
+		}
+		if w.Body.String() != "pong" {
+			t.Fatalf("got %s, wanted %s", w.Body.String(), "pong")
+		}
+	}
+}
+
 func BenchmarkRouterSimple(b *testing.B) {
 	router := New()
 

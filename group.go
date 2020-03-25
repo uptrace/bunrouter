@@ -6,9 +6,19 @@ import (
 	"strings"
 )
 
+type Middleware func(next HandlerFunc) HandlerFunc
+
+func handlerWithMiddlewares(handler HandlerFunc, stack []Middleware) HandlerFunc {
+	for i := len(stack) - 1; i >= 0; i-- {
+		handler = stack[i](handler)
+	}
+	return handler
+}
+
 type Group struct {
-	path string
-	mux  *TreeMux
+	path  string
+	mux   *TreeMux
+	stack []Middleware
 }
 
 // Add a sub-group to this group
@@ -23,7 +33,16 @@ func (g *Group) NewGroup(path string) *Group {
 	if path[len(path)-1] == '/' {
 		path = path[:len(path)-1]
 	}
-	return &Group{path, g.mux}
+	return &Group{
+		path:  path,
+		mux:   g.mux,
+		stack: g.stack,
+	}
+}
+
+// Use appends a middleware handler to the Group middleware stack.
+func (g *Group) Use(fn Middleware) {
+	g.stack = append(g.stack, fn)
 }
 
 // Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a
@@ -91,6 +110,10 @@ func (g *Group) NewGroup(path string) *Group {
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	g.mux.mutex.Lock()
 	defer g.mux.mutex.Unlock()
+
+	if len(g.stack) > 0 {
+		handler = handlerWithMiddlewares(handler, g.stack)
+	}
 
 	addSlash := false
 	addOne := func(thePath string) {
