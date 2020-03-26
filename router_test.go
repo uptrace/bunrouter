@@ -1092,7 +1092,7 @@ func TestMiddleware(t *testing.T) {
 		}
 	}
 
-	newMiddleware := func(name string) Middleware {
+	newMiddleware := func(name string) MiddlewareFunc {
 		return func(next HandlerFunc) HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
 				record(name)

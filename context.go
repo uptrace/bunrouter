@@ -15,8 +15,13 @@ type ContextGroup struct {
 }
 
 // Use appends a middleware handler to the Group middleware stack.
-func (cg *ContextGroup) Use(fn Middleware) {
+func (cg *ContextGroup) Use(fn MiddlewareFunc) {
 	cg.group.Use(fn)
+}
+
+// UseHandlerFunc is like Use but accepts http.HandlerFunc.
+func (cg *ContextGroup) UseHandlerFunc(fn http.HandlerFunc) {
+	cg.group.UseHandlerFunc(fn)
 }
 
 // UsingContext wraps the receiver to return a new instance of a ContextGroup.

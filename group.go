@@ -2,13 +2,14 @@ package httptreemux
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 )
 
-type Middleware func(next HandlerFunc) HandlerFunc
+type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
-func handlerWithMiddlewares(handler HandlerFunc, stack []Middleware) HandlerFunc {
+func handlerWithMiddlewares(handler HandlerFunc, stack []MiddlewareFunc) HandlerFunc {
 	for i := len(stack) - 1; i >= 0; i-- {
 		handler = stack[i](handler)
 	}
@@ -18,7 +19,7 @@ func handlerWithMiddlewares(handler HandlerFunc, stack []Middleware) HandlerFunc
 type Group struct {
 	path  string
 	mux   *TreeMux
-	stack []Middleware
+	stack []MiddlewareFunc
 }
 
 // Add a sub-group to this group
@@ -41,8 +42,18 @@ func (g *Group) NewGroup(path string) *Group {
 }
 
 // Use appends a middleware handler to the Group middleware stack.
-func (g *Group) Use(fn Middleware) {
+func (g *Group) Use(fn MiddlewareFunc) {
 	g.stack = append(g.stack, fn)
+}
+
+// UseHandlerFunc is like Use but accepts http.HandlerFunc.
+func (g *Group) UseHandlerFunc(fn http.HandlerFunc) {
+	g.stack = append(g.stack, func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			fn(w, r)
+			next(w, r, params)
+		}
+	})
 }
 
 // Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a
