@@ -56,6 +56,28 @@ func (g *Group) UseHandlerFunc(fn http.HandlerFunc) {
 	})
 }
 
+type handlerWithParams struct {
+	handler HandlerFunc
+	params  map[string]string
+}
+
+func (h handlerWithParams) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.handler(w, r, h.params)
+}
+
+// UseHandler is like Use but accepts http.Handler middleware.
+func (g *Group) UseHandler(middleware func(http.Handler) http.Handler) {
+	g.stack = append(g.stack, func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			nextHandler := handlerWithParams{
+				handler: next,
+				params:  params,
+			}
+			middleware(nextHandler).ServeHTTP(w, r)
+		}
+	})
+}
+
 // Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a
 // single path segment. That is, the pattern `/post/:postid` will match on `/post/1` or `/post/1/`,
 // but not `/post/1/2`.
