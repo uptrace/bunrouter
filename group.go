@@ -37,7 +37,7 @@ func (g *Group) NewGroup(path string) *Group {
 	return &Group{
 		path:  path,
 		mux:   g.mux,
-		stack: g.stack,
+		stack: g.stack[:len(g.stack):len(g.stack)],
 	}
 }
 
