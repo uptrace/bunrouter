@@ -19,11 +19,6 @@ func (cg *ContextGroup) Use(fn MiddlewareFunc) {
 	cg.group.Use(fn)
 }
 
-// UseHandlerFunc is like Use but accepts http.HandlerFunc.
-func (cg *ContextGroup) UseHandlerFunc(fn http.HandlerFunc) {
-	cg.group.UseHandlerFunc(fn)
-}
-
 // UseHandler is like Use but accepts http.Handler middleware.
 func (cg *ContextGroup) UseHandler(middleware func(http.Handler) http.Handler) {
 	cg.group.UseHandler(middleware)

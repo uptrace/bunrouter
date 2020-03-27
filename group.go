@@ -46,16 +46,6 @@ func (g *Group) Use(fn MiddlewareFunc) {
 	g.stack = append(g.stack, fn)
 }
 
-// UseHandlerFunc is like Use but accepts http.HandlerFunc.
-func (g *Group) UseHandlerFunc(fn http.HandlerFunc) {
-	g.stack = append(g.stack, func(next HandlerFunc) HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-			fn(w, r)
-			next(w, r, params)
-		}
-	})
-}
-
 type handlerWithParams struct {
 	handler HandlerFunc
 	params  map[string]string
