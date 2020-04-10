@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func simpleHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {}
+func simpleHandler(w http.ResponseWriter, r Request) {}
 
 func panicHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {
 	panic("test panic")
@@ -100,7 +100,7 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, us
 	var result string
 
 	makeHandler := func(method string) HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		return func(w http.ResponseWriter, r Request) {
 			result = method
 		}
 	}
@@ -233,12 +233,12 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 }
 
 func TestOptionsHandler(t *testing.T) {
-	optionsHandler := func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	optionsHandler := func(w http.ResponseWriter, r Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusNoContent)
 	}
 
-	customOptionsHandler := func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	customOptionsHandler := func(w http.ResponseWriter, r Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "httptreemux.com")
 		w.WriteHeader(http.StatusUnauthorized)
 	}
@@ -307,41 +307,6 @@ func TestOptionsHandler(t *testing.T) {
 	}
 }
 
-func TestPanic(t *testing.T) {
-
-	router := New()
-	router.PanicHandler = SimplePanicHandler
-	router.GET("/abc", panicHandler)
-	r, _ := newRequest("GET", "/abc", nil)
-	w := httptest.NewRecorder()
-
-	router.ServeHTTP(w, r)
-
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("Expected code %d from default panic handler, saw %d",
-			http.StatusInternalServerError, w.Code)
-	}
-
-	sawPanic := false
-	router.PanicHandler = func(w http.ResponseWriter, r *http.Request, err interface{}) {
-		sawPanic = true
-	}
-
-	router.ServeHTTP(w, r)
-	if !sawPanic {
-		t.Errorf("Custom panic handler was not called")
-	}
-
-	// Assume this does the right thing. Just a sanity test.
-	router.PanicHandler = ShowErrorsPanicHandler
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("Expected code %d from ShowErrorsPanicHandler, saw %d",
-			http.StatusInternalServerError, w.Code)
-	}
-}
-
 func TestRedirect(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
@@ -375,7 +340,7 @@ func behaviorToCode(b RedirectBehavior) int {
 func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior RedirectBehavior, customMethods bool,
 	newRequest RequestCreator, serveStyle bool) {
 
-	var redirHandler = func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	var redirHandler = func(w http.ResponseWriter, r Request) {
 		// Returning this instead of 200 makes it easy to verify that the handler is actually getting called.
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -591,7 +556,7 @@ func TestRoot(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
 		handlerCalled := false
-		handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		handler := func(w http.ResponseWriter, r Request) {
 			handlerCalled = true
 		}
 		router := New()
@@ -609,9 +574,9 @@ func TestRoot(t *testing.T) {
 
 func TestWildcardAtSplitNode(t *testing.T) {
 	var suppliedParam string
-	simpleHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-		t.Log(params)
-		suppliedParam, _ = params["slug"]
+	simpleHandler := func(w http.ResponseWriter, r Request) {
+		t.Log(r.Params.AsMap())
+		suppliedParam, _ = r.Params.Get("slug")
 	}
 
 	router := New()
@@ -658,11 +623,11 @@ func TestWildcardAtSplitNode(t *testing.T) {
 
 func TestSlash(t *testing.T) {
 	param := ""
-	handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-		param = params["param"]
+	handler := func(w http.ResponseWriter, r Request) {
+		param = r.Params.Text("param")
 	}
-	ymHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-		param = params["year"] + " " + params["month"]
+	ymHandler := func(w http.ResponseWriter, r Request) {
+		param = r.Params.Text("year") + " " + r.Params.Text("month")
 	}
 	router := New()
 	router.GET("/abc/:param", handler)
@@ -688,8 +653,8 @@ func TestQueryString(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
 		param := ""
-		handler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-			param = params["param"]
+		handler := func(w http.ResponseWriter, r Request) {
+			param = r.Params.Text("param")
 		}
 		router := New()
 		router.GET("/static", handler)
@@ -722,11 +687,11 @@ func TestQueryString(t *testing.T) {
 func TestPathSource(t *testing.T) {
 	var called string
 
-	appleHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	appleHandler := func(w http.ResponseWriter, r Request) {
 		called = "apples"
 	}
 
-	bananaHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	bananaHandler := func(w http.ResponseWriter, r Request) {
 		called = "bananas"
 	}
 	router := New()
@@ -784,13 +749,13 @@ func TestEscapedRoutes(t *testing.T) {
 		var foundParamKey string
 		var foundParamValue string
 
-		handleTestResponse := func(c *testcase, w http.ResponseWriter, r *http.Request, params map[string]string) {
+		handleTestResponse := func(c *testcase, w http.ResponseWriter, r Request) {
 			foundTestCase = c
 			foundParamKey = ""
 			foundParamValue = ""
-			for key, val := range params {
-				foundParamKey = key
-				foundParamValue = val
+			for _, p := range r.Params {
+				foundParamKey = p.Key
+				foundParamValue = p.Value
 			}
 			t.Logf("RequestURI %s found test case %+v", r.RequestURI, c)
 		}
@@ -817,8 +782,8 @@ func TestEscapedRoutes(t *testing.T) {
 		for _, c := range testcases {
 			t.Logf("Adding route %s", c.Route)
 			theCase := c
-			router.GET(c.Route, func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-				handleTestResponse(theCase, w, r, params)
+			router.GET(c.Route, func(w http.ResponseWriter, r Request) {
+				handleTestResponse(theCase, w, r)
 			})
 		}
 
@@ -1046,7 +1011,7 @@ func TestLookup(t *testing.T) {
 func TestRedirectEscapedPath(t *testing.T) {
 	router := New()
 
-	testHandler := func(w http.ResponseWriter, r *http.Request, params map[string]string) {}
+	testHandler := func(w http.ResponseWriter, r Request) {}
 
 	router.GET("/:escaped/", testHandler)
 
@@ -1087,16 +1052,16 @@ func TestMiddleware(t *testing.T) {
 	}
 
 	newHandler := func(name string) HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		return func(w http.ResponseWriter, r Request) {
 			record(name)
 		}
 	}
 
 	newMiddleware := func(name string) MiddlewareFunc {
 		return func(next HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			return func(w http.ResponseWriter, r Request) {
 				record(name)
-				next(w, r, params)
+				next(w, r)
 			}
 		}
 	}
@@ -1150,19 +1115,19 @@ func TestMiddleware(t *testing.T) {
 		execLog = nil
 		g := router.NewGroup("/g2")
 		g.Use(func(next HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			return func(w http.ResponseWriter, r Request) {
 				record("m4")
-				if params == nil {
-					params = make(map[string]string)
-				}
-				params["foo"] = "bar"
-				next(w, r, params)
+				r.Params = append(r.Params, Param{
+					Key:   "foo",
+					Value: "bar",
+				})
+				next(w, r)
 			}
 		})
-		g.GET("/h6", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		g.GET("/h6", func(w http.ResponseWriter, r Request) {
 			record("h6")
-			if params["foo"] != "bar" {
-				t.Fatalf("got %q, wanted %q", params["foo"], "bar")
+			if v := r.Params.Text("foo"); v != "bar" {
+				t.Fatalf("got %q, wanted %q", v, "bar")
 			}
 		})
 
@@ -1176,7 +1141,7 @@ func TestMiddleware(t *testing.T) {
 	{
 		execLog = nil
 		router.Use(func(_ HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+			return func(w http.ResponseWriter, r Request) {
 				record("m3")
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write([]byte("pong"))
@@ -1208,21 +1173,8 @@ func BenchmarkRouterSimple(b *testing.B) {
 	benchRequest(b, router, r)
 }
 
-func BenchmarkRouterRootWithPanicHandler(b *testing.B) {
+func BenchmarkRouterRoot(b *testing.B) {
 	router := New()
-	router.PanicHandler = SimplePanicHandler
-
-	router.GET("/", simpleHandler)
-	router.GET("/user/dimfeld", simpleHandler)
-
-	r, _ := newRequest("GET", "/", nil)
-
-	benchRequest(b, router, r)
-}
-
-func BenchmarkRouterRootWithoutPanicHandler(b *testing.B) {
-	router := New()
-	router.PanicHandler = nil
 
 	router.GET("/", simpleHandler)
 	router.GET("/user/dimfeld", simpleHandler)

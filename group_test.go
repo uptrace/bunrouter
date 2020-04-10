@@ -14,11 +14,12 @@ func TestEmptyGroupAndMapping(t *testing.T) {
 			t.Error(`Expected NewGroup("")`)
 		}
 	}()
-	New().GET("", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {})
+	New().GET("", func(w http.ResponseWriter, _ Request) {})
 }
+
 func TestSubGroupSlashMapping(t *testing.T) {
 	r := New()
-	r.NewGroup("/foo").GET("/", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+	r.NewGroup("/foo").GET("/", func(w http.ResponseWriter, _ Request) {
 		w.WriteHeader(200)
 	})
 
@@ -42,7 +43,7 @@ func TestSubGroupSlashMapping(t *testing.T) {
 
 func TestSubGroupEmptyMapping(t *testing.T) {
 	r := New()
-	r.NewGroup("/foo").GET("", func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+	r.NewGroup("/foo").GET("", func(w http.ResponseWriter, _ Request) {
 		w.WriteHeader(200)
 	})
 	req, _ := http.NewRequest("GET", "/foo", nil)
@@ -92,7 +93,7 @@ func TestInvalidPath(t *testing.T) {
 func testGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 	var result string
 	makeHandler := func(method string) HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		return func(w http.ResponseWriter, r Request) {
 			result = method
 		}
 	}
@@ -141,7 +142,7 @@ func testGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 func TestSetGetAfterHead(t *testing.T) {
 	var result string
 	makeHandler := func(method string) HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		return func(w http.ResponseWriter, r Request) {
 			result = method
 		}
 	}

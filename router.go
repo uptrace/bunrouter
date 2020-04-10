@@ -12,9 +12,16 @@ import (
 	"sync"
 )
 
-// The params argument contains the parameters parsed from wildcards and catch-alls in the URL.
-type HandlerFunc func(http.ResponseWriter, *http.Request, map[string]string)
-type PanicHandler func(http.ResponseWriter, *http.Request, interface{})
+type Request struct {
+	*http.Request
+	Params
+}
+
+func (req Request) Param(key string) string {
+	return req.Params.Text(key)
+}
+
+type HandlerFunc func(http.ResponseWriter, Request)
 
 // RedirectBehavior sets the behavior when the router redirects the request to the
 // canonical version of the requested URL using RedirectTrailingSlash or RedirectClean.
@@ -56,7 +63,7 @@ type LookupResult struct {
 	// will also be used in the case
 	StatusCode  int
 	handler     HandlerFunc
-	params      map[string]string
+	params      Params
 	leafHandler map[string]HandlerFunc // Only has a value when StatusCode is MethodNotAllowed.
 }
 
@@ -65,9 +72,6 @@ type TreeMux struct {
 	mutex sync.RWMutex
 
 	Group
-
-	// The default PanicHandler just returns a 500 code.
-	PanicHandler PanicHandler
 
 	// The default NotFoundHandler is http.NotFound.
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
@@ -149,12 +153,6 @@ func (t *TreeMux) Dump() string {
 	return t.root.dumpTree("", "")
 }
 
-func (t *TreeMux) serveHTTPPanic(w http.ResponseWriter, r *http.Request) {
-	if err := recover(); err != nil {
-		t.PanicHandler(w, r, err)
-	}
-}
-
 func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 	var behavior RedirectBehavior
 	var ok bool
@@ -178,18 +176,18 @@ func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 }
 
 func redirectHandler(newPath string, statusCode int) HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, params map[string]string) {
-		redirect(w, r, newPath, statusCode)
+	return func(w http.ResponseWriter, req Request) {
+		redirect(w, req, newPath, statusCode)
 	}
 }
 
-func redirect(w http.ResponseWriter, r *http.Request, newPath string, statusCode int) {
+func redirect(w http.ResponseWriter, req Request, newPath string, statusCode int) {
 	newURL := url.URL{
 		Path:     newPath,
-		RawQuery: r.URL.RawQuery,
-		Fragment: r.URL.Fragment,
+		RawQuery: req.URL.RawQuery,
+		Fragment: req.URL.Fragment,
 	}
-	http.Redirect(w, r, newURL.String(), statusCode)
+	http.Redirect(w, req.Request, newURL.String(), statusCode)
 }
 
 func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupResult, found bool) {
@@ -231,7 +229,10 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 			}
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				// Redirect to the actual path
-				return LookupResult{statusCode, redirectHandler(cleanPath, statusCode), nil, nil}, true
+				return LookupResult{
+					StatusCode: statusCode,
+					handler:    redirectHandler(cleanPath, statusCode),
+				}, true
 			}
 		} else {
 			// Not found.
@@ -265,13 +266,20 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 				}
 
 				if h != nil {
-					return LookupResult{statusCode, h, nil, nil}, true
+					return LookupResult{
+						StatusCode: statusCode,
+						handler:    h,
+					}, true
 				}
 			}
 		}
 	}
 
-	var paramMap map[string]string
+	lr := LookupResult{
+		StatusCode: http.StatusOK,
+		handler:    handler,
+	}
+
 	if len(params) != 0 {
 		if len(params) != len(n.leafWildcardNames) {
 			// Need better behavior here. Should this be a panic?
@@ -279,14 +287,18 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 				params, n.leafWildcardNames))
 		}
 
-		paramMap = make(map[string]string)
 		numParams := len(params)
-		for index := 0; index < numParams; index++ {
-			paramMap[n.leafWildcardNames[numParams-index-1]] = params[index]
+		lr.params = make([]Param, numParams)
+
+		for i := 0; i < numParams; i++ {
+			lr.params[i] = Param{
+				Key:   n.leafWildcardNames[numParams-i-1],
+				Value: params[i],
+			}
 		}
 	}
 
-	return LookupResult{http.StatusOK, handler, paramMap, nil}, true
+	return lr, true
 }
 
 // Lookup performs a lookup without actually serving the request or mutating the request or response.
@@ -313,32 +325,31 @@ func (t *TreeMux) Lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 }
 
 // ServeLookupResult serves a request, given a lookup result from the Lookup function.
-func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, r *http.Request, lr LookupResult) {
+func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr LookupResult) {
 	if lr.handler == nil {
 		if lr.StatusCode == http.StatusMethodNotAllowed && lr.leafHandler != nil {
 			if t.SafeAddRoutesWhileRunning {
 				t.mutex.RLock()
 			}
 
-			t.MethodNotAllowedHandler(w, r, lr.leafHandler)
+			t.MethodNotAllowedHandler(w, req, lr.leafHandler)
 
 			if t.SafeAddRoutesWhileRunning {
 				t.mutex.RUnlock()
 			}
 		} else {
-			t.NotFoundHandler(w, r)
+			t.NotFoundHandler(w, req)
 		}
 	} else {
-		r = t.setDefaultRequestContext(r)
-		lr.handler(w, r, lr.params)
+		req = t.setDefaultRequestContext(req)
+		lr.handler(w, Request{
+			Request: req,
+			Params:  lr.params,
+		})
 	}
 }
 
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if t.PanicHandler != nil {
-		defer t.serveHTTPPanic(w, r)
-	}
-
 	if t.SafeAddRoutesWhileRunning {
 		// In concurrency safe mode, we acquire a read lock on the mutex for any access.
 		// This is optional to avoid potential performance loss in high-usage scenarios.
