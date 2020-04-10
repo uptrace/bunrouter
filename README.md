@@ -1,5 +1,7 @@
-treemux  [![Build Status](https://travis-ci.org/dimfeld/treemux.png?branch=master)](https://travis-ci.org/dimfeld/treemux) [![GoDoc](https://godoc.org/github.com/dimfeld/treemux?status.svg)](https://godoc.org/github.com/dimfeld/treemux)
-===========
+# treemux
+
+[![Build Status](https://travis-ci.com/vmihailenco/treemux.png?branch=master)](https://travis-ci.com/vmihailenco/treemux)
+[![GoDoc](https://godoc.org/github.com/vmihailenco/treemux?status.svg)](https://godoc.org/github.com/vmihailenco/treemux)
 
 High-speed, flexible, tree-based HTTP router for Go.
 
