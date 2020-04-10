@@ -16,10 +16,6 @@ import (
 
 func simpleHandler(w http.ResponseWriter, r Request) {}
 
-func panicHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	panic("test panic")
-}
-
 func newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	r, _ := http.NewRequest(method, path, body)
 	u, _ := url.ParseRequestURI(path)
@@ -1144,7 +1140,7 @@ func TestMiddleware(t *testing.T) {
 			return func(w http.ResponseWriter, r Request) {
 				record("m3")
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("pong"))
+				_, _ = w.Write([]byte("pong"))
 			}
 		})
 		router.GET("/h5", newHandler("h5"))
