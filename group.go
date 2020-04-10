@@ -1,4 +1,4 @@
-package httptreemux
+package treemux
 
 import (
 	"fmt"
@@ -94,7 +94,7 @@ func (g *Group) UseHandler(middleware func(http.Handler) http.Handler) {
 // 3. Finally, a catch-all rule will match when the earlier path segments have matched, and none of the static or wildcard conditions have matched. Catch-all rules must be at the end of a pattern.
 //
 // So with the following patterns, we'll see certain matches:
-//	 router = httptreemux.New()
+//	 router = treemux.New()
 //	 router.GET("/:page", pageHandler)
 //	 router.GET("/:year/:month/:post", postHandler)
 //	 router.GET("/:year/:month", archiveHandler)
@@ -127,7 +127,7 @@ func (g *Group) UseHandler(middleware func(http.Handler) http.Handler) {
 // can not be predicted. If trailing slash removal is desired on catch-all patterns, set
 // TreeMux.RemoveCatchAllTrailingSlash to true.
 //
-// 	router = httptreemux.New()
+// 	router = treemux.New()
 // 	router.GET("/about", pageHandler)
 // 	router.GET("/posts/", postIndexHandler)
 // 	router.POST("/posts", postFormHandler)

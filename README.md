@@ -1,31 +1,31 @@
-httptreemux  [![Build Status](https://travis-ci.org/dimfeld/httptreemux.png?branch=master)](https://travis-ci.org/dimfeld/httptreemux) [![GoDoc](https://godoc.org/github.com/dimfeld/httptreemux?status.svg)](https://godoc.org/github.com/dimfeld/httptreemux)
+treemux  [![Build Status](https://travis-ci.org/dimfeld/treemux.png?branch=master)](https://travis-ci.org/dimfeld/treemux) [![GoDoc](https://godoc.org/github.com/dimfeld/treemux?status.svg)](https://godoc.org/github.com/dimfeld/treemux)
 ===========
 
 High-speed, flexible, tree-based HTTP router for Go.
 
-This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed so that a single path segment may be a wildcard in one route and a static token in another. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/julienschmidt/go-http-routing-benchmark), httptreemux is close to, but slightly slower than, httprouter.
+This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter), in that it uses a patricia tree, but the implementation is rather different. Specifically, the routing rules are relaxed so that a single path segment may be a wildcard in one route and a static token in another. This gives a nice combination of high performance with a lot of convenience in designing the routing patterns. In [benchmarks](https://github.com/julienschmidt/go-http-routing-benchmark), treemux is close to, but slightly slower than, httprouter.
 
-Release notes may be found using the [Github releases tab](https://github.com/dimfeld/httptreemux/releases). Version numbers are compatible with the [Semantic Versioning 2.0.0](http://semver.org/) convention, and a new release is made after every change to the code.
+Release notes may be found using the [Github releases tab](https://github.com/dimfeld/treemux/releases). Version numbers are compatible with the [Semantic Versioning 2.0.0](http://semver.org/) convention, and a new release is made after every change to the code.
 
 ## Installing with Go Modules
 
-When using Go Modules, import this repository with `import "github.com/dimfeld/httptreemux/v5"` to ensure that you get the right version.
+When using Go Modules, import this repository with `import "github.com/dimfeld/treemux/v5"` to ensure that you get the right version.
 
 ## Why?
 There are a lot of good routers out there. But looking at the ones that were really lightweight, I couldn't quite get something that fit with the route patterns I wanted. The code itself is simple enough, so I spent an evening writing this.
 
 ## Handler
-The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as httptreemux.HandlerFunc.
+The handler is a simple function with the prototype `func(w http.ResponseWriter, r *http.Request, params map[string]string)`. The params argument contains the parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased as treemux.HandlerFunc.
 
 ### Using http.HandlerFunc
-Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `httptreemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc). There are two ways to enable this support.
+Due to the inclusion of the [context](https://godoc.org/context) package as of Go 1.7, `treemux` now supports handlers of type [http.HandlerFunc](https://godoc.org/net/http#HandlerFunc). There are two ways to enable this support.
 
 #### Adapting an Existing Router
 
 The `UsingContext` method will wrap the router or group in a new group at the same path, but adapted for use with `context` and `http.HandlerFunc`.
 
 ```go
-router := httptreemux.New()
+router := treemux.New()
 
 group := router.NewGroup("/api")
 group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
@@ -36,7 +36,7 @@ group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request, params map[str
 // UsingContext returns a version of the router or group with context support.
 ctxGroup := group.UsingContext() // sibling to 'group' node in tree
 ctxGroup.GET("/v2/:id", func(w http.ResponseWriter, r *http.Request) {
-    params := httptreemux.ContextParams(r.Context())
+    params := treemux.ContextParams(r.Context())
     id := params["id"]
     fmt.Fprintf(w, "GET /api/v2/%s", id)
 })
@@ -49,16 +49,16 @@ http.ListenAndServe(":8080", router)
 The `NewContextMux` function returns a router preconfigured for use with `context` and `http.HandlerFunc`.
 
 ```go
-router := httptreemux.NewContextMux()
+router := treemux.NewContextMux()
 
 router.GET("/:page", func(w http.ResponseWriter, r *http.Request) {
-    params := httptreemux.ContextParams(r.Context())
+    params := treemux.ContextParams(r.Context())
     fmt.Fprintf(w, "GET /%s", params["page"])
 })
 
 group := router.NewGroup("/api")
 group.GET("/v1/:id", func(w http.ResponseWriter, r *http.Request) {
-    params := httptreemux.ContextParams(r.Context())
+    params := treemux.ContextParams(r.Context())
     id := params["id"]
     fmt.Fprintf(w, "GET /api/v1/%s", id)
 })
@@ -106,7 +106,7 @@ Lets you create a new group of routes with a given path prefix.  Makes it easier
 
 To use this you do:
 ```go
-router = httptreemux.New()
+router = treemux.New()
 api := router.NewGroup("/api/v1")
 api.GET("/foo", fooHandler) // becomes /api/v1/foo
 api.GET("/bar", barHandler) // becomes /api/v1/bar
@@ -121,7 +121,7 @@ The priority rules in the router are simple.
 
 So with the following patterns adapted from [simpleblog](https://www.github.com/dimfeld/simpleblog), we'll see certain matches:
 ```go
-router = httptreemux.New()
+router = treemux.New()
 router.GET("/:page", pageHandler)
 router.GET("/:year/:month/:post", postHandler)
 router.GET("/:year/:month", archiveHandler)
@@ -154,7 +154,7 @@ However this behavior can be turned off by setting TreeMux.RedirectTrailingSlash
 One exception to this rule is catch-all patterns. By default, trailing slash redirection is disabled on catch-all patterns, since the structure of the entire URL and the desired patterns can not be predicted. If trailing slash removal is desired on catch-all patterns, set TreeMux.RemoveCatchAllTrailingSlash to true.
 
 ```go
-router = httptreemux.New()
+router = treemux.New()
 router.GET("/about", pageHandler)
 router.GET("/posts/", postIndexHandler)
 router.POST("/posts", postFormHandler)
@@ -232,7 +232,7 @@ exhaustive, but covers some nonobvious cases that users have encountered.
 
 When matching on parameters in a route, the `gorilla/pat` router will modify
 `Request.URL.RawQuery` to make it appear like the parameters were in the
-query string. `httptreemux` does not do this. See [Issue #26](https://github.com/dimfeld/httptreemux/issues/26) for more details and a
+query string. `treemux` does not do this. See [Issue #26](https://github.com/dimfeld/treemux/issues/26) for more details and a
 code snippet that can perform this transformation for you, should you want it.
 
 ### httprouter and catch-all parameters

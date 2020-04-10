@@ -2,7 +2,7 @@
 // implementation is rather different. Specifically, the routing rules are relaxed so that a
 // single path segment may be a wildcard in one route and a static token in another. This gives a
 // nice combination of high performance with a lot of convenience in designing the routing patterns.
-package httptreemux
+package treemux
 
 import (
 	"context"
@@ -283,7 +283,7 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 	if len(params) != 0 {
 		if len(params) != len(n.leafWildcardNames) {
 			// Need better behavior here. Should this be a panic?
-			panic(fmt.Sprintf("httptreemux parameter list length mismatch: %v, %v",
+			panic(fmt.Sprintf("treemux parameter list length mismatch: %v, %v",
 				params, n.leafWildcardNames))
 		}
 

@@ -1,4 +1,4 @@
-package httptreemux
+package treemux
 
 import (
 	"fmt"
@@ -239,7 +239,7 @@ func TestOptionsHandler(t *testing.T) {
 	}
 
 	customOptionsHandler := func(w http.ResponseWriter, r Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "httptreemux.com")
+		w.Header().Set("Access-Control-Allow-Origin", "treemux.com")
 		w.WriteHeader(http.StatusUnauthorized)
 	}
 
@@ -272,7 +272,7 @@ func TestOptionsHandler(t *testing.T) {
 	w = httptest.NewRecorder()
 	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
 	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "httptreemux.com") {
+	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "treemux.com") {
 		t.Error("custom options handler did not overwrite global handler")
 	}
 
@@ -281,7 +281,7 @@ func TestOptionsHandler(t *testing.T) {
 	w = httptest.NewRecorder()
 	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
 	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "httptreemux.com") {
+	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "treemux.com") {
 		t.Error("custom options handler did not overwrite global handler")
 	}
 
