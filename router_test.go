@@ -14,7 +14,9 @@ import (
 	"testing"
 )
 
-func simpleHandler(w http.ResponseWriter, r Request) {}
+func simpleHandler(w http.ResponseWriter, r Request) error {
+	return nil
+}
 
 func newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	r, _ := http.NewRequest(method, path, body)
@@ -96,8 +98,9 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, us
 	var result string
 
 	makeHandler := func(method string) HandlerFunc {
-		return func(w http.ResponseWriter, r Request) {
+		return func(w http.ResponseWriter, r Request) error {
 			result = method
+			return nil
 		}
 	}
 
@@ -229,14 +232,16 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 }
 
 func TestOptionsHandler(t *testing.T) {
-	optionsHandler := func(w http.ResponseWriter, r Request) {
+	optionsHandler := func(w http.ResponseWriter, r Request) error {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusNoContent)
+		return nil
 	}
 
-	customOptionsHandler := func(w http.ResponseWriter, r Request) {
+	customOptionsHandler := func(w http.ResponseWriter, r Request) error {
 		w.Header().Set("Access-Control-Allow-Origin", "treemux.com")
 		w.WriteHeader(http.StatusUnauthorized)
+		return nil
 	}
 
 	router := New()
@@ -336,9 +341,10 @@ func behaviorToCode(b RedirectBehavior) int {
 func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior RedirectBehavior, customMethods bool,
 	newRequest RequestCreator, serveStyle bool) {
 
-	var redirHandler = func(w http.ResponseWriter, r Request) {
+	var redirHandler = func(w http.ResponseWriter, r Request) error {
 		// Returning this instead of 200 makes it easy to verify that the handler is actually getting called.
 		w.WriteHeader(http.StatusNoContent)
+		return nil
 	}
 
 	router := New()
@@ -552,8 +558,9 @@ func TestRoot(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
 		handlerCalled := false
-		handler := func(w http.ResponseWriter, r Request) {
+		handler := func(w http.ResponseWriter, r Request) error {
 			handlerCalled = true
+			return nil
 		}
 		router := New()
 		router.GET("/", handler)
@@ -570,9 +577,10 @@ func TestRoot(t *testing.T) {
 
 func TestWildcardAtSplitNode(t *testing.T) {
 	var suppliedParam string
-	simpleHandler := func(w http.ResponseWriter, r Request) {
+	simpleHandler := func(w http.ResponseWriter, r Request) error {
 		t.Log(r.Params.AsMap())
 		suppliedParam, _ = r.Params.Get("slug")
+		return nil
 	}
 
 	router := New()
@@ -619,11 +627,13 @@ func TestWildcardAtSplitNode(t *testing.T) {
 
 func TestSlash(t *testing.T) {
 	param := ""
-	handler := func(w http.ResponseWriter, r Request) {
+	handler := func(w http.ResponseWriter, r Request) error {
 		param = r.Params.Text("param")
+		return nil
 	}
-	ymHandler := func(w http.ResponseWriter, r Request) {
+	ymHandler := func(w http.ResponseWriter, r Request) error {
 		param = r.Params.Text("year") + " " + r.Params.Text("month")
+		return nil
 	}
 	router := New()
 	router.GET("/abc/:param", handler)
@@ -649,8 +659,9 @@ func TestQueryString(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
 		param := ""
-		handler := func(w http.ResponseWriter, r Request) {
+		handler := func(w http.ResponseWriter, r Request) error {
 			param = r.Params.Text("param")
+			return nil
 		}
 		router := New()
 		router.GET("/static", handler)
@@ -683,12 +694,14 @@ func TestQueryString(t *testing.T) {
 func TestPathSource(t *testing.T) {
 	var called string
 
-	appleHandler := func(w http.ResponseWriter, r Request) {
+	appleHandler := func(w http.ResponseWriter, r Request) error {
 		called = "apples"
+		return nil
 	}
 
-	bananaHandler := func(w http.ResponseWriter, r Request) {
+	bananaHandler := func(w http.ResponseWriter, r Request) error {
 		called = "bananas"
+		return nil
 	}
 	router := New()
 	router.GET("/apples", appleHandler)
@@ -778,8 +791,9 @@ func TestEscapedRoutes(t *testing.T) {
 		for _, c := range testcases {
 			t.Logf("Adding route %s", c.Route)
 			theCase := c
-			router.GET(c.Route, func(w http.ResponseWriter, r Request) {
+			router.GET(c.Route, func(w http.ResponseWriter, r Request) error {
 				handleTestResponse(theCase, w, r)
+				return nil
 			})
 		}
 
@@ -1007,7 +1021,9 @@ func TestLookup(t *testing.T) {
 func TestRedirectEscapedPath(t *testing.T) {
 	router := New()
 
-	testHandler := func(w http.ResponseWriter, r Request) {}
+	testHandler := func(w http.ResponseWriter, r Request) error {
+		return nil
+	}
 
 	router.GET("/:escaped/", testHandler)
 
@@ -1048,16 +1064,17 @@ func TestMiddleware(t *testing.T) {
 	}
 
 	newHandler := func(name string) HandlerFunc {
-		return func(w http.ResponseWriter, r Request) {
+		return func(w http.ResponseWriter, r Request) error {
 			record(name)
+			return nil
 		}
 	}
 
 	newMiddleware := func(name string) MiddlewareFunc {
 		return func(next HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r Request) {
+			return func(w http.ResponseWriter, r Request) error {
 				record(name)
-				next(w, r)
+				return next(w, r)
 			}
 		}
 	}
@@ -1111,20 +1128,21 @@ func TestMiddleware(t *testing.T) {
 		execLog = nil
 		g := router.NewGroup("/g2")
 		g.Use(func(next HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r Request) {
+			return func(w http.ResponseWriter, r Request) error {
 				record("m4")
 				r.Params = append(r.Params, Param{
 					Key:   "foo",
 					Value: "bar",
 				})
-				next(w, r)
+				return next(w, r)
 			}
 		})
-		g.GET("/h6", func(w http.ResponseWriter, r Request) {
+		g.GET("/h6", func(w http.ResponseWriter, r Request) error {
 			record("h6")
 			if v := r.Params.Text("foo"); v != "bar" {
 				t.Fatalf("got %q, wanted %q", v, "bar")
 			}
+			return nil
 		})
 
 		req, _ := newRequest("GET", "/g2/h6", nil)
@@ -1137,10 +1155,11 @@ func TestMiddleware(t *testing.T) {
 	{
 		execLog = nil
 		router.Use(func(_ HandlerFunc) HandlerFunc {
-			return func(w http.ResponseWriter, r Request) {
+			return func(w http.ResponseWriter, r Request) error {
 				record("m3")
 				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("pong"))
+				_, err := w.Write([]byte("pong"))
+				return err
 			}
 		})
 		router.GET("/h5", newHandler("h5"))

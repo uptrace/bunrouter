@@ -50,27 +50,13 @@ func (g *Group) Use(fn MiddlewareFunc) {
 	g.stack = append(g.stack, fn)
 }
 
-type handlerWithParams struct {
-	handler HandlerFunc
-	params  Params
-}
-
-func (h handlerWithParams) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	h.handler(w, Request{
-		Request: req,
-		Params:  h.params,
-	})
-}
-
-// UseHandler is like Use but accepts http.Handler middleware.
-func (g *Group) UseHandler(middleware func(http.Handler) http.Handler) {
+func (g *Group) UseHandler(fn HandlerFunc) {
 	g.stack = append(g.stack, func(next HandlerFunc) HandlerFunc {
-		return func(w http.ResponseWriter, req Request) {
-			nextHandler := handlerWithParams{
-				handler: next,
-				params:  req.Params,
+		return func(w http.ResponseWriter, req Request) error {
+			if err := fn(w, req); err != nil {
+				return err
 			}
-			middleware(nextHandler).ServeHTTP(w, req.Request)
+			return next(w, req)
 		}
 	})
 }

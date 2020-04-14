@@ -13,6 +13,7 @@ import (
 )
 
 type Request struct {
+	Ctx context.Context
 	*http.Request
 	Params
 }
@@ -21,7 +22,7 @@ func (req Request) Param(key string) string {
 	return req.Params.Text(key)
 }
 
-type HandlerFunc func(http.ResponseWriter, Request)
+type HandlerFunc func(http.ResponseWriter, Request) error
 
 // RedirectBehavior sets the behavior when the router redirects the request to the
 // canonical version of the requested URL using RedirectTrailingSlash or RedirectClean.
@@ -72,6 +73,8 @@ type TreeMux struct {
 	mutex sync.RWMutex
 
 	Group
+
+	ErrorHandler func(w http.ResponseWriter, req Request, err error)
 
 	// The default NotFoundHandler is http.NotFound.
 	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
@@ -176,8 +179,9 @@ func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 }
 
 func redirectHandler(newPath string, statusCode int) HandlerFunc {
-	return func(w http.ResponseWriter, req Request) {
+	return func(w http.ResponseWriter, req Request) error {
 		redirect(w, req, newPath, statusCode)
+		return nil
 	}
 }
 
@@ -342,10 +346,14 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 		}
 	} else {
 		req = t.setDefaultRequestContext(req)
-		lr.handler(w, Request{
+		reqWrapper := Request{
+			Ctx:     req.Context(),
 			Request: req,
 			Params:  lr.params,
-		})
+		}
+		if err := lr.handler(w, reqWrapper); err != nil {
+			t.ErrorHandler(w, reqWrapper, err)
+		}
 	}
 }
 

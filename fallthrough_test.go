@@ -18,10 +18,11 @@ func TestMethodNotAllowedFallthrough(t *testing.T) {
 	router := New()
 
 	addRoute := func(method, path string) {
-		router.Handle(method, path, func(w http.ResponseWriter, req Request) {
+		router.Handle(method, path, func(w http.ResponseWriter, req Request) error {
 			matchedMethod = method
 			matchedPath = path
 			matchedParams = req.Params.AsMap()
+			return nil
 		})
 	}
 

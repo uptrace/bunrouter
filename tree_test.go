@@ -5,12 +5,14 @@ import (
 	"testing"
 )
 
-func dummyHandler(w http.ResponseWriter, r Request) {}
+func dummyHandler(w http.ResponseWriter, r Request) error {
+	return nil
+}
 
 func addPath(t *testing.T, tree *node, path string) {
 	t.Logf("Adding path %s", path)
 	n := tree.addPath(path[1:], nil, false)
-	handler := func(w http.ResponseWriter, r Request) {
+	handler := func(w http.ResponseWriter, r Request) error {
 		for i := range r.Params {
 			p := &r.Params[i]
 			if p.Key == "path" {
@@ -18,6 +20,7 @@ func addPath(t *testing.T, tree *node, path string) {
 				break
 			}
 		}
+		return nil
 	}
 	n.setHandler("GET", handler, false)
 }
