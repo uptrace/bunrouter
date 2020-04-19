@@ -19,6 +19,10 @@ type Request struct {
 	Params
 }
 
+func (req Request) Context() context.Context {
+	return req.Ctx
+}
+
 func (req Request) Param(key string) string {
 	return req.Params.Text(key)
 }
