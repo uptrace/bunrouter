@@ -15,11 +15,16 @@ import (
 type Request struct {
 	Ctx context.Context
 	*http.Request
+	route string
 	Params
 }
 
 func (req Request) Param(key string) string {
 	return req.Params.Text(key)
+}
+
+func (req Request) Route() string {
+	return req.route
 }
 
 type HandlerFunc func(http.ResponseWriter, Request) error
@@ -63,6 +68,7 @@ type LookupResult struct {
 	// error case. On a normal success, the statusCode will be `http.StatusOK`. A redirect code
 	// will also be used in the case
 	StatusCode  int
+	route       string
 	handler     HandlerFunc
 	params      Params
 	leafHandler map[string]HandlerFunc // Only has a value when StatusCode is MethodNotAllowed.
@@ -194,8 +200,7 @@ func redirect(w http.ResponseWriter, req Request, newPath string, statusCode int
 	http.Redirect(w, req.Request, newURL.String(), statusCode)
 }
 
-func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupResult, found bool) {
-	result.StatusCode = http.StatusNotFound
+func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, bool) {
 	path := r.RequestURI
 	unescapedPath := r.URL.Path
 	pathLen := len(path)
@@ -228,8 +233,9 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 			cleanPath := Clean(unescapedPath)
 			n, handler, params = t.root.search(r.Method, cleanPath[1:])
 			if n == nil {
-				// Still nothing found.
-				return
+				return LookupResult{
+					StatusCode: http.StatusNotFound,
+				}, false
 			}
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				// Redirect to the actual path
@@ -239,8 +245,9 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 				}, true
 			}
 		} else {
-			// Not found.
-			return
+			return LookupResult{
+				StatusCode: http.StatusNotFound,
+			}, false
 		}
 	}
 
@@ -250,9 +257,10 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 		}
 
 		if handler == nil {
-			result.leafHandler = n.leafHandler
-			result.StatusCode = http.StatusMethodNotAllowed
-			return
+			return LookupResult{
+				StatusCode:  http.StatusMethodNotAllowed,
+				leafHandler: n.leafHandler,
+			}, false
 		}
 	}
 
@@ -281,6 +289,7 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (result LookupR
 
 	lr := LookupResult{
 		StatusCode: http.StatusOK,
+		route:      n.route,
 		handler:    handler,
 	}
 
@@ -341,19 +350,22 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 			if t.SafeAddRoutesWhileRunning {
 				t.mutex.RUnlock()
 			}
-		} else {
-			t.NotFoundHandler(w, req)
+			return
 		}
-	} else {
-		req = t.setDefaultRequestContext(req)
-		reqWrapper := Request{
-			Ctx:     req.Context(),
-			Request: req,
-			Params:  lr.params,
-		}
-		if err := lr.handler(w, reqWrapper); err != nil {
-			t.ErrorHandler(w, reqWrapper, err)
-		}
+
+		t.NotFoundHandler(w, req)
+		return
+	}
+
+	req = t.setDefaultRequestContext(req)
+	reqWrapper := Request{
+		Ctx:     req.Context(),
+		Request: req,
+		route:   lr.route,
+		Params:  lr.params,
+	}
+	if err := lr.handler(w, reqWrapper); err != nil {
+		t.ErrorHandler(w, reqWrapper, err)
 	}
 }
 

@@ -27,6 +27,7 @@ func newRequest(method, path string, body io.Reader) (*http.Request, error) {
 }
 
 type RequestCreator func(string, string, io.Reader) (*http.Request, error)
+
 type TestScenario struct {
 	RequestCreator RequestCreator
 	ServeStyle     bool

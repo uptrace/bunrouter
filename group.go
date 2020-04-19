@@ -120,8 +120,13 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	}
 
 	addSlash := false
-	addOne := func(thePath string) {
-		node := g.mux.root.addPath(thePath[1:], nil, false)
+	addOne := func(fullPath string) {
+		node := g.mux.root.addPath(fullPath[1:], nil, false)
+		if node.route == "" {
+			node.route = fullPath
+		} else if node.route != fullPath {
+			panic(fmt.Errorf("%q != %q", node.route, fullPath))
+		}
 		if addSlash {
 			node.addSlash = true
 		}

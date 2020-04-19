@@ -7,7 +7,8 @@ import (
 )
 
 type node struct {
-	path string
+	route string
+	path  string
 
 	priority int
 
@@ -85,7 +86,7 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	}
 
 	c := path[0]
-	nextSlash := strings.Index(path, "/")
+	nextSlash := strings.IndexByte(path, '/')
 	var thisToken string
 	var tokenEnd int
 
@@ -126,7 +127,9 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 		n.catchAllChild.leafWildcardNames = wildcards
 
 		return n.catchAllChild
-	} else if c == ':' && !inStaticToken {
+	}
+
+	if c == ':' && !inStaticToken {
 		// Token starts with a :
 		thisToken = thisToken[1:]
 
@@ -141,55 +144,54 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 		}
 
 		return n.wildcardChild.addPath(remainingPath, wildcards, false)
-
-	} else {
-		// if strings.ContainsAny(thisToken, ":*") {
-		// 	panic("* or : in middle of path component " + path)
-		// }
-
-		unescaped := false
-		if len(thisToken) >= 2 && !inStaticToken {
-			if thisToken[0] == '\\' && (thisToken[1] == '*' || thisToken[1] == ':' || thisToken[1] == '\\') {
-				// The token starts with a character escaped by a backslash. Drop the backslash.
-				c = thisToken[1]
-				thisToken = thisToken[1:]
-				unescaped = true
-			}
-		}
-
-		// Set inStaticToken to ensure that the rest of this token is not mistaken
-		// for a wildcard if a prefix split occurs at a '*' or ':'.
-		inStaticToken = (c != '/')
-
-		// Do we have an existing node that starts with the same letter?
-		for i, index := range n.staticIndices {
-			if c == index {
-				// Yes. Split it based on the common prefix of the existing
-				// node and the new one.
-				child, prefixSplit := n.splitCommonPrefix(i, thisToken)
-
-				child.priority++
-				n.sortStaticChild(i)
-				if unescaped {
-					// Account for the removed backslash.
-					prefixSplit++
-				}
-				return child.addPath(path[prefixSplit:], wildcards, inStaticToken)
-			}
-		}
-
-		// No existing node starting with this letter, so create it.
-		child := &node{path: thisToken}
-
-		if n.staticIndices == nil {
-			n.staticIndices = []byte{c}
-			n.staticChild = []*node{child}
-		} else {
-			n.staticIndices = append(n.staticIndices, c)
-			n.staticChild = append(n.staticChild, child)
-		}
-		return child.addPath(remainingPath, wildcards, inStaticToken)
 	}
+
+	// if strings.ContainsAny(thisToken, ":*") {
+	// 	panic("* or : in middle of path component " + path)
+	// }
+
+	unescaped := false
+	if len(thisToken) >= 2 && !inStaticToken {
+		if thisToken[0] == '\\' && (thisToken[1] == '*' || thisToken[1] == ':' || thisToken[1] == '\\') {
+			// The token starts with a character escaped by a backslash. Drop the backslash.
+			c = thisToken[1]
+			thisToken = thisToken[1:]
+			unescaped = true
+		}
+	}
+
+	// Set inStaticToken to ensure that the rest of this token is not mistaken
+	// for a wildcard if a prefix split occurs at a '*' or ':'.
+	inStaticToken = (c != '/')
+
+	// Do we have an existing node that starts with the same letter?
+	for i, index := range n.staticIndices {
+		if c == index {
+			// Yes. Split it based on the common prefix of the existing
+			// node and the new one.
+			child, prefixSplit := n.splitCommonPrefix(i, thisToken)
+
+			child.priority++
+			n.sortStaticChild(i)
+			if unescaped {
+				// Account for the removed backslash.
+				prefixSplit++
+			}
+			return child.addPath(path[prefixSplit:], wildcards, inStaticToken)
+		}
+	}
+
+	// No existing node starting with this letter, so create it.
+	child := &node{path: thisToken}
+
+	if n.staticIndices == nil {
+		n.staticIndices = []byte{c}
+		n.staticChild = []*node{child}
+	} else {
+		n.staticIndices = append(n.staticIndices, c)
+		n.staticChild = append(n.staticChild, child)
+	}
+	return child.addPath(remainingPath, wildcards, inStaticToken)
 }
 
 func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int) {
@@ -272,7 +274,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 			nextSlash = pathLen
 		}
 
-		thisToken := path[0:nextSlash]
+		thisToken := path[:nextSlash]
 		nextToken := path[nextSlash:]
 
 		if len(thisToken) > 0 { // Don't match on empty tokens.
