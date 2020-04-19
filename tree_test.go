@@ -63,7 +63,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 
 	r := Request{}
 	r.Params = append(r.Params, Param{"path", ""})
-	handler(nil, r)
+	_ = handler(nil, r)
 	matchedPath := r.Params.Text("path")
 
 	if matchedPath != expectPath {
@@ -241,7 +241,7 @@ func TestTree(t *testing.T) {
 		if ok {
 			r := Request{}
 			r.Params = append(r.Params, Param{"path", ""})
-			handler(nil, r)
+			_ = handler(nil, r)
 			matchPath = r.Params.Text("path")
 		}
 
