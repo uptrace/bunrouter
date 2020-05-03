@@ -2,6 +2,7 @@ package treemux
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -47,6 +48,19 @@ func (g *Group) WithGroup(path string, fn func(g *Group)) {
 // Use appends a middleware handler to the Group middleware stack.
 func (g *Group) Use(fn MiddlewareFunc) {
 	g.stack = append(g.stack, fn)
+}
+
+// UseHandler is like Use, but handler can't modify the request.
+func (g *Group) UseHandler(fn HandlerFunc) {
+	middleware := func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, req Request) error {
+			if err := fn(w, req); err != nil {
+				return err
+			}
+			return next(w, req)
+		}
+	}
+	g.stack = append(g.stack, middleware)
 }
 
 // Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a
