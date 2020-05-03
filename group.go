@@ -24,14 +24,10 @@ type Group struct {
 
 // Add a sub-group to this group
 func (g *Group) NewGroup(path string) *Group {
-	if len(path) < 1 {
-		panic("Group path must not be empty")
-	}
-
 	checkPath(path)
 	path = g.path + path
 	//Don't want trailing slash as all sub-paths start with slash
-	if path[len(path)-1] == '/' {
+	if len(path) > 0 && path[len(path)-1] == '/' {
 		path = path[:len(path)-1]
 	}
 	return &Group{
