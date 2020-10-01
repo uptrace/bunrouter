@@ -6,6 +6,9 @@
 
 > :heart: [**Uptrace.dev** - distributed traces, logs, and errors in one place](https://uptrace.dev)
 
+- [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
+- [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
+
 High-speed, flexible, tree-based HTTP router for Go. This is a fork of
 [Daniel Imfeld's httptreemux](https://github.com/dimfeld/httptreemux).
 
