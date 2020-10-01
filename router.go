@@ -15,7 +15,8 @@ type Request struct {
 	ctx context.Context
 	*http.Request
 	route string
-	Params
+
+	Params Params
 }
 
 func (req Request) Context() context.Context {

@@ -25,6 +25,7 @@ func (g *LockedGroup) NewGroup(path string) *Group {
 	return g.group.NewGroup(path)
 }
 
+// Group is a group of routes and middlewares.
 type Group struct {
 	path  string
 	mux   *TreeMux
@@ -38,7 +39,7 @@ func (g *Group) Lock() *LockedGroup {
 	}
 }
 
-// Add a sub-group to this group
+// NewGroup adds a sub-group to this group.
 func (g *Group) NewGroup(path string) *Group {
 	return &Group{
 		path:  joinPath(g.path, path),
