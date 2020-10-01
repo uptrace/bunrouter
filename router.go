@@ -13,14 +13,19 @@ import (
 )
 
 type Request struct {
-	Ctx context.Context
+	ctx context.Context
 	*http.Request
 	route string
 	Params
 }
 
 func (req Request) Context() context.Context {
-	return req.Ctx
+	return req.ctx
+}
+
+func (req Request) WithContext(ctx context.Context) Request {
+	req.ctx = ctx
+	return req
 }
 
 func (req Request) Param(key string) string {
@@ -363,7 +368,7 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 
 	req = t.setDefaultRequestContext(req)
 	reqWrapper := Request{
-		Ctx:     req.Context(),
+		ctx:     req.Context(),
 		Request: req,
 		route:   lr.route,
 		Params:  lr.params,
@@ -395,7 +400,6 @@ func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // in the `Allow` header value appropriately.
 func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request,
 	methods map[string]HandlerFunc) {
-
 	for m := range methods {
 		w.Header().Add("Allow", m)
 	}
