@@ -16,22 +16,32 @@ func handlerWithMiddlewares(handler HandlerFunc, stack []MiddlewareFunc) Handler
 	return handler
 }
 
+// LockedGroup is an immutable version of a Group.
+type LockedGroup struct {
+	group *Group
+}
+
+func (g *LockedGroup) NewGroup(path string) *Group {
+	return g.group.NewGroup(path)
+}
+
 type Group struct {
 	path  string
 	mux   *TreeMux
 	stack []MiddlewareFunc
 }
 
+// Lock returns a locked group that does not allow to mutate the group.
+func (g *Group) Lock() *LockedGroup {
+	return &LockedGroup{
+		group: g,
+	}
+}
+
 // Add a sub-group to this group
 func (g *Group) NewGroup(path string) *Group {
-	checkPath(path)
-	path = g.path + path
-	//Don't want trailing slash as all sub-paths start with slash
-	if len(path) > 0 && path[len(path)-1] == '/' {
-		path = path[:len(path)-1]
-	}
 	return &Group{
-		path:  path,
+		path:  joinPath(g.path, path),
 		mux:   g.mux,
 		stack: g.stack[:len(g.stack):len(g.stack)],
 	}
@@ -129,7 +139,7 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 		handler = handlerWithMiddlewares(handler, g.stack)
 	}
 
-	addSlash := false
+	var addSlash bool
 	addOne := func(fullPath string) {
 		node := g.mux.root.addPath(fullPath[1:], nil, false)
 		if node.route == "" {
@@ -206,6 +216,16 @@ func (g *Group) HEAD(path string, handler HandlerFunc) {
 // Syntactic sugar for Handle("OPTIONS", path, handler)
 func (g *Group) OPTIONS(path string, handler HandlerFunc) {
 	g.Handle("OPTIONS", path, handler)
+}
+
+func joinPath(base, path string) string {
+	checkPath(path)
+	path = base + path
+	// Don't want trailing slash as all sub-paths start with slash
+	if len(path) > 0 && path[len(path)-1] == '/' {
+		path = path[:len(path)-1]
+	}
+	return path
 }
 
 func checkPath(path string) {
