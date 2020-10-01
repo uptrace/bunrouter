@@ -35,7 +35,7 @@ func (ps Params) Uint64(name string) (uint64, error) {
 	return strconv.ParseUint(ps.Text(name), 10, 64)
 }
 
-func (ps Params) AsMap() map[string]string {
+func (ps Params) Map() map[string]string {
 	if len(ps) == 0 {
 		return nil
 	}

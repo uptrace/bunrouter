@@ -576,7 +576,7 @@ func TestRoot(t *testing.T) {
 func TestWildcardAtSplitNode(t *testing.T) {
 	var suppliedParam string
 	simpleHandler := func(w http.ResponseWriter, r Request) error {
-		t.Log(r.Params.AsMap())
+		t.Log(r.Params.Map())
 		suppliedParam, _ = r.Params.Get("slug")
 		return nil
 	}
