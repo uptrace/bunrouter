@@ -15,7 +15,7 @@ func addPath(t *testing.T, tree *node, path string) {
 	handler := func(w http.ResponseWriter, r Request) error {
 		for i := range r.Params {
 			p := &r.Params[i]
-			if p.Key == "path" {
+			if p.Name == "path" {
 				p.Value = path
 				break
 			}
@@ -81,28 +81,27 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 				len(paramList), len(n.leafWildcardNames))
 		}
 
-		params := map[string]string{}
-		for i := 0; i < len(paramList); i++ {
-			params[n.leafWildcardNames[len(paramList)-i-1]] = paramList[i]
+		paramMap := make(map[string]string, len(paramList))
+		for _, param := range paramList {
+			paramMap[param.Name] = param.Value
 		}
-		t.Log("\tGot params", params)
+		t.Log("\tGot paramMap", paramMap)
 
 		for key, val := range expectedParams {
-			sawVal, ok := params[key]
+			sawVal, ok := paramMap[key]
 			if !ok {
 				t.Errorf("Path %s matched without key %s", path, key)
 			} else if sawVal != val {
 				t.Errorf("Path %s expected param %s to be %s, saw %s", path, key, val, sawVal)
 			}
 
-			delete(params, key)
+			delete(paramMap, key)
 		}
 
-		for key, val := range params {
+		for key, val := range paramMap {
 			t.Errorf("Path %s returned unexpected param %s=%s", path, key, val)
 		}
 	}
-
 }
 
 func checkHandlerNodes(t *testing.T, n *node) {
@@ -248,7 +247,6 @@ func TestTree(t *testing.T) {
 		if len(matchPath) < 2 || matchPath[1:] != p {
 			t.Errorf("Duplicate add of %s returned node for %s\n%s", p, matchPath,
 				n.dumpTree("", " "))
-
 		}
 	}
 

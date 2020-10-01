@@ -35,6 +35,10 @@ type node struct {
 	leafWildcardNames []string
 }
 
+func (n *node) paramName(i int) string {
+	return n.leafWildcardNames[len(n.leafWildcardNames)-1-i]
+}
+
 func (n *node) sortStaticChild(i int) {
 	for i > 0 && n.staticChild[i].priority > n.staticChild[i-1].priority {
 		n.staticChild[i], n.staticChild[i-1] = n.staticChild[i-1], n.staticChild[i]
@@ -150,7 +154,8 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	// 	panic("* or : in middle of path component " + path)
 	// }
 
-	unescaped := false
+	var unescaped bool
+
 	if len(thisToken) >= 2 && !inStaticToken {
 		if thisToken[0] == '\\' && (thisToken[1] == '*' || thisToken[1] == ':' || thisToken[1] == '\\') {
 			// The token starts with a character escaped by a backslash. Drop the backslash.
@@ -234,7 +239,7 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 	return newNode, i
 }
 
-func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []string) {
+func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []Param) {
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
@@ -286,9 +291,15 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 				}
 
 				if wcParams == nil {
-					wcParams = []string{unescaped}
+					wcParams = []Param{{
+						Name:  wcNode.paramName(0),
+						Value: unescaped,
+					}}
 				} else {
-					wcParams = append(wcParams, unescaped)
+					wcParams = append(wcParams, Param{
+						Name:  wcNode.paramName(len(wcParams)),
+						Value: unescaped,
+					})
 				}
 
 				if wcHandler != nil {
@@ -318,7 +329,10 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 				unescaped = path
 			}
 
-			return catchAllChild, handler, []string{unescaped}
+			return catchAllChild, handler, []Param{{
+				Name:  catchAllChild.paramName(0),
+				Value: unescaped,
+			}}
 		}
 
 	}

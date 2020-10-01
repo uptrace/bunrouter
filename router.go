@@ -6,7 +6,6 @@ package treemux
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
@@ -28,12 +27,12 @@ func (req Request) WithContext(ctx context.Context) Request {
 	return req
 }
 
-func (req Request) Param(key string) string {
-	return req.Params.Text(key)
-}
-
 func (req Request) Route() string {
 	return req.route
+}
+
+func (req Request) Param(key string) string {
+	return req.Params.Text(key)
 }
 
 type HandlerFunc func(http.ResponseWriter, Request) error
@@ -300,24 +299,7 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 		StatusCode: http.StatusOK,
 		route:      n.route,
 		handler:    handler,
-	}
-
-	if len(params) != 0 {
-		if len(params) != len(n.leafWildcardNames) {
-			// Need better behavior here. Should this be a panic?
-			panic(fmt.Sprintf("treemux parameter list length mismatch: %v, %v",
-				params, n.leafWildcardNames))
-		}
-
-		numParams := len(params)
-		lr.params = make([]Param, numParams)
-
-		for i := 0; i < numParams; i++ {
-			lr.params[i] = Param{
-				Key:   n.leafWildcardNames[numParams-i-1],
-				Value: params[i],
-			}
-		}
+		params:     params,
 	}
 
 	return lr, true

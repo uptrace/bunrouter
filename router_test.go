@@ -181,7 +181,6 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 
 	notAllowedHandler := func(w http.ResponseWriter, r *http.Request,
 		methods map[string]HandlerFunc) {
-
 		calledNotAllowed = true
 
 		expected := []string{"GET", "PUT", "DELETE", "HEAD"}
@@ -341,8 +340,7 @@ func behaviorToCode(b RedirectBehavior) int {
 
 func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior RedirectBehavior, customMethods bool,
 	newRequest RequestCreator, serveStyle bool) {
-
-	var redirHandler = func(w http.ResponseWriter, r Request) error {
+	redirHandler := func(w http.ResponseWriter, r Request) error {
 		// Returning this instead of 200 makes it easy to verify that the handler is actually getting called.
 		w.WriteHeader(http.StatusNoContent)
 		return nil
@@ -351,7 +349,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 	router := New()
 	router.RedirectBehavior = defaultBehavior
 
-	var expectedCodeMap = map[string]int{"PUT": behaviorToCode(defaultBehavior)}
+	expectedCodeMap := map[string]int{"PUT": behaviorToCode(defaultBehavior)}
 
 	if customMethods {
 		router.RedirectMethodBehavior["GET"] = getBehavior
@@ -552,7 +550,6 @@ func TestCatchAllTrailingSlashRedirect(t *testing.T) {
 			testPath("apples/bananas/")
 		}
 	}
-
 }
 
 func TestRoot(t *testing.T) {
@@ -764,7 +761,7 @@ func TestEscapedRoutes(t *testing.T) {
 			foundParamKey = ""
 			foundParamValue = ""
 			for _, p := range r.Params {
-				foundParamKey = p.Key
+				foundParamKey = p.Name
 				foundParamValue = p.Value
 			}
 			t.Logf("RequestURI %s found test case %+v", r.RequestURI, c)
@@ -987,7 +984,7 @@ func TestLookup(t *testing.T) {
 	router.GET("/abc/*", simpleHandler)
 	router.POST("/abc/*", simpleHandler)
 
-	var tryLookup = func(method, path string, expectFound bool, expectCode int) {
+	tryLookup := func(method, path string, expectFound bool, expectCode int) {
 		r, _ := newRequest(method, path, nil)
 		w := &mockResponseWriter{}
 		lr, found := router.Lookup(w, r)
@@ -1132,7 +1129,7 @@ func TestMiddleware(t *testing.T) {
 			return func(w http.ResponseWriter, r Request) error {
 				record("m4")
 				r.Params = append(r.Params, Param{
-					Key:   "foo",
+					Name:  "foo",
 					Value: "bar",
 				})
 				return next(w, r)
