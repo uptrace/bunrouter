@@ -1,4 +1,4 @@
-# treemux
+# treemux - fast and flexible HTTP router
 
 [![Build Status](https://travis-ci.com/vmihailenco/treemux.png?branch=master)](https://travis-ci.com/vmihailenco/treemux)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
@@ -24,9 +24,8 @@ slightly slower than, httprouter.
 
 ## Changes from httptreemux
 
-- Thin wrapper `treemux.Request` around `http.Request`.
-
-- Route name is exposed as `Request.Route`. Params are accessible via `req.Params`.
+- Thin wrapper `treemux.Request` around `http.Request` to expose route via `Request.Route` and route
+  params via `req.Params`.
 
 - Setting a `context.Context` does not require an allocation.
 
@@ -85,7 +84,7 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
     return func(w http.ResponseWriter, req treemux.Request) error {
         if origin := req.Header.Get("Origin"); origin != "" {
             h := w.Header()
-            h.Set("Access-Control-Allow-Origin", allowedOrigin(origin))
+            h.Set("Access-Control-Allow-Origin", origin)
             h.Set("Access-Control-Allow-Credentials", "true")
         }
         return next(w, req)
