@@ -148,21 +148,10 @@ type TreeMux struct {
 	// a version passed through URL.EscapedPath. This behavior is disabled by default.
 	EscapeAddedRoutes bool
 
-	// If present, override the default context with this one.
-	DefaultContext context.Context
-
 	// SafeAddRoutesWhileRunning tells the router to protect all accesses to the tree with an RWMutex. This is only needed
 	// if you are going to add routes after the router has already begun serving requests. There is a potential
 	// performance penalty at high load.
 	SafeAddRoutesWhileRunning bool
-}
-
-func (t *TreeMux) setDefaultRequestContext(r *http.Request) *http.Request {
-	if t.DefaultContext != nil {
-		r = r.WithContext(t.DefaultContext)
-	}
-
-	return r
 }
 
 // Dump returns a text representation of the routing tree.
@@ -348,7 +337,6 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 		return
 	}
 
-	req = t.setDefaultRequestContext(req)
 	reqWrapper := Request{
 		ctx:     req.Context(),
 		Request: req,
