@@ -153,8 +153,10 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 		}
 		node.setHandler(method, handler, false)
 
-		if g.mux.HeadCanUseGet && method == "GET" && node.leafHandler["HEAD"] == nil {
-			node.setHandler("HEAD", handler, true)
+		if g.mux.HeadCanUseGet &&
+			method == http.MethodGet &&
+			node.handlerMap.Get(http.MethodHead) == nil {
+			node.setHandler(http.MethodHead, handler, true)
 		}
 	}
 

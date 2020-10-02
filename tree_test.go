@@ -48,8 +48,8 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		return
 	}
 
-	handler, ok := n.leafHandler["GET"]
-	if !ok {
+	handler := n.handlerMap.Get(http.MethodGet)
+	if handler == nil {
 		t.Errorf("Path %s returned node without handler", path)
 		t.Error("Node and subtree was\n" + n.dumpTree("", " "))
 		return
@@ -105,7 +105,7 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 }
 
 func checkHandlerNodes(t *testing.T, n *node) {
-	hasHandlers := len(n.leafHandler) != 0
+	hasHandlers := n.handlerMap != nil
 	hasWildcards := len(n.leafWildcardNames) != 0
 
 	if hasWildcards && !hasHandlers {
@@ -235,9 +235,9 @@ func TestTree(t *testing.T) {
 	if n == nil {
 		t.Errorf("Duplicate add of %s didn't return a node", p)
 	} else {
-		handler, ok := n.leafHandler["GET"]
+		handler := n.handlerMap.Get(http.MethodGet)
 		matchPath := ""
-		if ok {
+		if handler != nil {
 			r := Request{}
 			r.Params = append(r.Params, Param{"path", ""})
 			_ = handler(nil, r)
@@ -317,8 +317,8 @@ func BenchmarkTreeNullRequest(b *testing.B) {
 	b.ReportAllocs()
 	tree := &node{
 		path: "/",
-		leafHandler: map[string]HandlerFunc{
-			"GET": dummyHandler,
+		handlerMap: &handlerMap{
+			get: dummyHandler,
 		},
 	}
 
@@ -332,8 +332,8 @@ func BenchmarkTreeOneStatic(b *testing.B) {
 	b.ReportAllocs()
 	tree := &node{
 		path: "/",
-		leafHandler: map[string]HandlerFunc{
-			"GET": dummyHandler,
+		handlerMap: &handlerMap{
+			get: dummyHandler,
 		},
 	}
 	tree.addPath("abc", nil, false)
@@ -347,8 +347,8 @@ func BenchmarkTreeOneStatic(b *testing.B) {
 func BenchmarkTreeOneParam(b *testing.B) {
 	tree := &node{
 		path: "/",
-		leafHandler: map[string]HandlerFunc{
-			"GET": dummyHandler,
+		handlerMap: &handlerMap{
+			get: dummyHandler,
 		},
 	}
 	b.ReportAllocs()
@@ -363,8 +363,8 @@ func BenchmarkTreeOneParam(b *testing.B) {
 func BenchmarkTreeLongParams(b *testing.B) {
 	tree := &node{
 		path: "/",
-		leafHandler: map[string]HandlerFunc{
-			"GET": dummyHandler,
+		handlerMap: &handlerMap{
+			get: dummyHandler,
 		},
 	}
 	b.ReportAllocs()

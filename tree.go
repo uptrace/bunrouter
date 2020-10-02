@@ -2,9 +2,78 @@ package treemux
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 )
+
+type handlerMap struct {
+	get     HandlerFunc
+	post    HandlerFunc
+	put     HandlerFunc
+	delete  HandlerFunc
+	head    HandlerFunc
+	options HandlerFunc
+	patch   HandlerFunc
+
+	// If true, the head handler was set implicitly, so let it also be set explicitly.
+	implicitHead bool
+
+	m map[string]HandlerFunc
+}
+
+func newHandlerMap() *handlerMap {
+	return new(handlerMap)
+}
+
+func (h *handlerMap) Map() map[string]HandlerFunc {
+	return h.m
+}
+
+func (h *handlerMap) Get(name string) HandlerFunc {
+	switch name {
+	case http.MethodGet:
+		return h.get
+	case http.MethodPost:
+		return h.post
+	case http.MethodPut:
+		return h.put
+	case http.MethodDelete:
+		return h.delete
+	case http.MethodHead:
+		return h.head
+	case http.MethodOptions:
+		return h.options
+	case http.MethodPatch:
+		return h.patch
+	default:
+		return h.m[name]
+	}
+}
+
+func (h *handlerMap) Set(name string, handler HandlerFunc) {
+	switch name {
+	case http.MethodGet:
+		h.get = handler
+	case http.MethodPost:
+		h.post = handler
+	case http.MethodPut:
+		h.put = handler
+	case http.MethodDelete:
+		h.delete = handler
+	case http.MethodHead:
+		h.head = handler
+	case http.MethodOptions:
+		h.options = handler
+	case http.MethodPatch:
+		h.patch = handler
+	}
+
+	if h.m == nil {
+		h.m = make(map[string]HandlerFunc)
+	}
+	h.m[name] = handler
+}
 
 type node struct {
 	route string
@@ -26,10 +95,9 @@ type node struct {
 
 	addSlash   bool
 	isCatchAll bool
-	// If true, the head handler was set implicitly, so let it also be set explicitly.
-	implicitHead bool
+
 	// If this node is the end of the URL, then call the handler, if applicable.
-	leafHandler map[string]HandlerFunc
+	handlerMap *handlerMap
 
 	// The names of the parameters to apply.
 	leafWildcardNames []string
@@ -48,17 +116,16 @@ func (n *node) sortStaticChild(i int) {
 }
 
 func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
-	if n.leafHandler == nil {
-		n.leafHandler = make(map[string]HandlerFunc)
+	if n.handlerMap == nil {
+		n.handlerMap = newHandlerMap()
 	}
-	_, ok := n.leafHandler[verb]
-	if ok && (verb != "HEAD" || !n.implicitHead) {
+	if h := n.handlerMap.Get(verb); h != nil &&
+		(verb != http.MethodHead || !n.handlerMap.implicitHead) {
 		panic(fmt.Sprintf("%s already handles %s", n.path, verb))
 	}
-	n.leafHandler[verb] = handler
-
-	if verb == "HEAD" {
-		n.implicitHead = implicitHead
+	n.handlerMap.Set(verb, handler)
+	if verb == http.MethodHead {
+		n.handlerMap.implicitHead = implicitHead
 	}
 }
 
@@ -245,11 +312,10 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 	// }
 	pathLen := len(path)
 	if pathLen == 0 {
-		if len(n.leafHandler) == 0 {
+		if n.handlerMap == nil {
 			return nil, nil, nil
-		} else {
-			return n, n.leafHandler[method], nil
 		}
+		return n, n.handlerMap.Get(method), nil
 	}
 
 	// First see if this matches a static token.
@@ -320,7 +386,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 	if catchAllChild != nil {
 		// Hit the catchall, so just assign the whole remaining path if it
 		// has a matching handler.
-		handler = catchAllChild.leafHandler[method]
+		handler = catchAllChild.handlerMap.Get(method)
 		// Found a handler, or we found a catchall node without a handler.
 		// Either way, return it since there's nothing left to check after this.
 		if handler != nil || found == nil {
@@ -342,7 +408,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 
 func (n *node) dumpTree(prefix, nodeType string) string {
 	line := fmt.Sprintf("%s %02d %s%s [%d] %v wildcards %v\n", prefix, n.priority, nodeType, n.path,
-		len(n.staticChild), n.leafHandler, n.leafWildcardNames)
+		len(n.staticChild), n.handlerMap, n.leafWildcardNames)
 	prefix += "  "
 	for _, node := range n.staticChild {
 		line += node.dumpTree(prefix, "")

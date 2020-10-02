@@ -50,11 +50,11 @@ type LookupResult struct {
 	// This will generally be `http.StatusNotFound` or `http.StatusMethodNotAllowed` for an
 	// error case. On a normal success, the statusCode will be `http.StatusOK`. A redirect code
 	// will also be used in the case
-	StatusCode  int
-	route       string
-	handler     HandlerFunc
-	params      Params
-	leafHandler map[string]HandlerFunc // Only has a value when StatusCode is MethodNotAllowed.
+	StatusCode int
+	route      string
+	handler    HandlerFunc
+	params     Params
+	handlerMap *handlerMap // Only has a value when StatusCode is MethodNotAllowed.
 }
 
 type TreeMux struct {
@@ -230,8 +230,8 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 
 		if handler == nil {
 			return LookupResult{
-				StatusCode:  http.StatusMethodNotAllowed,
-				leafHandler: n.leafHandler,
+				StatusCode: http.StatusMethodNotAllowed,
+				handlerMap: n.handlerMap,
 			}, false
 		}
 	}
@@ -295,12 +295,12 @@ func (t *TreeMux) Lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 // ServeLookupResult serves a request, given a lookup result from the Lookup function.
 func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr LookupResult) {
 	if lr.handler == nil {
-		if lr.StatusCode == http.StatusMethodNotAllowed && lr.leafHandler != nil {
+		if lr.StatusCode == http.StatusMethodNotAllowed && lr.handlerMap != nil {
 			if t.SafeAddRoutesWhileRunning {
 				t.mutex.RLock()
 			}
 
-			t.MethodNotAllowedHandler(w, req, lr.leafHandler)
+			t.MethodNotAllowedHandler(w, req, lr.handlerMap.Map())
 
 			if t.SafeAddRoutesWhileRunning {
 				t.mutex.RUnlock()
