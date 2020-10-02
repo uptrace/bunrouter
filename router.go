@@ -5,36 +5,10 @@
 package treemux
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"sync"
 )
-
-type Request struct {
-	ctx context.Context
-	*http.Request
-	route string
-
-	Params Params
-}
-
-func (req Request) Context() context.Context {
-	return req.ctx
-}
-
-func (req Request) WithContext(ctx context.Context) Request {
-	req.ctx = ctx
-	return req
-}
-
-func (req Request) Route() string {
-	return req.route
-}
-
-func (req Request) Param(key string) string {
-	return req.Params.Text(key)
-}
 
 type HandlerFunc func(http.ResponseWriter, Request) error
 

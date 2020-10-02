@@ -38,7 +38,9 @@ router.GET("/posts/:id", func(w http.ResponseWriter, req treemux.Request) error 
     if err != nil {
         return err
     }
-    fmt.Fprintf(w, "hello %d", id)
+
+    _, err = fmt.Fprintf(w, "hello %d", id)
+    return err
 })
 
 router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
