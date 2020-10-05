@@ -125,6 +125,15 @@ api.GET("/foo", fooHandler) // becomes /api/v1/foo
 api.GET("/bar", barHandler) // becomes /api/v1/bar
 ```
 
+Or using `WithGroup`:
+
+```go
+router.WithGroup("/api/v1", func(g *treemux.Group) {
+    g.GET("/foo", fooHandler) // becomes /api/v1/foo
+    g.GET("/bar", barHandler) // becomes /api/v1/bar
+})
+```
+
 ### Routing Priority
 
 The priority rules in the router are simple.
