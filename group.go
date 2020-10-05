@@ -32,7 +32,7 @@ type Group struct {
 	stack []MiddlewareFunc
 }
 
-// Lock returns a locked group that does not allow to mutate the group.
+// Lock returns a locked group that does not allow mutating the original group.
 func (g *Group) Lock() *LockedGroup {
 	return &LockedGroup{
 		group: g,

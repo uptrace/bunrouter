@@ -9,48 +9,8 @@
 - [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
 
-High-speed, flexible, tree-based HTTP router for Go. This is a fork of
-[Daniel Imfeld's httptreemux](https://github.com/dimfeld/httptreemux).
-
-## Why?
-
-This is inspired by [Julien Schmidt's httprouter](https://www.github.com/julienschmidt/httprouter),
-in that it uses a patricia tree, but the implementation is rather different. Specifically, the
-routing rules are relaxed so that a single path segment may be a wildcard in one route and a static
-token in another. This gives a nice combination of high performance with a lot of convenience in
-designing the routing patterns. In
-[benchmarks](https://github.com/julienschmidt/go-http-routing-benchmark), treemux is close to, but
-slightly slower than, httprouter.
-
-## Changes from httptreemux
-
-- Thin wrapper `treemux.Request` around `http.Request` to expose route via `Request.Route` and route
-  params via `req.Params`.
-
-- Setting a `context.Context` does not require an allocation.
-
-- Centralized error handling. Each handler returns an error which is handled by global
-  `TreeMux.ErrorHandler` func.
-
-```go
-router.GET("/posts/:id", func(w http.ResponseWriter, req treemux.Request) error {
-    id, err := req.Params.Uint64("id")
-    if err != nil {
-        return err
-    }
-
-    _, err = fmt.Fprintf(w, "hello %d", id)
-    return err
-})
-
-router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
-    _, _ = w.Write([]byte(err.Error()))
-}
-```
-
-- More efficient params encoding using a slice instead of a map.
-
-- `Group` can be locked before sharing to avoid accidental leaking of middlewares into the group.
+High-speed, flexible, tree-based HTTP router for Go. It is like Julien Schmidt's httprouter, but
+supports more flexible routing.
 
 ## Installing with Go Modules
 
@@ -60,9 +20,9 @@ ensure that you get the right version.
 ## Handler
 
 The handler is a simple function with the prototype
-`func(w http.ResponseWriter, req treemux.Request) error`. The params argument contains the
-parameters parsed from wildcards and catch-alls in the URL, as described below. This type is aliased
-as treemux.HandlerFunc.
+`func(w http.ResponseWriter, req treemux.Request) error`. A `treemux.Request` contains route name
+and parameters parsed from wildcards and catch-alls in the URL. This type is aliased as
+`treemux.HandlerFunc`.
 
 ```go
 router := treemux.New()
@@ -71,10 +31,20 @@ group := router.NewGroup("/api")
 group.GET("/v1/:id", func(w http.ResponseWriter, req treemux.Request) error {
     id := req.Param("id")
     fmt.Fprintf(w, "GET /api/v1/%s", id)
+    fmt.Fprintf(w, "route: %s", req.Route())
     return nil
 })
 
 http.ListenAndServe(":8080", router)
+```
+
+treemux supports centralized handling of errors returned by handlers:
+
+```go
+router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
+    w.WriteHeader(500)
+    _, _ = w.Write([]byte("Internal Server Error"))
+}
 ```
 
 ## Middleware
@@ -98,8 +68,8 @@ router.Use(corsMiddleware)
 
 ## Routing Rules
 
-The syntax here is also modeled after httprouter. Each variable in a path may match on one segment
-only, except for an optional catch-all variable at the end of the URL.
+The syntax here is modeled after httprouter. Each variable in a path may match on one segment only,
+except for an optional catch-all variable at the end of the URL.
 
 Some examples of valid URL patterns are:
 
@@ -279,7 +249,7 @@ Therefore, this router defaults to using the raw URL, stored in the Request.Requ
 Matching wildcards and catch-alls are then unescaped, to give the desired behavior.
 
 TL;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP
-routers may not due to [Go issue 3659](https://code.google.com/p/go/issues/detail?id=3659).
+routers may not due to [Go issue 3659](https://github.com/golang/go/issues/3659).
 
 #### Escaped Characters
 
@@ -309,10 +279,21 @@ by setting `router.SafeAddRoutesWhileRunning` to `true` to use the `RWMutex` whe
 
 ## Error Handlers
 
+### ErrorHandler
+
+To handle errors returned by handlers, use `TreeMux.ErrorHandler`:
+
+```go
+router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
+    w.WriteHeader(500)
+    _, _ = w.Write([]byte("Internal Server Error"))
+}
+```
+
 ### NotFoundHandler
 
-TreeMux.NotFoundHandler can be set to provide custom 404-error handling. The default implementation
-is Go's `http.NotFound` function.
+`TreeMux.NotFoundHandler` can be set to provide custom 404-error handling. The default
+implementation is Go's `http.NotFound` function.
 
 ### MethodNotAllowedHandler
 
@@ -335,7 +316,37 @@ URLs like `/images/` where the catch-all parameter is empty. This router does no
 catch-all parameters, but the behavior can be duplicated by adding a route without the catch-all
 (e.g. `/images/`).
 
-# Acknowledgements
+## httptreemux
 
-- This is a fork of [httptreemux](https://github.com/dimfeld/httptreemux). Most of the code is
-  written by Daniel Imfeld.
+This is a fork of [httptreemux](https://github.com/dimfeld/httptreemux). Most of the code is written
+by Daniel Imfeld.
+
+### Changes from httptreemux
+
+- Thin wrapper `treemux.Request` around `http.Request` to expose route via `Request.Route` and route
+  params via `req.Params`.
+
+- Setting a `context.Context` does not require an allocation.
+
+- Centralized error handling. Each handler returns an error which is handled by global
+  `TreeMux.ErrorHandler` func.
+
+```go
+router.GET("/posts/:id", func(w http.ResponseWriter, req treemux.Request) error {
+    id, err := req.Params.Uint64("id")
+    if err != nil {
+        return err
+    }
+
+    _, err = fmt.Fprintf(w, "hello %d", id)
+    return err
+})
+
+router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
+    _, _ = w.Write([]byte(err.Error()))
+}
+```
+
+- More efficient params encoding using a slice instead of a map.
+
+- `Group` can be locked before sharing to avoid accidental leaking of middlewares into the group.
