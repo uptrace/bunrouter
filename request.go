@@ -53,15 +53,21 @@ func (ps Params) Text(name string) string {
 }
 
 func (ps Params) Uint32(name string) (uint32, error) {
-	n, err := strconv.ParseUint(ps.Text(name), 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return uint32(n), nil
+	n, err := strconv.ParseUint(ps.Text(name), 10, 32)
+	return uint32(n), err
 }
 
 func (ps Params) Uint64(name string) (uint64, error) {
 	return strconv.ParseUint(ps.Text(name), 10, 64)
+}
+
+func (ps Params) Int32(name string) (int32, error) {
+	n, err := strconv.ParseInt(ps.Text(name), 10, 32)
+	return int32(n), err
+}
+
+func (ps Params) Int64(name string) (int64, error) {
+	return strconv.ParseInt(ps.Text(name), 10, 64)
 }
 
 func (ps Params) Map() map[string]string {
