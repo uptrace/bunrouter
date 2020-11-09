@@ -63,6 +63,7 @@ type TreeMux struct {
 
 	Group
 
+	// ErrorHandler handles errors returned from handlers.
 	ErrorHandler func(w http.ResponseWriter, req Request, err error)
 
 	// The default NotFoundHandler is http.NotFound.
@@ -355,6 +356,7 @@ func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request,
 func New() *TreeMux {
 	tm := &TreeMux{
 		root:                    &node{path: "/"},
+		ErrorHandler:            defaultErrorHandler,
 		NotFoundHandler:         http.NotFound,
 		MethodNotAllowedHandler: MethodNotAllowedHandler,
 		HeadCanUseGet:           true,

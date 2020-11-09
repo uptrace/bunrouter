@@ -25,17 +25,21 @@ and parameters parsed from wildcards and catch-alls in the URL. This type is ali
 `treemux.HandlerFunc`.
 
 ```go
+import "github.com/vmihailenco/treemux"
+
 router := treemux.New()
 
-group := router.NewGroup("/api")
-group.GET("/v1/:id", func(w http.ResponseWriter, req treemux.Request) error {
+group := router.NewGroup("/api/v1")
+
+group.GET("/:id", func(w http.ResponseWriter, req treemux.Request) error {
     id := req.Param("id")
-    fmt.Fprintf(w, "GET /api/v1/%s", id)
-    fmt.Fprintf(w, "route: %s", req.Route())
-    return nil
+    return treemux.JSON(w, treemux.H{
+        "url": fmt.Sprintf("GET /api/v1/%s", id),
+        "route": req.Route(),
+    })
 })
 
-http.ListenAndServe(":8080", router)
+log.Println(http.ListenAndServe(":8080", router))
 ```
 
 treemux supports centralized handling of errors returned by handlers:
@@ -43,11 +47,13 @@ treemux supports centralized handling of errors returned by handlers:
 ```go
 router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
     w.WriteHeader(500)
-    _, _ = w.Write([]byte("Internal Server Error"))
+    _ = treemux.JSON(w, treemux.H{
+        "message": "Internal Server Error",
+    })
 }
 ```
 
-## Middleware
+## Middlewares
 
 Middleware is a function that wraps a handler with another function:
 
