@@ -16,7 +16,7 @@ func handlerWithMiddlewares(handler HandlerFunc, stack []MiddlewareFunc) Handler
 	return handler
 }
 
-// LockedGroup is an immutable version of a Group.
+// LockedGroup is an immutable Group.
 type LockedGroup struct {
 	group *Group
 }
