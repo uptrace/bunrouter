@@ -10,10 +10,28 @@ import (
 	"github.com/vmihailenco/treemux"
 )
 
-var Middleware = (&Config{Verbose: true}).Middleware
+var Middleware = New().Middleware
 
 type Config struct {
-	Verbose bool
+	verbose bool
+}
+
+type Option func(c *Config)
+
+func Verbose(on bool) Option {
+	return func(c *Config) {
+		c.verbose = on
+	}
+}
+
+func New(opts ...Option) *Config {
+	c := &Config{
+		verbose: true,
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
@@ -27,7 +45,7 @@ func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 		err := next(rec, req)
 		dur := time.Since(now)
 
-		if !cfg.Verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
+		if !cfg.verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
 			return nil
 		}
 

@@ -24,10 +24,8 @@ import (
 )
 
 router := treemux.New()
-
-config := treemuxgzip.Config{
-    CompressionLevel: gzip.BestSpeed,
-    ContentTypes:     []string{"application/json"},
-}
-router.Use(config.Middleware)
+router.Use(treemuxgzip.New(
+    treemuxgzip.CompressionLevel(gzip.BestSpeed),
+    treemuxgzip.ContentTypes("application/json"),
+).Middleware)
 ```

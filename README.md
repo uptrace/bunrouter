@@ -8,6 +8,9 @@
 
 - [Basic example](/example/basic/)
 - [CORS example](/example/cors/)
+- [Debug logging](/extra/reqlog/)
+- [Gzip compression](/extra/treemuxgzip/)
+- [OpenTelemetry integration](/extra/treemuxotel/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
 - [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)

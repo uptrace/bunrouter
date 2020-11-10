@@ -7,7 +7,7 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-github.com/vmihailenco/httpgzip v1.2.2 h1:QC4XAb6ESGSoTJ7qicP2NAFjYHaBG90c0H+lahPnJ9w=
-github.com/vmihailenco/httpgzip v1.2.2/go.mod h1:9IiIXKlXwRA35QAkFN25kxgzXWoyUa0j/F4CwuBQ/Qg=
+github.com/vmihailenco/httpgzip v1.2.3 h1:bm+kD5064Z5sAkA8CtPr2QaeFiYdaiT3cf+MwsfAB48=
+github.com/vmihailenco/httpgzip v1.2.3/go.mod h1:9IiIXKlXwRA35QAkFN25kxgzXWoyUa0j/F4CwuBQ/Qg=
 github.com/vmihailenco/treemux v0.1.2 h1:QBCDctuOpmEFGhio8vs/aNy7HtkX4c7PRH0k1SdPcmA=
 github.com/vmihailenco/treemux v0.1.2/go.mod h1:gDm0IBsUeYmAk74cxYcxE6LT5ziQ7eofBZYkT2ycIjo=
