@@ -21,5 +21,5 @@ With options:
 import "github.com/vmihailenco/treemux/extra/reqlog"
 
 router := treemux.New()
-router.Use(reqlog.New(reqlog.Verbose(false)).Middleware)
+router.Use(reqlog.New(reqlog.WithVerbose(false)).Middleware)
 ```

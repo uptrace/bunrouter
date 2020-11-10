@@ -18,7 +18,7 @@ type Config struct {
 
 type Option func(c *Config)
 
-func Verbose(on bool) Option {
+func WithVerbose(on bool) Option {
 	return func(c *Config) {
 		c.verbose = on
 	}

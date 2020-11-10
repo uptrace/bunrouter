@@ -51,7 +51,11 @@ log.Println(http.ListenAndServe(":8080", router))
 treemux supports centralized handling of errors returned by handlers:
 
 ```go
-router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
+router := treemux.New(
+    treemux.WithErrorHandler(errorHandler),
+)
+
+func errorHandler(w http.ResponseWriter, req treemux.Request, err error) {
     w.WriteHeader(500)
     _ = treemux.JSON(w, treemux.H{
         "message": "Internal Server Error",
@@ -75,7 +79,7 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
     }
 }
 
-router.Use(corsMiddleware)
+router = treemux.New(treemux.WithMiddleware(corsMiddleware))
 ```
 
 ## Routing Rules
@@ -132,6 +136,7 @@ To use this you do:
 
 ```go
 router = treemux.New()
+
 api := router.NewGroup("/api/v1")
 api.GET("/foo", fooHandler) // becomes /api/v1/foo
 api.GET("/bar", barHandler) // becomes /api/v1/bar
@@ -144,6 +149,38 @@ router.WithGroup("/api/v1", func(g *treemux.Group) {
     g.GET("/foo", fooHandler) // becomes /api/v1/foo
     g.GET("/bar", barHandler) // becomes /api/v1/bar
 })
+```
+
+More complex example:
+
+```go
+router := treemux.New()
+
+g := router.NewGroup("/api/v1", treemux.WithMiddleware(ipRateLimitMiddleware))
+
+g.NewGroup("/users/:user_id",
+    treemux.WithMiddleware(authMiddleware),
+    treemux.WithGroup(func(g *treemux.Group) {
+        g.GET("", userHandler)
+
+        g = g.WithMiddleware(adminMiddleware)
+
+        g.PUT("", updateUserHandler)
+        g.DELETE("", deleteUserHandler)
+    }))
+
+g.NewGroup("/projects/:project_id/articles/:article_id",
+    treemux.WithMiddleware(authMiddleware),
+    treemux.WithMiddleware(projectMiddleware),
+    treemux.WithGroup(func(g *treemux.Group) {
+        g.GET("", articleHandler)
+
+        g.Use(quotaMiddleware)
+
+        g.POST("", createArticleHandler)
+        g.PUT("", updateArticleHandler)
+        g.DELETE("", deleteArticleHandler)
+    }))
 ```
 
 ### Routing Priority

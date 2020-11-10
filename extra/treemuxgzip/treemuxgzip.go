@@ -21,13 +21,13 @@ type Config struct {
 
 type Option func(c *Config)
 
-func CompressionLevel(level int) Option {
+func WithCompressionLevel(level int) Option {
 	return func(c *Config) {
 		c.compressionLevel = level
 	}
 }
 
-func ContentTypes(contentTypes ...string) Option {
+func WithContentTypes(contentTypes ...string) Option {
 	return func(c *Config) {
 		c.contentTypes = contentTypes
 	}

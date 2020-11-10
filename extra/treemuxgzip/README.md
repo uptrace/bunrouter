@@ -26,7 +26,7 @@ import (
 
 router := treemux.New()
 router.Use(treemuxgzip.New(
-    treemuxgzip.CompressionLevel(gzip.BestSpeed),
-    treemuxgzip.ContentTypes("application/json"),
+    treemuxgzip.WithCompressionLevel(gzip.BestSpeed),
+    treemuxgzip.WithContentTypes("application/json"),
 ).Middleware)
 ```
