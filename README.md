@@ -339,8 +339,7 @@ implementation is Go's `http.NotFound` function.
 
 If a pattern matches, but the pattern does not have an associated handler for the requested method,
 the router calls the MethodNotAllowedHandler. The default version of this handler just writes the
-status code `http.StatusMethodNotAllowed` and sets the response header's `Allowed` field
-appropriately.
+status code `http.StatusMethodNotAllowed`.
 
 ## Unexpected Differences from Other Routers
 
@@ -369,24 +368,8 @@ by Daniel Imfeld.
 - Setting a `context.Context` does not require an allocation.
 
 - Centralized error handling. Each handler returns an error which is handled by global
-  `TreeMux.ErrorHandler` func.
-
-```go
-router.GET("/posts/:id", func(w http.ResponseWriter, req treemux.Request) error {
-    id, err := req.Params.Uint64("id")
-    if err != nil {
-        return err
-    }
-
-    _, err = fmt.Fprintf(w, "hello %d", id)
-    return err
-})
-
-router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
-    _, _ = w.Write([]byte(err.Error()))
-}
-```
+  `WithErrorHandler` func.
 
 - More efficient params encoding using a slice instead of a map.
 
-- `Group` can be locked before sharing to avoid accidental leaking of middlewares into the group.
+- `Group` is immutable to avoid accidental leaking of middlewares into the group.
