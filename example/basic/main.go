@@ -12,7 +12,7 @@ import (
 
 func main() {
 	router := treemux.New(
-		treemux.WithMiddleware(reqlog.Middleware),
+		treemux.WithMiddleware(reqlog.NewMiddleware()),
 	)
 
 	router.GET("/", indexHandler)

@@ -11,8 +11,9 @@ To use:
 ```go
 import "github.com/vmihailenco/treemux/extra/reqlog"
 
-router := treemux.New()
-router.Use(reqlog.Middleware)
+router := treemux.New(
+    treemux.WithMiddleware(reqlog.NewMiddleware()),
+)
 ```
 
 With options:
@@ -20,6 +21,9 @@ With options:
 ```go
 import "github.com/vmihailenco/treemux/extra/reqlog"
 
-router := treemux.New()
-router.Use(reqlog.New(reqlog.WithVerbose(false)).Middleware)
+reqlogMiddleware := reqlog.NewMiddleware(reqlog.WithVerbose(false))
+
+router := treemux.New(
+    treemux.WithMiddleware(reqlogMiddleware),
+)
 ```

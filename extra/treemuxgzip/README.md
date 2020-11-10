@@ -11,9 +11,10 @@ To use:
 ```go
 import "github.com/vmihailenco/treemux/extra/treemuxgzip"
 
-router := treemux.New()
-// Compress everything with default compression level.
-router.Use(treemuxgzip.Middleware)
+router := treemux.New(
+    // Compress everything with default compression level.
+    treemux.WithMiddleware(treemuxgzip.NewMiddleware()),
+)
 ```
 
 With options:
@@ -24,9 +25,12 @@ import (
     "github.com/vmihailenco/treemux/extra/treemuxgzip"
 )
 
-router := treemux.New()
-router.Use(treemuxgzip.New(
+gzipMiddleware := treemuxgzip.NewMiddleware(
     treemuxgzip.WithCompressionLevel(gzip.BestSpeed),
     treemuxgzip.WithContentTypes("application/json"),
-).Middleware)
+)
+
+router := treemux.New(
+    treemux.WithMiddleware(gzipMiddleware),
+)
 ```

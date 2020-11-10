@@ -11,8 +11,9 @@ To use:
 ```go
 import "github.com/vmihailenco/treemux/extra/treemuxotel"
 
-router := treemux.New()
-router.Use(treemuxotel.Middleware)
+router := treemux.New(
+    treemux.WithMiddleware(treemuxotel.NewMiddleware()),
+)
 ```
 
 With options:
@@ -20,6 +21,11 @@ With options:
 ```go
 import "github.com/vmihailenco/treemux/extra/treemuxotel"
 
-router := treemux.New()
-router.Use(treemuxotel.New(treemuxotel.WithClientIP(false)).Middleware)
+otelMiddleware := treemuxotel.NewMiddleware(
+    treemuxotel.WithClientIP(false),
+)
+
+router := treemux.New(
+    treemux.WithMiddleware(otelMiddleware),
+)
 ```

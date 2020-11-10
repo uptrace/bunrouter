@@ -10,31 +10,29 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 )
 
-var Middleware = New().Middleware
-
-type Config struct {
+type config struct {
 	clientIP bool
 }
 
-type Option func(c *Config)
+type Option func(c *config)
 
 func WithClientIP(on bool) Option {
-	return func(c *Config) {
+	return func(c *config) {
 		c.clientIP = on
 	}
 }
 
-func New(opts ...Option) *Config {
-	c := &Config{
+func NewMiddleware(opts ...Option) treemux.MiddlewareFunc {
+	c := &config{
 		clientIP: true,
 	}
 	for _, opt := range opts {
 		opt(c)
 	}
-	return c
+	return c.Middleware
 }
 
-func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
+func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 	return func(w http.ResponseWriter, req treemux.Request) error {
 		span := trace.SpanFromContext(req.Context())
 		if !span.IsRecording() {
@@ -43,7 +41,7 @@ func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 
 		attrs := make([]label.KeyValue, 0, 2+len(req.Params))
 		attrs = append(attrs, semconv.HTTPRouteKey.String(req.Route()))
-		if cfg.clientIP {
+		if c.clientIP {
 			attrs = append(attrs, semconv.HTTPClientIPKey.String(remoteAddr(req.Request)))
 		}
 

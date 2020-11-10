@@ -12,42 +12,40 @@ const (
 	acceptEncoding = "Accept-Encoding"
 )
 
-var Middleware = New().Middleware
-
-type Config struct {
+type config struct {
 	compressionLevel int
 	contentTypes     []string
 }
 
-type Option func(c *Config)
+type Option func(c *config)
 
 func WithCompressionLevel(level int) Option {
-	return func(c *Config) {
+	return func(c *config) {
 		c.compressionLevel = level
 	}
 }
 
 func WithContentTypes(contentTypes ...string) Option {
-	return func(c *Config) {
+	return func(c *config) {
 		c.contentTypes = contentTypes
 	}
 }
 
-func New(opts ...Option) *Config {
-	c := &Config{}
+func NewMiddleware(opts ...Option) treemux.MiddlewareFunc {
+	c := &config{}
 	for _, opt := range opts {
 		opt(c)
 	}
-	return c
+	return c.Middleware
 }
 
-func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
+func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 	var opts []httpgzip.Option
-	if cfg.compressionLevel != 0 {
-		opts = append(opts, httpgzip.CompressionLevel(cfg.compressionLevel))
+	if c.compressionLevel != 0 {
+		opts = append(opts, httpgzip.CompressionLevel(c.compressionLevel))
 	}
-	if cfg.contentTypes != nil {
-		opts = append(opts, httpgzip.ContentTypes(cfg.contentTypes))
+	if c.contentTypes != nil {
+		opts = append(opts, httpgzip.ContentTypes(c.contentTypes))
 	}
 	hgz, err := httpgzip.New(opts...)
 	if err != nil {

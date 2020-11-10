@@ -10,31 +10,29 @@ import (
 	"github.com/vmihailenco/treemux"
 )
 
-var Middleware = New().Middleware
-
-type Config struct {
+type config struct {
 	verbose bool
 }
 
-type Option func(c *Config)
+type Option func(c *config)
 
 func WithVerbose(on bool) Option {
-	return func(c *Config) {
+	return func(c *config) {
 		c.verbose = on
 	}
 }
 
-func New(opts ...Option) *Config {
-	c := &Config{
+func NewMiddleware(opts ...Option) treemux.MiddlewareFunc {
+	c := &config{
 		verbose: true,
 	}
 	for _, opt := range opts {
 		opt(c)
 	}
-	return c
+	return c.Middleware
 }
 
-func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
+func (cfg *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 	return func(w http.ResponseWriter, req treemux.Request) error {
 		rec := statusCodeRecorder{
 			ResponseWriter: w,
