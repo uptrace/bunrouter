@@ -1,9 +1,7 @@
 package treemux
 
 import (
-	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -611,44 +609,6 @@ func TestPathSource(t *testing.T) {
 	if called != "bananas" {
 		t.Error("Using RequestURI, expected bananas but saw", called)
 	}
-}
-
-// Create a bunch of paths for testing.
-func createRoutes(numRoutes int) []string {
-	letters := "abcdefghijhklmnopqrstuvwxyz"
-	wordMap := map[string]bool{}
-	for i := 0; i < numRoutes/2; i += 1 {
-		length := (i % 4) + 4
-
-		wordBytes := make([]byte, length)
-		for charIndex := 0; charIndex < length; charIndex += 1 {
-			wordBytes[charIndex] = letters[(i*3+charIndex*4)%len(letters)]
-		}
-		wordMap[string(wordBytes)] = true
-	}
-
-	words := make([]string, 0, len(wordMap))
-	for word := range wordMap {
-		words = append(words, word)
-	}
-
-	routes := make([]string, 0, numRoutes)
-	createdRoutes := map[string]bool{}
-	rand.Seed(0)
-	for len(routes) < numRoutes {
-		first := words[rand.Int()%len(words)]
-		second := words[rand.Int()%len(words)]
-		third := words[rand.Int()%len(words)]
-		route := fmt.Sprintf("/%s/%s/%s", first, second, third)
-
-		if createdRoutes[route] {
-			continue
-		}
-		createdRoutes[route] = true
-		routes = append(routes, route)
-	}
-
-	return routes
 }
 
 func TestLookup(t *testing.T) {
