@@ -24,16 +24,16 @@ type Option func(*config)
 
 // WithErrorHandler handles errors returned from handlers.
 func WithErrorHandler(handler func(w http.ResponseWriter, req Request, err error)) Option {
-	return func(t *config) {
-		t.errorHandler = handler
+	return func(c *config) {
+		c.errorHandler = handler
 	}
 }
 
 // WithNotFoundHandler is called when there is no a matching pattern.
 // The default NotFoundHandler is http.NotFound.
 func WithNotFoundHandler(handler HandlerFunc) Option {
-	return func(t *config) {
-		t.notFoundHandler = handler
+	return func(c *config) {
+		c.notFoundHandler = handlerWithMiddlewares(handler, c.group.stack)
 	}
 }
 
@@ -43,7 +43,7 @@ func WithNotFoundHandler(handler HandlerFunc) Option {
 // the required Allowed header.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 	return func(c *config) {
-		c.methodNotAllowedHandler = handler
+		c.methodNotAllowedHandler = handlerWithMiddlewares(handler, c.group.stack)
 	}
 }
 
@@ -51,8 +51,8 @@ func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 // HEAD requests if no explicit HEAD handler has been added for the
 // matching pattern. This is true by default.
 func WithHeadCanUseGet(on bool) Option {
-	return func(t *config) {
-		t.headCanUseGet = on
+	return func(c *config) {
+		c.headCanUseGet = on
 	}
 }
 
@@ -60,8 +60,8 @@ func WithHeadCanUseGet(on bool) Option {
 // if no handler is registered for it, using CleanPath from github.com/dimfeld/httppath.
 // This is true by default.
 func WithRedirectCleanPath(on bool) Option {
-	return func(t *config) {
-		t.redirectCleanPath = on
+	return func(c *config) {
+		c.redirectCleanPath = on
 	}
 }
 

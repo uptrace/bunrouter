@@ -110,6 +110,9 @@ func (g *Group) WithGroup(path string, fn func(g *Group)) {
 // 	GET /posts/ will match normally.
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
+	g.mux.mu.Lock()
+	defer g.mux.mu.Unlock()
+
 	if len(g.stack) > 0 {
 		handler = handlerWithMiddlewares(handler, g.stack)
 	}

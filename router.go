@@ -7,6 +7,7 @@ package treemux
 import (
 	"net/http"
 	"net/url"
+	"sync"
 )
 
 type HandlerFunc func(http.ResponseWriter, Request) error
@@ -59,6 +60,7 @@ type TreeMux struct {
 	config
 	Group
 
+	mu   sync.Mutex
 	root *node
 }
 
@@ -66,14 +68,17 @@ func New(opts ...Option) *TreeMux {
 	tm := &TreeMux{
 		config: config{
 			errorHandler:            errorHandler,
-			notFoundHandler:         notFoundHandler,
-			methodNotAllowedHandler: methodNotAllowedHandler,
-			headCanUseGet:           true,
-			redirectTrailingSlash:   true,
-			redirectCleanPath:       true,
-			redirectBehavior:        Redirect301,
-			redirectMethodBehavior:  make(map[string]RedirectBehavior),
-			pathSource:              RequestURI,
+			notFoundHandler:         nil,
+			methodNotAllowedHandler: nil,
+
+			headCanUseGet:         true,
+			redirectTrailingSlash: true,
+			redirectCleanPath:     true,
+
+			redirectBehavior:       Redirect301,
+			redirectMethodBehavior: make(map[string]RedirectBehavior),
+
+			pathSource: RequestURI,
 		},
 
 		root: &node{path: "/"},
@@ -84,6 +89,13 @@ func New(opts ...Option) *TreeMux {
 
 	for _, opt := range opts {
 		opt(&tm.config)
+	}
+
+	if tm.notFoundHandler == nil {
+		tm.notFoundHandler = handlerWithMiddlewares(notFoundHandler, tm.Group.stack)
+	}
+	if tm.methodNotAllowedHandler == nil {
+		tm.methodNotAllowedHandler = handlerWithMiddlewares(methodNotAllowedHandler, tm.Group.stack)
 	}
 
 	return tm
