@@ -8,8 +8,9 @@ import (
 type H map[string]interface{}
 
 // JSON marshals the value as JSON and writes it to the response writer.
+//
 // Don't hesitate to copy-paste this function to your project and customize it as necessary.
-func JSON(w http.ResponseWriter, value H) error {
+func JSON(w http.ResponseWriter, value interface{}) error {
 	if value == nil {
 		return nil
 	}
