@@ -35,7 +35,7 @@ func (cfg *Config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 			"[treemux]",
 			now.Format(" 15:04:05.000 "),
 			formatStatus(rec.Code),
-			fmt.Sprintf(" %10s ", dur),
+			fmt.Sprintf(" %10s ", dur.Round(time.Microsecond)),
 			formatMethod(req.Method),
 			req.URL.String(),
 		}
