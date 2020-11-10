@@ -12,6 +12,7 @@ To use:
 import "github.com/vmihailenco/treemux/extra/treemuxgzip"
 
 router := treemux.New()
+// Compress everything with default compression level.
 router.Use(treemuxgzip.Middleware)
 ```
 
