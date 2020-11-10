@@ -309,13 +309,6 @@ Matching wildcards and catch-alls are then unescaped, to give the desired behavi
 TL;DR: If a requested URL contains a %2f, this router will still do the right thing. Some Go HTTP
 routers may not due to [Go issue 3659](https://github.com/golang/go/issues/3659).
 
-#### Escaped Characters
-
-As mentioned above, characters in the URL are not unescaped when using RequestURI to determine the
-matched route. If this is a problem for you and you are unable to switch to URL.Path for the above
-reasons, you may set `router.EscapeAddedRoutes` to `true`. This option will run each added route
-through the `URL.EscapedPath` function, and add an additional route if the escaped version differs.
-
 #### http Package Utility Functions
 
 Although using RequestURI avoids the issue described above, certain utility functions such as
@@ -323,17 +316,6 @@ Although using RequestURI avoids the issue described above, certain utility func
 make its decision. If you are using some of these functions, set the router's `PathSource` member to
 `URLPath`. This will give up the proper handling of escaped slashes described above, while allowing
 the router to work properly with these utility functions.
-
-## Concurrency
-
-The router contains an `RWMutex` that arbitrates access to the tree. This allows routes to be safely
-added from multiple goroutines at once.
-
-No concurrency controls are needed when only reading from the tree, so the default behavior is to
-not use the `RWMutex` when serving a request. This avoids a theoretical slowdown under high-usage
-scenarios from competing atomic integer operations inside the `RWMutex`. If your application adds
-routes to the router after it has begun serving requests, you should avoid potential race conditions
-by setting `router.SafeAddRoutesWhileRunning` to `true` to use the `RWMutex` when serving requests.
 
 ## Error Handlers
 
