@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func simpleHandler(w http.ResponseWriter, r Request) error {
@@ -734,12 +735,6 @@ func TestMiddleware(t *testing.T) {
 		execLog = append(execLog, s)
 	}
 
-	assertExecLog := func(wanted []string) {
-		if !reflect.DeepEqual(execLog, wanted) {
-			t.Fatalf("got %v, wanted %v", execLog, wanted)
-		}
-	}
-
 	newHandler := func(name string) HandlerFunc {
 		return func(w http.ResponseWriter, r Request) error {
 			record(name)
@@ -766,14 +761,15 @@ func TestMiddleware(t *testing.T) {
 		req, _ := newRequest("GET", "/h1", nil)
 		router.ServeHTTP(w, req)
 
-		assertExecLog([]string{"h1"})
+		require.Equal(t, []string{"h1"}, execLog)
 	}
+
+	g := router.NewGroup("", WithMiddleware(newMiddleware("m1")))
+	g.GET("/h2", newHandler("h2"))
 
 	// Test route with and without middleware.
 	{
 		execLog = nil
-		router.Use(newMiddleware("m1"))
-		router.GET("/h2", newHandler("h2"))
 
 		req, _ := newRequest("GET", "/h1", nil)
 		router.ServeHTTP(w, req)
@@ -781,14 +777,13 @@ func TestMiddleware(t *testing.T) {
 		req, _ = newRequest("GET", "/h2", nil)
 		router.ServeHTTP(w, req)
 
-		assertExecLog([]string{"h1", "m1", "h2"})
+		require.Equal(t, []string{"h1", "m1", "h2"}, execLog)
 	}
 
 	// NewGroup inherits middlewares but has its own stack.
 	{
 		execLog = nil
-		g := router.NewGroup("/g1")
-		g.Use(newMiddleware("m2"))
+		g := g.NewGroup("/g1", WithMiddleware(newMiddleware("m2")))
 		g.GET("/h3", newHandler("h3"))
 
 		req, _ := newRequest("GET", "/h2", nil)
@@ -797,14 +792,13 @@ func TestMiddleware(t *testing.T) {
 		req, _ = newRequest("GET", "/g1/h3", nil)
 		router.ServeHTTP(w, req)
 
-		assertExecLog([]string{"m1", "h2", "m1", "m2", "h3"})
+		require.Equal(t, []string{"m1", "h2", "m1", "m2", "h3"}, execLog)
 	}
 
 	// Middleware can modify params.
 	{
 		execLog = nil
-		g := router.NewGroup("/g2")
-		g.Use(func(next HandlerFunc) HandlerFunc {
+		g := g.NewGroup("/g2", WithMiddleware(func(next HandlerFunc) HandlerFunc {
 			return func(w http.ResponseWriter, r Request) error {
 				record("m4")
 				r.Params = append(r.Params, Param{
@@ -813,7 +807,7 @@ func TestMiddleware(t *testing.T) {
 				})
 				return next(w, r)
 			}
-		})
+		}))
 		g.GET("/h6", func(w http.ResponseWriter, r Request) error {
 			record("h6")
 			if v := r.Params.Text("foo"); v != "bar" {
@@ -825,26 +819,26 @@ func TestMiddleware(t *testing.T) {
 		req, _ := newRequest("GET", "/g2/h6", nil)
 		router.ServeHTTP(w, req)
 
-		assertExecLog([]string{"m1", "m4", "h6"})
+		require.Equal(t, []string{"m1", "m4", "h6"}, execLog)
 	}
 
 	// Middleware can serve request without calling next.
 	{
 		execLog = nil
-		router.Use(func(_ HandlerFunc) HandlerFunc {
+		g := g.NewGroup("", WithMiddleware(func(_ HandlerFunc) HandlerFunc {
 			return func(w http.ResponseWriter, r Request) error {
 				record("m3")
 				w.WriteHeader(http.StatusBadRequest)
 				_, err := w.Write([]byte("pong"))
 				return err
 			}
-		})
-		router.GET("/h5", newHandler("h5"))
+		}))
+		g.GET("/h5", newHandler("h5"))
 
 		req, _ := newRequest("GET", "/h5", nil)
 		router.ServeHTTP(w, req)
 
-		assertExecLog([]string{"m1", "m3"})
+		require.Equal(t, []string{"m1", "m3"}, execLog)
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("got %d, wanted %d", w.Code, http.StatusBadRequest)
 		}

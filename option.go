@@ -2,11 +2,29 @@ package treemux
 
 import "net/http"
 
-type Option func(*TreeMux)
+type config struct {
+	errorHandler            func(w http.ResponseWriter, req Request, err error)
+	notFoundHandler         HandlerFunc
+	methodNotAllowedHandler HandlerFunc
+
+	headCanUseGet               bool
+	redirectCleanPath           bool
+	redirectTrailingSlash       bool
+	removeCatchAllTrailingSlash bool
+
+	redirectBehavior       RedirectBehavior
+	redirectMethodBehavior map[string]RedirectBehavior
+
+	pathSource PathSource
+
+	group *Group
+}
+
+type Option func(*config)
 
 // WithErrorHandler handles errors returned from handlers.
 func WithErrorHandler(handler func(w http.ResponseWriter, req Request, err error)) Option {
-	return func(t *TreeMux) {
+	return func(t *config) {
 		t.errorHandler = handler
 	}
 }
@@ -14,7 +32,7 @@ func WithErrorHandler(handler func(w http.ResponseWriter, req Request, err error
 // WithNotFoundHandler is called when there is no a matching pattern.
 // The default NotFoundHandler is http.NotFound.
 func WithNotFoundHandler(handler HandlerFunc) Option {
-	return func(t *TreeMux) {
+	return func(t *config) {
 		t.notFoundHandler = handler
 	}
 }
@@ -24,7 +42,7 @@ func WithNotFoundHandler(handler HandlerFunc) Option {
 // handler just writes the status code http.StatusMethodNotAllowed and adds
 // the required Allowed header.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
-	return func(c *TreeMux) {
+	return func(c *config) {
 		c.methodNotAllowedHandler = handler
 	}
 }
@@ -33,7 +51,7 @@ func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 // HEAD requests if no explicit HEAD handler has been added for the
 // matching pattern. This is true by default.
 func WithHeadCanUseGet(on bool) Option {
-	return func(t *TreeMux) {
+	return func(t *config) {
 		t.headCanUseGet = on
 	}
 }
@@ -42,7 +60,7 @@ func WithHeadCanUseGet(on bool) Option {
 // if no handler is registered for it, using CleanPath from github.com/dimfeld/httppath.
 // This is true by default.
 func WithRedirectCleanPath(on bool) Option {
-	return func(t *TreeMux) {
+	return func(t *config) {
 		t.redirectCleanPath = on
 	}
 }
@@ -51,7 +69,7 @@ func WithRedirectCleanPath(on bool) Option {
 // for the current request path but a handler for the path with or without the trailing
 // slash exists. This is true by default.
 func WithRedirectTrailingSlash(on bool) Option {
-	return func(c *TreeMux) {
+	return func(c *config) {
 		c.redirectTrailingSlash = on
 	}
 }
@@ -59,24 +77,24 @@ func WithRedirectTrailingSlash(on bool) Option {
 // WithRemoveCatchAllTrailingSlash removes the trailing slash when a catch-all pattern
 // is matched, if set to true. By default, catch-all paths are never redirected.
 func WithRemoveCatchAllTrailingSlash(on bool) Option {
-	return func(t *TreeMux) {
-		t.removeCatchAllTrailingSlash = on
+	return func(c *config) {
+		c.removeCatchAllTrailingSlash = on
 	}
 }
 
 // WithRedirectBehavior sets the default redirect behavior when RedirectTrailingSlash or
 // RedirectCleanPath are true. The default value is Redirect301.
 func WithRedirectBehavior(value RedirectBehavior) Option {
-	return func(t *TreeMux) {
-		t.redirectBehavior = value
+	return func(c *config) {
+		c.redirectBehavior = value
 	}
 }
 
 // WithRedirectMethodBehavior overrides the default behavior for a particular HTTP method.
 // The key is the method name, and the value is the behavior to use for that method.
 func WithRedirectMethodBehavior(value map[string]RedirectBehavior) Option {
-	return func(t *TreeMux) {
-		t.redirectMethodBehavior = value
+	return func(c *config) {
+		c.redirectMethodBehavior = value
 	}
 }
 
@@ -89,7 +107,36 @@ func WithRedirectMethodBehavior(value map[string]RedirectBehavior) Option {
 // better compatibility with some utility functions in the http
 // library that modify the Request before passing it to the router.
 func WithPathSource(value PathSource) Option {
-	return func(t *TreeMux) {
-		t.pathSource = value
+	return func(c *config) {
+		c.pathSource = value
+	}
+}
+
+// WithMiddleware adds a middleware handler to the Group's middleware stack.
+func WithMiddleware(fn MiddlewareFunc) Option {
+	return func(c *config) {
+		c.group.stack = append(c.group.stack, fn)
+	}
+}
+
+// WithHandler is like WithMiddleware, but it can't modify the request.
+func WithHandler(fn HandlerFunc) Option {
+	return func(c *config) {
+		middleware := func(next HandlerFunc) HandlerFunc {
+			return func(w http.ResponseWriter, req Request) error {
+				if err := fn(w, req); err != nil {
+					return err
+				}
+				return next(w, req)
+			}
+		}
+		c.group.stack = append(c.group.stack, middleware)
+	}
+}
+
+// WithGroup calls the fn with the current Group.
+func WithGroup(fn func(g *Group)) Option {
+	return func(c *config) {
+		fn(c.group)
 	}
 }

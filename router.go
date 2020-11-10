@@ -56,43 +56,34 @@ type LookupResult struct {
 }
 
 type TreeMux struct {
+	config
 	Group
-
-	errorHandler            func(w http.ResponseWriter, req Request, err error)
-	notFoundHandler         HandlerFunc
-	methodNotAllowedHandler HandlerFunc
-
-	headCanUseGet               bool
-	redirectCleanPath           bool
-	redirectTrailingSlash       bool
-	removeCatchAllTrailingSlash bool
-
-	redirectBehavior       RedirectBehavior
-	redirectMethodBehavior map[string]RedirectBehavior
-
-	pathSource PathSource
 
 	root *node
 }
 
 func New(opts ...Option) *TreeMux {
 	tm := &TreeMux{
-		errorHandler:            errorHandler,
-		notFoundHandler:         notFoundHandler,
-		methodNotAllowedHandler: methodNotAllowedHandler,
-		headCanUseGet:           true,
-		redirectTrailingSlash:   true,
-		redirectCleanPath:       true,
-		redirectBehavior:        Redirect301,
-		redirectMethodBehavior:  make(map[string]RedirectBehavior),
-		pathSource:              RequestURI,
+		config: config{
+			errorHandler:            errorHandler,
+			notFoundHandler:         notFoundHandler,
+			methodNotAllowedHandler: methodNotAllowedHandler,
+			headCanUseGet:           true,
+			redirectTrailingSlash:   true,
+			redirectCleanPath:       true,
+			redirectBehavior:        Redirect301,
+			redirectMethodBehavior:  make(map[string]RedirectBehavior),
+			pathSource:              RequestURI,
+		},
 
 		root: &node{path: "/"},
 	}
+
 	tm.Group.mux = tm
+	tm.config.group = &tm.Group
 
 	for _, opt := range opts {
-		opt(tm)
+		opt(&tm.config)
 	}
 
 	return tm

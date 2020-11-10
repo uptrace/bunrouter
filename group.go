@@ -3,7 +3,6 @@ package treemux
 import (
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
@@ -15,58 +14,37 @@ func handlerWithMiddlewares(handler HandlerFunc, stack []MiddlewareFunc) Handler
 	return handler
 }
 
-// LockedGroup is an immutable Group.
-type LockedGroup struct {
-	group *Group
-}
-
-func (g *LockedGroup) NewGroup(path string) *Group {
-	return g.group.NewGroup(path)
-}
-
 // Group is a group of routes and middlewares.
 type Group struct {
-	path  string
 	mux   *TreeMux
+	path  string
 	stack []MiddlewareFunc
 }
 
-// Lock returns a locked group that does not allow mutating the original group.
-func (g *Group) Lock() *LockedGroup {
-	return &LockedGroup{
-		group: g,
-	}
-}
-
 // NewGroup adds a sub-group to this group.
-func (g *Group) NewGroup(path string) *Group {
-	return &Group{
-		path:  joinPath(g.path, path),
+func (g *Group) NewGroup(path string, opts ...Option) *Group {
+	group := &Group{
 		mux:   g.mux,
+		path:  joinPath(g.path, path),
 		stack: g.stack[:len(g.stack):len(g.stack)],
 	}
+
+	cfg := &config{
+		group: group,
+	}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	return group
+}
+
+func (g *Group) WithMiddleware(middleware MiddlewareFunc) *Group {
+	return g.NewGroup("", WithMiddleware(middleware))
 }
 
 func (g *Group) WithGroup(path string, fn func(g *Group)) {
 	fn(g.NewGroup(path))
-}
-
-// Use appends a middleware handler to the Group's middleware stack.
-func (g *Group) Use(fn MiddlewareFunc) {
-	g.stack = append(g.stack, fn)
-}
-
-// UseHandler is like Use, but handler can't modify the request.
-func (g *Group) UseHandler(fn HandlerFunc) {
-	middleware := func(next HandlerFunc) HandlerFunc {
-		return func(w http.ResponseWriter, req Request) error {
-			if err := fn(w, req); err != nil {
-				return err
-			}
-			return next(w, req)
-		}
-	}
-	g.stack = append(g.stack, middleware)
 }
 
 // Path elements starting with : indicate a wildcard in the path. A wildcard will only match on a
@@ -220,25 +198,4 @@ func checkPath(path string) {
 	if len(path) > 0 && path[0] != '/' {
 		panic(fmt.Sprintf("Path %s must start with slash", path))
 	}
-}
-
-func unescapeSpecial(s string) string {
-	// Look for sequences of \*, *, and \: that were escaped, and undo some of that escaping.
-
-	// Unescape /* since it references a wildcard token.
-	s = strings.Replace(s, "/%2A", "/*", -1)
-
-	// Unescape /\: since it references a literal colon
-	s = strings.Replace(s, "/%5C:", "/\\:", -1)
-
-	// Replace escaped /\\: with /\:
-	s = strings.Replace(s, "/%5C%5C:", "/%5C:", -1)
-
-	// Replace escaped /\* with /*
-	s = strings.Replace(s, "/%5C%2A", "/%2A", -1)
-
-	// Replace escaped /\\* with /\*
-	s = strings.Replace(s, "/%5C%5C%2A", "/%5C%2A", -1)
-
-	return s
 }
