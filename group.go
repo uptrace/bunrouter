@@ -52,7 +52,7 @@ func (g *Group) WithGroup(path string, fn func(g *Group)) {
 	fn(g.NewGroup(path))
 }
 
-// Use appends a middleware handler to the Group middleware stack.
+// Use appends a middleware handler to the Group's middleware stack.
 func (g *Group) Use(fn MiddlewareFunc) {
 	g.stack = append(g.stack, fn)
 }

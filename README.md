@@ -6,6 +6,8 @@
 
 > :heart: [**Uptrace.dev** - distributed traces, logs, and errors in one place](https://uptrace.dev)
 
+- [Basic example](/example/basic/)
+- [CORS example](/example/cors/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
 - [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
