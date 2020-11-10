@@ -7,7 +7,6 @@ package treemux
 import (
 	"net/http"
 	"net/url"
-	"sync"
 )
 
 type HandlerFunc func(http.ResponseWriter, Request) error
@@ -54,80 +53,49 @@ type LookupResult struct {
 	route      string
 	handler    HandlerFunc
 	params     Params
-	handlerMap *handlerMap // Only has a value when StatusCode is MethodNotAllowed.
 }
 
 type TreeMux struct {
-	root  *node
-	mutex sync.RWMutex
-
 	Group
 
-	// ErrorHandler handles errors returned from handlers.
-	ErrorHandler func(w http.ResponseWriter, req Request, err error)
+	errorHandler            func(w http.ResponseWriter, req Request, err error)
+	notFoundHandler         HandlerFunc
+	methodNotAllowedHandler HandlerFunc
 
-	// The default NotFoundHandler is http.NotFound.
-	NotFoundHandler func(w http.ResponseWriter, r *http.Request)
+	headCanUseGet               bool
+	redirectCleanPath           bool
+	redirectTrailingSlash       bool
+	removeCatchAllTrailingSlash bool
 
-	// Any OPTIONS request that matches a path without its own OPTIONS handler will use this handler,
-	// if set, instead of calling MethodNotAllowedHandler.
-	OptionsHandler HandlerFunc
+	redirectBehavior       RedirectBehavior
+	redirectMethodBehavior map[string]RedirectBehavior
 
-	// MethodNotAllowedHandler is called when a pattern matches, but that
-	// pattern does not have a handler for the requested method. The default
-	// handler just writes the status code http.StatusMethodNotAllowed and adds
-	// the required Allowed header.
-	// The methods parameter contains the map of each method to the corresponding
-	// handler function.
-	MethodNotAllowedHandler func(w http.ResponseWriter, r *http.Request,
-		methods map[string]HandlerFunc)
+	pathSource PathSource
 
-	// HeadCanUseGet allows the router to use the GET handler to respond to
-	// HEAD requests if no explicit HEAD handler has been added for the
-	// matching pattern. This is true by default.
-	HeadCanUseGet bool
+	root *node
+}
 
-	// RedirectCleanPath allows the router to try clean the current request path,
-	// if no handler is registered for it, using CleanPath from github.com/dimfeld/httppath.
-	// This is true by default.
-	RedirectCleanPath bool
+func New(opts ...Option) *TreeMux {
+	tm := &TreeMux{
+		errorHandler:            errorHandler,
+		notFoundHandler:         notFoundHandler,
+		methodNotAllowedHandler: methodNotAllowedHandler,
+		headCanUseGet:           true,
+		redirectTrailingSlash:   true,
+		redirectCleanPath:       true,
+		redirectBehavior:        Redirect301,
+		redirectMethodBehavior:  make(map[string]RedirectBehavior),
+		pathSource:              RequestURI,
 
-	// RedirectTrailingSlash enables automatic redirection in case router doesn't find a matching route
-	// for the current request path but a handler for the path with or without the trailing
-	// slash exists. This is true by default.
-	RedirectTrailingSlash bool
+		root: &node{path: "/"},
+	}
+	tm.Group.mux = tm
 
-	// RemoveCatchAllTrailingSlash removes the trailing slash when a catch-all pattern
-	// is matched, if set to true. By default, catch-all paths are never redirected.
-	RemoveCatchAllTrailingSlash bool
+	for _, opt := range opts {
+		opt(tm)
+	}
 
-	// RedirectBehavior sets the default redirect behavior when RedirectTrailingSlash or
-	// RedirectCleanPath are true. The default value is Redirect301.
-	RedirectBehavior RedirectBehavior
-
-	// RedirectMethodBehavior overrides the default behavior for a particular HTTP method.
-	// The key is the method name, and the value is the behavior to use for that method.
-	RedirectMethodBehavior map[string]RedirectBehavior
-
-	// PathSource determines from where the router gets its path to search.
-	// By default it pulls the data from the RequestURI member, but this can
-	// be overridden to use URL.Path instead.
-	//
-	// There is a small tradeoff here. Using RequestURI allows the router to handle
-	// encoded slashes (i.e. %2f) in the URL properly, while URL.Path provides
-	// better compatibility with some utility functions in the http
-	// library that modify the Request before passing it to the router.
-	PathSource PathSource
-
-	// EscapeAddedRoutes controls URI escaping behavior when adding a route to the tree.
-	// If set to true, the router will add both the route as originally passed, and
-	// a version passed through URL.EscapedPath. This behavior is disabled by default.
-	EscapeAddedRoutes bool
-
-	// SafeAddRoutesWhileRunning tells the router to protect all accesses to the tree with an RWMutex. This is only needed
-	// if you are going to add routes after the router has already begun serving requests. There is a potential
-	// performance penalty at high load.
-	SafeAddRoutesWhileRunning bool
+	return tm
 }
 
 // Dump returns a text representation of the routing tree.
@@ -138,8 +106,8 @@ func (t *TreeMux) Dump() string {
 func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 	var behavior RedirectBehavior
 	var ok bool
-	if behavior, ok = t.RedirectMethodBehavior[method]; !ok {
-		behavior = t.RedirectBehavior
+	if behavior, ok = t.redirectMethodBehavior[method]; !ok {
+		behavior = t.redirectBehavior
 	}
 	switch behavior {
 	case Redirect301:
@@ -159,25 +127,21 @@ func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
 
 func redirectHandler(newPath string, statusCode int) HandlerFunc {
 	return func(w http.ResponseWriter, req Request) error {
-		redirect(w, req, newPath, statusCode)
+		newURL := url.URL{
+			Path:     newPath,
+			RawQuery: req.URL.RawQuery,
+			Fragment: req.URL.Fragment,
+		}
+		http.Redirect(w, req.Request, newURL.String(), statusCode)
 		return nil
 	}
-}
-
-func redirect(w http.ResponseWriter, req Request, newPath string, statusCode int) {
-	newURL := url.URL{
-		Path:     newPath,
-		RawQuery: req.URL.RawQuery,
-		Fragment: req.URL.Fragment,
-	}
-	http.Redirect(w, req.Request, newURL.String(), statusCode)
 }
 
 func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, bool) {
 	path := r.RequestURI
 	unescapedPath := r.URL.Path
 	pathLen := len(path)
-	if pathLen > 0 && t.PathSource == RequestURI {
+	if pathLen > 0 && t.pathSource == RequestURI {
 		rawQueryLen := len(r.URL.RawQuery)
 
 		if rawQueryLen != 0 || path[pathLen-1] == '?' {
@@ -193,14 +157,14 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 	}
 
 	trailingSlash := path[pathLen-1] == '/' && pathLen > 1
-	if trailingSlash && t.RedirectTrailingSlash {
+	if trailingSlash && t.redirectTrailingSlash {
 		path = path[:pathLen-1]
 		unescapedPath = unescapedPath[:len(unescapedPath)-1]
 	}
 
 	n, handler, params := t.root.search(r.Method, path[1:])
 	if n == nil {
-		if t.RedirectCleanPath {
+		if t.redirectCleanPath {
 			// Path was not found. Try cleaning it up and search again.
 			// TODO Test this
 			cleanPath := Clean(unescapedPath)
@@ -225,20 +189,13 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 	}
 
 	if handler == nil {
-		if r.Method == "OPTIONS" && t.OptionsHandler != nil {
-			handler = t.OptionsHandler
-		}
-
-		if handler == nil {
-			return LookupResult{
-				StatusCode: http.StatusMethodNotAllowed,
-				handlerMap: n.handlerMap,
-			}, false
-		}
+		return LookupResult{
+			StatusCode: http.StatusMethodNotAllowed,
+		}, false
 	}
 
-	if !n.isCatchAll || t.RemoveCatchAllTrailingSlash {
-		if trailingSlash != n.addSlash && t.RedirectTrailingSlash {
+	if !n.isCatchAll || t.removeCatchAllTrailingSlash {
+		if trailingSlash != n.addSlash && t.redirectTrailingSlash {
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				var h HandlerFunc
 				if n.addSlash {
@@ -278,39 +235,19 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 // Regardless of the returned boolean's value, the LookupResult may be passed to ServeLookupResult
 // to be served appropriately.
 func (t *TreeMux) Lookup(w http.ResponseWriter, r *http.Request) (LookupResult, bool) {
-	if t.SafeAddRoutesWhileRunning {
-		// In concurrency safe mode, we acquire a read lock on the mutex for any access.
-		// This is optional to avoid potential performance loss in high-usage scenarios.
-		t.mutex.RLock()
-	}
-
-	result, found := t.lookup(w, r)
-
-	if t.SafeAddRoutesWhileRunning {
-		t.mutex.RUnlock()
-	}
-
-	return result, found
+	return t.lookup(w, r)
 }
 
 // ServeLookupResult serves a request, given a lookup result from the Lookup function.
 func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr LookupResult) {
-	if lr.handler == nil {
-		if lr.StatusCode == http.StatusMethodNotAllowed && lr.handlerMap != nil {
-			if t.SafeAddRoutesWhileRunning {
-				t.mutex.RLock()
-			}
+	handler := lr.handler
 
-			t.MethodNotAllowedHandler(w, req, lr.handlerMap.Map())
-
-			if t.SafeAddRoutesWhileRunning {
-				t.mutex.RUnlock()
-			}
-			return
+	if handler == nil {
+		if lr.StatusCode == http.StatusMethodNotAllowed {
+			handler = t.methodNotAllowedHandler
+		} else {
+			handler = t.notFoundHandler
 		}
-
-		t.NotFoundHandler(w, req)
-		return
 	}
 
 	reqWrapper := Request{
@@ -319,54 +256,33 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 		route:   lr.route,
 		Params:  lr.params,
 	}
-	if err := lr.handler(w, reqWrapper); err != nil {
-		t.ErrorHandler(w, reqWrapper, err)
+	if err := handler(w, reqWrapper); err != nil {
+		t.errorHandler(w, reqWrapper, err)
 	}
 }
 
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if t.SafeAddRoutesWhileRunning {
-		// In concurrency safe mode, we acquire a read lock on the mutex for any access.
-		// This is optional to avoid potential performance loss in high-usage scenarios.
-		t.mutex.RLock()
-	}
-
 	result, _ := t.lookup(w, r)
-
-	if t.SafeAddRoutesWhileRunning {
-		t.mutex.RUnlock()
-	}
-
 	t.ServeLookupResult(w, r, result)
 }
 
-// MethodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,
+func errorHandler(w http.ResponseWriter, req Request, err error) {
+	w.WriteHeader(http.StatusBadRequest)
+	_ = JSON(w, H{
+		"message": err.Error(),
+	})
+}
+
+// methodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,
 // which is called for patterns that match, but do not have a handler installed for the
 // requested method. It simply writes the status code http.StatusMethodNotAllowed and fills
 // in the `Allow` header value appropriately.
-func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request,
-	methods map[string]HandlerFunc) {
-	for m := range methods {
-		w.Header().Add("Allow", m)
-	}
-
+func methodNotAllowedHandler(w http.ResponseWriter, r Request) error {
 	w.WriteHeader(http.StatusMethodNotAllowed)
+	return nil
 }
 
-func New() *TreeMux {
-	tm := &TreeMux{
-		root:                    &node{path: "/"},
-		ErrorHandler:            defaultErrorHandler,
-		NotFoundHandler:         http.NotFound,
-		MethodNotAllowedHandler: MethodNotAllowedHandler,
-		HeadCanUseGet:           true,
-		RedirectTrailingSlash:   true,
-		RedirectCleanPath:       true,
-		RedirectBehavior:        Redirect301,
-		RedirectMethodBehavior:  make(map[string]RedirectBehavior),
-		PathSource:              RequestURI,
-		EscapeAddedRoutes:       false,
-	}
-	tm.Group.mux = tm
-	return tm
+func notFoundHandler(w http.ResponseWriter, req Request) error {
+	http.NotFound(w, req.Request)
+	return nil
 }

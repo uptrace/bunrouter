@@ -24,10 +24,3 @@ func JSON(w http.ResponseWriter, value interface{}) error {
 
 	return nil
 }
-
-func defaultErrorHandler(w http.ResponseWriter, req Request, err error) {
-	w.WriteHeader(http.StatusBadRequest)
-	_ = JSON(w, H{
-		"message": err.Error(),
-	})
-}

@@ -9,7 +9,7 @@ import (
 func TestEmptyGroupAndMapping(t *testing.T) {
 	defer func() {
 		if err := recover(); err != nil {
-			//everything is good, it paniced
+			// everything is good, it paniced
 		} else {
 			t.Error(`Expected NewGroup("")`)
 		}
@@ -32,7 +32,7 @@ func TestSubGroupSlashMapping(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/foo", nil)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
-	if recorder.Code != 301 { //should get redirected
+	if recorder.Code != 301 { // should get redirected
 		t.Error(`/foo on NewGroup("/foo").GET("/") should result in 301 response, got:`, recorder.Code)
 	}
 
@@ -93,7 +93,7 @@ func TestInvalidPath(t *testing.T) {
 	New().NewGroup("foo")
 }
 
-//Liberally borrowed from router_test
+// Liberally borrowed from router_test
 func testGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 	var result string
 	makeHandler := func(method string) HandlerFunc {
@@ -102,8 +102,7 @@ func testGroupMethods(t *testing.T, reqGen RequestCreator, headCanUseGet bool) {
 			return nil
 		}
 	}
-	router := New()
-	router.HeadCanUseGet = headCanUseGet
+	router := New(WithHeadCanUseGet(headCanUseGet))
 	// Testing with a sub-group of a group as that will test everything at once
 	g := router.NewGroup("/base").NewGroup("/user")
 	g.GET("/:param", makeHandler("GET"))
@@ -153,8 +152,7 @@ func TestSetGetAfterHead(t *testing.T) {
 		}
 	}
 
-	router := New()
-	router.HeadCanUseGet = true
+	router := New(WithHeadCanUseGet(true))
 	router.HEAD("/abc", makeHandler("HEAD"))
 	router.GET("/abc", makeHandler("GET"))
 

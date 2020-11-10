@@ -3,7 +3,6 @@ package treemux
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -133,9 +132,6 @@ func (g *Group) UseHandler(fn HandlerFunc) {
 // 	GET /posts/ will match normally.
 // 	POST /posts will redirect to /posts/, because the GET method used a trailing slash.
 func (g *Group) Handle(method string, path string, handler HandlerFunc) {
-	g.mux.mutex.Lock()
-	defer g.mux.mutex.Unlock()
-
 	if len(g.stack) > 0 {
 		handler = handlerWithMiddlewares(handler, g.stack)
 	}
@@ -153,7 +149,7 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 		}
 		node.setHandler(method, handler, false)
 
-		if g.mux.HeadCanUseGet &&
+		if g.mux.headCanUseGet &&
 			method == http.MethodGet &&
 			node.handlerMap.Get(http.MethodHead) == nil {
 			node.setHandler(http.MethodHead, handler, true)
@@ -166,21 +162,9 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 		panic("Cannot map an empty path")
 	}
 
-	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.RedirectTrailingSlash {
+	if len(path) > 1 && path[len(path)-1] == '/' && g.mux.redirectTrailingSlash {
 		addSlash = true
 		path = path[:len(path)-1]
-	}
-
-	if g.mux.EscapeAddedRoutes {
-		u, err := url.ParseRequestURI(path)
-		if err != nil {
-			panic("URL parsing error " + err.Error() + " on url " + path)
-		}
-		escapedPath := unescapeSpecial(u.String())
-
-		if escapedPath != path {
-			addOne(escapedPath)
-		}
 	}
 
 	addOne(path)

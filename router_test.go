@@ -8,9 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
-	"sort"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -105,8 +103,7 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, us
 		}
 	}
 
-	router := New()
-	router.HeadCanUseGet = headCanUseGet
+	router := New(WithHeadCanUseGet(headCanUseGet))
 	router.GET("/user/:param", makeHandler("GET"))
 	router.POST("/user/:param", makeHandler("POST"))
 	router.PATCH("/user/:param", makeHandler("PATCH"))
@@ -152,8 +149,9 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, us
 func TestNotFound(t *testing.T) {
 	calledNotFound := false
 
-	notFoundHandler := func(w http.ResponseWriter, r *http.Request) {
+	notFoundHandler := func(w http.ResponseWriter, r Request) error {
 		calledNotFound = true
+		return nil
 	}
 
 	router := New()
@@ -168,143 +166,12 @@ func TestNotFound(t *testing.T) {
 	}
 
 	// Now try with a custome handler.
-	router.NotFoundHandler = notFoundHandler
+	router = New(WithNotFoundHandler(notFoundHandler))
+	router.GET("/user/abc", simpleHandler)
 
 	router.ServeHTTP(w, r)
 	if !calledNotFound {
 		t.Error("Custom not found handler was not called")
-	}
-}
-
-func TestMethodNotAllowedHandler(t *testing.T) {
-	calledNotAllowed := false
-
-	notAllowedHandler := func(w http.ResponseWriter, r *http.Request,
-		methods map[string]HandlerFunc) {
-		calledNotAllowed = true
-
-		expected := []string{"GET", "PUT", "DELETE", "HEAD"}
-		allowed := make([]string, 0)
-		for m := range methods {
-			allowed = append(allowed, m)
-		}
-
-		sort.Strings(expected)
-		sort.Strings(allowed)
-
-		if !reflect.DeepEqual(expected, allowed) {
-			t.Errorf("Custom handler expected map %v, saw %v",
-				expected, allowed)
-		}
-	}
-
-	router := New()
-	router.GET("/user/abc", simpleHandler)
-	router.PUT("/user/abc", simpleHandler)
-	router.DELETE("/user/abc", simpleHandler)
-
-	w := httptest.NewRecorder()
-	r, _ := newRequest("POST", "/user/abc", nil)
-	router.ServeHTTP(w, r)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("Expected error %d from built-in not found handler but saw %d",
-			http.StatusMethodNotAllowed, w.Code)
-	}
-
-	allowed := w.Header()["Allow"]
-	sort.Strings(allowed)
-	expected := []string{"DELETE", "GET", "PUT", "HEAD"}
-	sort.Strings(expected)
-
-	if !reflect.DeepEqual(allowed, expected) {
-		t.Errorf("Expected Allow header %v, saw %v",
-			expected, allowed)
-	}
-
-	// Now try with a custom handler.
-	router.MethodNotAllowedHandler = notAllowedHandler
-
-	router.ServeHTTP(w, r)
-	if !calledNotAllowed {
-		t.Error("Custom not allowed handler was not called")
-	}
-}
-
-func TestOptionsHandler(t *testing.T) {
-	optionsHandler := func(w http.ResponseWriter, r Request) error {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusNoContent)
-		return nil
-	}
-
-	customOptionsHandler := func(w http.ResponseWriter, r Request) error {
-		w.Header().Set("Access-Control-Allow-Origin", "treemux.com")
-		w.WriteHeader(http.StatusUnauthorized)
-		return nil
-	}
-
-	router := New()
-	router.GET("/user/abc", simpleHandler)
-	router.PUT("/user/abc", simpleHandler)
-	router.DELETE("/user/abc", simpleHandler)
-	router.OPTIONS("/user/abc/options", customOptionsHandler)
-
-	// test without an OPTIONS handler
-	w := httptest.NewRecorder()
-	r, _ := newRequest("OPTIONS", "/user/abc", nil)
-	router.ServeHTTP(w, r)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("Expected error %d from built-in not found handler but saw %d",
-			http.StatusMethodNotAllowed, w.Code)
-	}
-
-	// Now try with a global options handler.
-	router.OptionsHandler = optionsHandler
-
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNoContent && w.Header()["Access-Control-Allow-Origin"][0] == "*") {
-		t.Error("global options handler was not called")
-	}
-
-	// Now see if a custom handler overwrites the global options handler.
-	w = httptest.NewRecorder()
-	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "treemux.com") {
-		t.Error("custom options handler did not overwrite global handler")
-	}
-
-	// Now see if a custom handler works with the global options handler set to nil.
-	router.OptionsHandler = nil
-	w = httptest.NewRecorder()
-	r, _ = newRequest("OPTIONS", "/user/abc/options", nil)
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusUnauthorized && w.Header()["Access-Control-Allow-Origin"][0] == "treemux.com") {
-		t.Error("custom options handler did not overwrite global handler")
-	}
-
-	// Make sure that the MethodNotAllowedHandler works when OptionsHandler is set
-	router.OptionsHandler = optionsHandler
-	w = httptest.NewRecorder()
-	r, _ = newRequest("POST", "/user/abc", nil)
-	router.ServeHTTP(w, r)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("Expected error %d from built-in not found handler but saw %d",
-			http.StatusMethodNotAllowed, w.Code)
-	}
-
-	allowed := w.Header()["Allow"]
-	sort.Strings(allowed)
-	expected := []string{"DELETE", "GET", "PUT", "HEAD"}
-	sort.Strings(expected)
-
-	if !reflect.DeepEqual(allowed, expected) {
-		t.Errorf("Expected Allow header %v, saw %v",
-			expected, allowed)
 	}
 }
 
@@ -346,17 +213,24 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		return nil
 	}
 
-	router := New()
-	router.RedirectBehavior = defaultBehavior
-
 	expectedCodeMap := map[string]int{"PUT": behaviorToCode(defaultBehavior)}
+	var router *TreeMux
 
 	if customMethods {
-		router.RedirectMethodBehavior["GET"] = getBehavior
-		router.RedirectMethodBehavior["POST"] = postBehavior
+		router = New(
+			WithRedirectBehavior(defaultBehavior),
+			WithRedirectMethodBehavior(map[string]RedirectBehavior{
+				"GET":  getBehavior,
+				"POST": postBehavior,
+			}),
+		)
+
 		expectedCodeMap["GET"] = behaviorToCode(getBehavior)
 		expectedCodeMap["POST"] = behaviorToCode(postBehavior)
 	} else {
+		router = New(
+			WithRedirectBehavior(defaultBehavior),
+		)
 		expectedCodeMap["GET"] = expectedCodeMap["PUT"]
 		expectedCodeMap["POST"] = expectedCodeMap["PUT"]
 	}
@@ -483,9 +357,11 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 }
 
 func TestSkipRedirect(t *testing.T) {
-	router := New()
-	router.RedirectTrailingSlash = false
-	router.RedirectCleanPath = false
+	router := New(
+		WithRedirectTrailingSlash(false),
+		WithRedirectCleanPath(false),
+	)
+
 	router.GET("/slash/", simpleHandler)
 	router.GET("/noslash", simpleHandler)
 
@@ -512,10 +388,7 @@ func TestSkipRedirect(t *testing.T) {
 }
 
 func TestCatchAllTrailingSlashRedirect(t *testing.T) {
-	router := New()
-	redirectSettings := []bool{false, true}
-
-	router.GET("/abc/*path", simpleHandler)
+	var router *TreeMux
 
 	testPath := func(path string) {
 		r, _ := newRequest("GET", "/abc/"+path, nil)
@@ -525,7 +398,7 @@ func TestCatchAllTrailingSlashRedirect(t *testing.T) {
 		endingSlash := strings.HasSuffix(path, "/")
 
 		var expectedCode int
-		if endingSlash && router.RedirectTrailingSlash && router.RemoveCatchAllTrailingSlash {
+		if endingSlash && router.redirectTrailingSlash && router.removeCatchAllTrailingSlash {
 			expectedCode = http.StatusMovedPermanently
 		} else {
 			expectedCode = http.StatusOK
@@ -534,15 +407,19 @@ func TestCatchAllTrailingSlashRedirect(t *testing.T) {
 		if w.Code != expectedCode {
 			t.Errorf("Path %s with RedirectTrailingSlash %v, RemoveCatchAllTrailingSlash %v "+
 				" expected code %d but saw %d", path,
-				router.RedirectTrailingSlash, router.RemoveCatchAllTrailingSlash,
+				router.redirectTrailingSlash, router.removeCatchAllTrailingSlash,
 				expectedCode, w.Code)
 		}
 	}
 
+	redirectSettings := []bool{false, true}
 	for _, redirectSetting := range redirectSettings {
 		for _, removeCatchAllSlash := range redirectSettings {
-			router.RemoveCatchAllTrailingSlash = removeCatchAllSlash
-			router.RedirectTrailingSlash = redirectSetting
+			router = New(
+				WithRemoveCatchAllTrailingSlash(removeCatchAllSlash),
+				WithRedirectTrailingSlash(redirectSetting),
+			)
+			router.GET("/abc/*path", simpleHandler)
 
 			testPath("apples")
 			testPath("apples/")
@@ -701,9 +578,14 @@ func TestPathSource(t *testing.T) {
 		called = "bananas"
 		return nil
 	}
-	router := New()
-	router.GET("/apples", appleHandler)
-	router.GET("/bananas", bananaHandler)
+
+	var router *TreeMux
+
+	newRouter := func(opts ...Option) {
+		router = New(opts...)
+		router.GET("/apples", appleHandler)
+		router.GET("/bananas", bananaHandler)
+	}
 
 	// Set up a request with different values in URL and RequestURI.
 	r, _ := newRequest("GET", "/apples", nil)
@@ -711,120 +593,22 @@ func TestPathSource(t *testing.T) {
 	w := new(mockResponseWriter)
 
 	// Default setting should be RequestURI
+	newRouter()
 	router.ServeHTTP(w, r)
 	if called != "bananas" {
 		t.Error("Using default, expected bananas but saw", called)
 	}
 
-	router.PathSource = URLPath
+	newRouter(WithPathSource(URLPath))
 	router.ServeHTTP(w, r)
 	if called != "apples" {
 		t.Error("Using URLPath, expected apples but saw", called)
 	}
 
-	router.PathSource = RequestURI
+	newRouter(WithPathSource(RequestURI))
 	router.ServeHTTP(w, r)
 	if called != "bananas" {
 		t.Error("Using RequestURI, expected bananas but saw", called)
-	}
-}
-
-func TestEscapedRoutes(t *testing.T) {
-	type testcase struct {
-		Route      string
-		Path       string
-		Param      string
-		ParamValue string
-	}
-
-	testcases := []*testcase{
-		{"/abc/def", "/abc/def", "", ""},
-		{"/abc/*star", "/abc/defg", "star", "defg"},
-		{"/abc/extrapath/*star", "/abc/extrapath/*lll", "star", "*lll"},
-		{"/abc/\\*def", "/abc/*def", "", ""},
-		{"/abc/\\\\*def", "/abc/\\*def", "", ""},
-		{"/:wild/def", "/*abcd/def", "wild", "*abcd"},
-		{"/\\:wild/def", "/:wild/def", "", ""},
-		{"/\\\\:wild/def", "/\\:wild/def", "", ""},
-		{"/\\*abc/def", "/*abc/def", "", ""},
-	}
-
-	escapeCases := []bool{false, true}
-
-	for _, escape := range escapeCases {
-		var foundTestCase *testcase
-		var foundParamKey string
-		var foundParamValue string
-
-		handleTestResponse := func(c *testcase, w http.ResponseWriter, r Request) {
-			foundTestCase = c
-			foundParamKey = ""
-			foundParamValue = ""
-			for _, p := range r.Params {
-				foundParamKey = p.Name
-				foundParamValue = p.Value
-			}
-			t.Logf("RequestURI %s found test case %+v", r.RequestURI, c)
-		}
-
-		verify := func(c *testcase) {
-			t.Logf("Expecting test case %+v", c)
-			if c != foundTestCase {
-				t.Errorf("Incorrectly matched test case %+v", foundTestCase)
-			}
-
-			if c.Param != foundParamKey {
-				t.Errorf("Expected param key %s but saw %s", c.Param, foundParamKey)
-			}
-
-			if c.ParamValue != foundParamValue {
-				t.Errorf("Expected param key %s but saw %s", c.Param, foundParamKey)
-			}
-		}
-
-		t.Log("Recreating router")
-		router := New()
-		router.EscapeAddedRoutes = escape
-
-		for _, c := range testcases {
-			t.Logf("Adding route %s", c.Route)
-			theCase := c
-			router.GET(c.Route, func(w http.ResponseWriter, r Request) error {
-				handleTestResponse(theCase, w, r)
-				return nil
-			})
-		}
-
-		for _, c := range testcases {
-			escapedPath := (&url.URL{Path: c.Path}).EscapedPath()
-			escapedIsSame := escapedPath == c.Path
-
-			r, _ := newRequest("GET", c.Path, nil)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, r)
-			if w.Code != 200 {
-				t.Errorf("Escape %v test case %v saw code %d", escape, c, w.Code)
-			}
-			verify(c)
-
-			if !escapedIsSame {
-				r, _ := newRequest("GET", escapedPath, nil)
-				w := httptest.NewRecorder()
-				router.ServeHTTP(w, r)
-				if router.EscapeAddedRoutes {
-					// Expect a match
-					if w.Code != 200 {
-						t.Errorf("Escape %v test case %v saw code %d", escape, c, w.Code)
-					}
-					verify(c)
-				} else {
-					// Expect a non-match if the parameter isn't a wildcard.
-					if foundParamKey == "" && w.Code != 404 {
-						t.Errorf("Escape %v test case %v expected 404 saw %d", escape, c, w.Code)
-					}
-				}
-			}
-		}
 	}
 }
 
@@ -866,123 +650,17 @@ func createRoutes(numRoutes int) []string {
 	return routes
 }
 
-// TestWriteConcurrency ensures that the router works with multiple goroutines adding
-// routes concurrently.
-func TestWriteConcurrency(t *testing.T) {
-	router := New()
-
-	// First create a bunch of routes
-	numRoutes := 10000
-	routes := createRoutes(numRoutes)
-
-	wg := sync.WaitGroup{}
-	addRoutes := func(base int, method string) {
-		for i := 0; i < len(routes); i += 1 {
-			route := routes[(i+base)%len(routes)]
-			// t.Logf("Adding %s %s", method, route)
-			router.Handle(method, route, simpleHandler)
-		}
-		wg.Done()
-	}
-
-	wg.Add(5)
-	go addRoutes(100, "GET")
-	go addRoutes(200, "POST")
-	go addRoutes(300, "PATCH")
-	go addRoutes(400, "PUT")
-	go addRoutes(500, "DELETE")
-	wg.Wait()
-
-	handleRequests := func(method string) {
-		for _, route := range routes {
-			// t.Logf("Serving %s %s", method, route)
-			r, _ := newRequest(method, route, nil)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, r)
-
-			if w.Code != 200 {
-				t.Errorf("%s %s request failed", method, route)
-			}
-		}
-	}
-
-	handleRequests("GET")
-	handleRequests("POST")
-	handleRequests("PATCH")
-	handleRequests("PUT")
-	handleRequests("DELETE")
-}
-
-// TestReadWriteConcurrency ensures that when SafeAddRoutesWhileRunning is enabled,
-// the router is able to add routes while serving traffic.
-func TestReadWriteConcurrency(t *testing.T) {
-	router := New()
-	router.SafeAddRoutesWhileRunning = true
-
-	// First create a bunch of routes
-	numRoutes := 10000
-	routes := createRoutes(numRoutes)
-
-	wg := sync.WaitGroup{}
-	addRoutes := func(base int, method string, routes []string) {
-		for i := 0; i < len(routes); i += 1 {
-			route := routes[(i+base)%len(routes)]
-			// t.Logf("Adding %s %s", method, route)
-			router.Handle(method, route, simpleHandler)
-		}
-		wg.Done()
-	}
-
-	handleRequests := func(base int, method string, routes []string, requireFound bool) {
-		for i := 0; i < len(routes); i += 1 {
-			route := routes[(i+base)%len(routes)]
-			// t.Logf("Serving %s %s", method, route)
-			r, _ := newRequest(method, route, nil)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, r)
-
-			if requireFound && w.Code != 200 {
-				t.Errorf("%s %s request failed", method, route)
-			}
-		}
-		wg.Done()
-	}
-
-	wg.Add(12)
-	initialRoutes := routes[0 : numRoutes/10]
-	addRoutes(0, "GET", initialRoutes)
-	handleRequests(0, "GET", initialRoutes, true)
-
-	concurrentRoutes := routes[numRoutes/10:]
-	go addRoutes(100, "GET", concurrentRoutes)
-	go addRoutes(200, "POST", concurrentRoutes)
-	go addRoutes(300, "PATCH", concurrentRoutes)
-	go addRoutes(400, "PUT", concurrentRoutes)
-	go addRoutes(500, "DELETE", concurrentRoutes)
-	go handleRequests(50, "GET", routes, false)
-	go handleRequests(150, "POST", routes, false)
-	go handleRequests(250, "PATCH", routes, false)
-	go handleRequests(350, "PUT", routes, false)
-	go handleRequests(450, "DELETE", routes, false)
-
-	wg.Wait()
-
-	// Finally check all the routes and make sure they exist.
-	wg.Add(5)
-	handleRequests(0, "GET", routes, true)
-	handleRequests(0, "POST", concurrentRoutes, true)
-	handleRequests(0, "PATCH", concurrentRoutes, true)
-	handleRequests(0, "PUT", concurrentRoutes, true)
-	handleRequests(0, "DELETE", concurrentRoutes, true)
-}
-
 func TestLookup(t *testing.T) {
-	router := New()
-	router.GET("/", simpleHandler)
-	router.GET("/user/dimfeld", simpleHandler)
-	router.POST("/user/dimfeld", simpleHandler)
-	router.GET("/abc/*", simpleHandler)
-	router.POST("/abc/*", simpleHandler)
+	var router *TreeMux
+
+	newRouter := func(opts ...Option) {
+		router = New(opts...)
+		router.GET("/", simpleHandler)
+		router.GET("/user/dimfeld", simpleHandler)
+		router.POST("/user/dimfeld", simpleHandler)
+		router.GET("/abc/*", simpleHandler)
+		router.POST("/abc/*", simpleHandler)
+	}
 
 	tryLookup := func(method, path string, expectFound bool, expectCode int) {
 		r, _ := newRequest(method, path, nil)
@@ -1005,6 +683,7 @@ func TestLookup(t *testing.T) {
 		}
 	}
 
+	newRouter()
 	tryLookup("GET", "/", true, http.StatusOK)
 	tryLookup("GET", "/", true, http.StatusOK)
 	tryLookup("POST", "/user/dimfeld", true, http.StatusOK)
@@ -1012,7 +691,7 @@ func TestLookup(t *testing.T) {
 	tryLookup("PATCH", "/user/dimfeld", false, http.StatusMethodNotAllowed)
 	tryLookup("GET", "/abc/def/ghi", true, http.StatusOK)
 
-	router.RedirectBehavior = Redirect307
+	newRouter(WithRedirectBehavior(Redirect307))
 	tryLookup("POST", "/user/dimfeld/", true, http.StatusTemporaryRedirect)
 }
 
