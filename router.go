@@ -67,7 +67,6 @@ type TreeMux struct {
 func New(opts ...Option) *TreeMux {
 	tm := &TreeMux{
 		config: config{
-			errorHandler:            errorHandler,
 			notFoundHandler:         nil,
 			methodNotAllowedHandler: nil,
 
@@ -92,10 +91,10 @@ func New(opts ...Option) *TreeMux {
 	}
 
 	if tm.notFoundHandler == nil {
-		tm.notFoundHandler = handlerWithMiddlewares(notFoundHandler, tm.Group.stack)
+		tm.notFoundHandler = tm.config.wrapHandler(notFoundHandler)
 	}
 	if tm.methodNotAllowedHandler == nil {
-		tm.methodNotAllowedHandler = handlerWithMiddlewares(methodNotAllowedHandler, tm.Group.stack)
+		tm.methodNotAllowedHandler = tm.config.wrapHandler(methodNotAllowedHandler)
 	}
 
 	return tm
@@ -259,21 +258,12 @@ func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr
 		route:   lr.route,
 		Params:  lr.params,
 	}
-	if err := handler(w, reqWrapper); err != nil {
-		t.errorHandler(w, reqWrapper, err)
-	}
+	_ = handler(w, reqWrapper)
 }
 
 func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	result, _ := t.lookup(w, r)
 	t.ServeLookupResult(w, r, result)
-}
-
-func errorHandler(w http.ResponseWriter, req Request, err error) {
-	w.WriteHeader(http.StatusBadRequest)
-	_ = JSON(w, H{
-		"message": err.Error(),
-	})
 }
 
 // methodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,

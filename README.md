@@ -8,6 +8,7 @@
 
 - [Basic example](/example/basic/)
 - [CORS example](/example/cors/)
+- [Error handler example](/example/error_handler/)
 - [Debug logging](/extra/reqlog/)
 - [Gzip compression](/extra/treemuxgzip/)
 - [OpenTelemetry integration](/extra/treemuxotel/)
@@ -48,21 +49,6 @@ group.GET("/:id", func(w http.ResponseWriter, req treemux.Request) error {
 log.Println(http.ListenAndServe(":8080", router))
 ```
 
-treemux supports centralized handling of errors returned by handlers:
-
-```go
-router := treemux.New(
-    treemux.WithErrorHandler(errorHandler),
-)
-
-func errorHandler(w http.ResponseWriter, req treemux.Request, err error) {
-    w.WriteHeader(500)
-    _ = treemux.JSON(w, treemux.H{
-        "message": "Internal Server Error",
-    })
-}
-```
-
 ## Middlewares
 
 Middleware is a function that wraps a handler with another function:
@@ -81,6 +67,8 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 
 router = treemux.New(treemux.WithMiddleware(corsMiddleware))
 ```
+
+Middlewares can be used for [error handling](/example/error_handler/).
 
 ## Routing Rules
 
@@ -367,9 +355,8 @@ by Daniel Imfeld.
 
 - Setting a `context.Context` does not require an allocation.
 
-- Centralized error handling. Each handler returns an error which is handled by global
-  `WithErrorHandler` func.
-
 - More efficient params encoding using a slice instead of a map.
+
+- Reworked configuration.
 
 - `Group` is immutable to avoid accidental leaking of middlewares into the group.

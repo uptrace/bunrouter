@@ -3,7 +3,6 @@ package treemux
 import "net/http"
 
 type config struct {
-	errorHandler            func(w http.ResponseWriter, req Request, err error)
 	notFoundHandler         HandlerFunc
 	methodNotAllowedHandler HandlerFunc
 
@@ -20,30 +19,26 @@ type config struct {
 	group *Group
 }
 
-type Option func(*config)
-
-// WithErrorHandler handles errors returned from handlers.
-func WithErrorHandler(handler func(w http.ResponseWriter, req Request, err error)) Option {
-	return func(c *config) {
-		c.errorHandler = handler
-	}
+func (c *config) wrapHandler(handler HandlerFunc) HandlerFunc {
+	return handlerWithMiddlewares(handler, c.group.stack)
 }
+
+type Option func(*config)
 
 // WithNotFoundHandler is called when there is no a matching pattern.
 // The default NotFoundHandler is http.NotFound.
 func WithNotFoundHandler(handler HandlerFunc) Option {
 	return func(c *config) {
-		c.notFoundHandler = handlerWithMiddlewares(handler, c.group.stack)
+		c.notFoundHandler = c.wrapHandler(handler)
 	}
 }
 
 // MethodNotAllowedHandler is called when a pattern matches, but that
 // pattern does not have a handler for the requested method. The default
-// handler just writes the status code http.StatusMethodNotAllowed and adds
-// the required Allowed header.
+// handler just writes the status code http.StatusMethodNotAllowed.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 	return func(c *config) {
-		c.methodNotAllowedHandler = handlerWithMiddlewares(handler, c.group.stack)
+		c.methodNotAllowedHandler = c.wrapHandler(handler)
 	}
 }
 

@@ -34,7 +34,7 @@ func NewMiddleware(opts ...Option) treemux.MiddlewareFunc {
 
 func (cfg *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 	return func(w http.ResponseWriter, req treemux.Request) error {
-		rec := statusCodeRecorder{
+		rec := &statusCodeRecorder{
 			ResponseWriter: w,
 			Code:           http.StatusOK,
 		}
@@ -77,8 +77,9 @@ type statusCodeRecorder struct {
 	Code int
 }
 
-func (rec statusCodeRecorder) WriteHeader(statusCode int) {
+func (rec *statusCodeRecorder) WriteHeader(statusCode int) {
 	rec.Code = statusCode
+	rec.ResponseWriter.WriteHeader(statusCode)
 }
 
 //------------------------------------------------------------------------------
