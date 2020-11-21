@@ -1,6 +1,8 @@
 module github.com/vmihailenco/treemux/extra/reqlog
 
-go 1.16
+go 1.15
+
+replace github.com/vmihailenco/treemux => ../..
 
 require (
 	github.com/fatih/color v1.10.0

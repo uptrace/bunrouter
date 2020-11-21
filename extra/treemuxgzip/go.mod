@@ -1,6 +1,8 @@
 module github.com/vmihailenco/treemux/extra/treemuxgzip
 
-go 1.16
+go 1.15
+
+replace github.com/vmihailenco/treemux => ../..
 
 require (
 	github.com/vmihailenco/httpgzip v1.2.3
