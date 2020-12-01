@@ -8,7 +8,7 @@
 
 - [Basic example](/example/basic/)
 - [CORS example](/example/cors/)
-- [Error handler example](/example/error_handler/)
+- [Error handling example](/example/error_handling/)
 - [Debug logging](/extra/reqlog/)
 - [Gzip compression](/extra/treemuxgzip/)
 - [OpenTelemetry integration](/extra/treemuxotel/)
@@ -306,17 +306,6 @@ make its decision. If you are using some of these functions, set the router's `P
 the router to work properly with these utility functions.
 
 ## Error Handlers
-
-### ErrorHandler
-
-To handle errors returned by handlers, use `TreeMux.ErrorHandler`:
-
-```go
-router.ErrorHandler = func(w http.ResponseWriter, req treemux.Request, err error) {
-    w.WriteHeader(500)
-    _, _ = w.Write([]byte("Internal Server Error"))
-}
-```
 
 ### NotFoundHandler
 
