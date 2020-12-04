@@ -73,17 +73,6 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	}
 }
 
-func serve(router *TreeMux, w http.ResponseWriter, r *http.Request, useLookup bool) bool {
-	if useLookup {
-		result, found := router.Lookup(w, r)
-		router.ServeLookupResult(w, r, result)
-		return found
-	} else {
-		router.ServeHTTP(w, r)
-		return true
-	}
-}
-
 func TestMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
@@ -113,11 +102,7 @@ func testMethods(t *testing.T, newRequest RequestCreator, headCanUseGet bool, us
 		result = ""
 		w := httptest.NewRecorder()
 		r, _ := newRequest(method, "/user/"+method, nil)
-		found := serve(router, w, r, useSeparateLookup)
-
-		if useSeparateLookup && expect == "" && found {
-			t.Errorf("Lookup unexpectedly succeeded for method %s", method)
-		}
+		router.ServeHTTP(w, r)
 
 		if expect == "" && w.Code != http.StatusMethodNotAllowed {
 			t.Errorf("Method %s not expected to match but saw code %d", method, w.Code)
@@ -246,10 +231,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		w := httptest.NewRecorder()
 		r, _ := newRequest(method, "/slash", nil)
-		found := serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/slash: found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != expectedCode {
 			t.Errorf("/slash expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -259,10 +241,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		r, _ = newRequest(method, "/noslash/", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/noslash: found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != expectedCode {
 			t.Errorf("/noslash/ expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -273,10 +252,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		r, _ = newRequest(method, "//noslash/", nil)
 		if r.RequestURI == "//noslash/" { // http.NewRequest parses this out differently
 			w = httptest.NewRecorder()
-			found = serve(router, w, r, serveStyle)
-			if found == false {
-				t.Errorf("//noslash/: found returned false")
-			}
+			router.ServeHTTP(w, r)
 			if w.Code != expectedCode {
 				t.Errorf("//noslash/ expected code %d, saw %d", expectedCode, w.Code)
 			}
@@ -288,40 +264,28 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		// Test nonredirect cases
 		r, _ = newRequest(method, "/noslash", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/noslash (non-redirect): found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/noslash?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/noslash (non-redirect): found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/noslash (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/slash/", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/slash/ (non-redirect): found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/slash/ (non-redirect) expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
 
 		r, _ = newRequest(method, "/slash/?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/slash/?a=1&b=2: found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != http.StatusNoContent {
 			t.Errorf("/slash/?a=1&b=2 expected code %d, saw %d", http.StatusNoContent, w.Code)
 		}
@@ -329,10 +293,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 		// Test querystring and fragment cases
 		r, _ = newRequest(method, "/slash?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/slash?a=1&b=2 : found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != expectedCode {
 			t.Errorf("/slash?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -342,10 +303,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 
 		r, _ = newRequest(method, "/noslash/?a=1&b=2", nil)
 		w = httptest.NewRecorder()
-		found = serve(router, w, r, serveStyle)
-		if found == false {
-			t.Errorf("/noslash/?a=1&b=2: found returned false")
-		}
+		router.ServeHTTP(w, r)
 		if w.Code != expectedCode {
 			t.Errorf("/noslash/?a=1&b=2 expected code %d, saw %d", expectedCode, w.Code)
 		}
@@ -441,7 +399,7 @@ func TestRoot(t *testing.T) {
 
 		r, _ := scenario.RequestCreator("GET", "/", nil)
 		w := new(mockResponseWriter)
-		serve(router, w, r, scenario.ServeStyle)
+		router.ServeHTTP(w, r)
 
 		if !handlerCalled {
 			t.Error("Handler not called for root path")
@@ -546,19 +504,19 @@ func TestQueryString(t *testing.T) {
 		w := new(mockResponseWriter)
 
 		param = "nomatch"
-		serve(router, w, r, scenario.ServeStyle)
+		router.ServeHTTP(w, r)
 		if param != "" {
 			t.Error("No match on", r.RequestURI)
 		}
 
 		r, _ = scenario.RequestCreator("GET", "/wildcard/aaa?abc=def", nil)
-		serve(router, w, r, scenario.ServeStyle)
+		router.ServeHTTP(w, r)
 		if param != "aaa" {
 			t.Error("Expected wildcard to match aaa, saw", param)
 		}
 
 		r, _ = scenario.RequestCreator("GET", "/catchall/bbb?abc=def", nil)
-		serve(router, w, r, scenario.ServeStyle)
+		router.ServeHTTP(w, r)
 		if param != "bbb" {
 			t.Error("Expected wildcard to match bbb, saw", param)
 		}
@@ -609,51 +567,6 @@ func TestPathSource(t *testing.T) {
 	if called != "bananas" {
 		t.Error("Using RequestURI, expected bananas but saw", called)
 	}
-}
-
-func TestLookup(t *testing.T) {
-	var router *TreeMux
-
-	newRouter := func(opts ...Option) {
-		router = New(opts...)
-		router.GET("/", simpleHandler)
-		router.GET("/user/dimfeld", simpleHandler)
-		router.POST("/user/dimfeld", simpleHandler)
-		router.GET("/abc/*", simpleHandler)
-		router.POST("/abc/*", simpleHandler)
-	}
-
-	tryLookup := func(method, path string, expectFound bool, expectCode int) {
-		r, _ := newRequest(method, path, nil)
-		w := &mockResponseWriter{}
-		lr, found := router.Lookup(w, r)
-		if found != expectFound {
-			t.Errorf("%s %s expected found %v, saw %v", method, path, expectFound, found)
-		}
-
-		if lr.StatusCode != expectCode {
-			t.Errorf("%s %s expected status code %d, saw %d", method, path, expectCode, lr.StatusCode)
-		}
-
-		if w.code != 0 {
-			t.Errorf("%s %s unexpectedly wrote status %d", method, path, w.code)
-		}
-
-		if w.calledWrite {
-			t.Errorf("%s %s unexpectedly wrote data", method, path)
-		}
-	}
-
-	newRouter()
-	tryLookup("GET", "/", true, http.StatusOK)
-	tryLookup("GET", "/", true, http.StatusOK)
-	tryLookup("POST", "/user/dimfeld", true, http.StatusOK)
-	tryLookup("POST", "/user/dimfeld/", true, http.StatusMovedPermanently)
-	tryLookup("PATCH", "/user/dimfeld", false, http.StatusMethodNotAllowed)
-	tryLookup("GET", "/abc/def/ghi", true, http.StatusOK)
-
-	newRouter(WithRedirectBehavior(Redirect307))
-	tryLookup("POST", "/user/dimfeld/", true, http.StatusTemporaryRedirect)
 }
 
 func TestRedirectEscapedPath(t *testing.T) {

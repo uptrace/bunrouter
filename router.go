@@ -43,19 +43,6 @@ const (
 	URLPath                      // Use r.URL.Path
 )
 
-// LookupResult contains information about a route lookup, which is returned from Lookup and
-// can be passed to ServeLookupResult if the request should be served.
-type LookupResult struct {
-	// StatusCode informs the caller about the result of the lookup.
-	// This will generally be `http.StatusNotFound` or `http.StatusMethodNotAllowed` for an
-	// error case. On a normal success, the statusCode will be `http.StatusOK`. A redirect code
-	// will also be used in the case
-	StatusCode int
-	route      string
-	handler    HandlerFunc
-	params     Params
-}
-
 type TreeMux struct {
 	config
 	Group
@@ -139,7 +126,7 @@ func redirectHandler(newPath string, statusCode int) HandlerFunc {
 	}
 }
 
-func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, bool) {
+func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, string, []Param) {
 	path := r.RequestURI
 	unescapedPath := r.URL.Path
 	pathLen := len(path)
@@ -172,98 +159,49 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (LookupResult, 
 			cleanPath := Clean(unescapedPath)
 			n, handler, params = t.root.search(r.Method, cleanPath[1:])
 			if n == nil {
-				return LookupResult{
-					StatusCode: http.StatusNotFound,
-				}, false
+				return t.notFoundHandler, "", nil
 			}
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
 				// Redirect to the actual path
-				return LookupResult{
-					StatusCode: statusCode,
-					handler:    redirectHandler(cleanPath, statusCode),
-				}, true
+				return redirectHandler(cleanPath, statusCode), "", nil
 			}
 		} else {
-			return LookupResult{
-				StatusCode: http.StatusNotFound,
-			}, false
+			return t.notFoundHandler, "", nil
 		}
 	}
 
 	if handler == nil {
-		return LookupResult{
-			StatusCode: http.StatusMethodNotAllowed,
-		}, false
+		return t.methodNotAllowedHandler, "", nil
 	}
 
 	if !n.isCatchAll || t.removeCatchAllTrailingSlash {
 		if trailingSlash != n.addSlash && t.redirectTrailingSlash {
 			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
-				var h HandlerFunc
 				if n.addSlash {
 					// Need to add a slash.
-					h = redirectHandler(unescapedPath+"/", statusCode)
-				} else if path != "/" {
+					return redirectHandler(unescapedPath+"/", statusCode), "", nil
+				}
+				if path != "/" {
 					// We need to remove the slash. This was already done at the
 					// beginning of the function.
-					h = redirectHandler(unescapedPath, statusCode)
-				}
-
-				if h != nil {
-					return LookupResult{
-						StatusCode: statusCode,
-						handler:    h,
-					}, true
+					return redirectHandler(unescapedPath, statusCode), "", nil
 				}
 			}
 		}
 	}
 
-	lr := LookupResult{
-		StatusCode: http.StatusOK,
-		route:      n.route,
-		handler:    handler,
-		params:     params,
-	}
-
-	return lr, true
+	return handler, n.route, params
 }
 
-// Lookup performs a lookup without actually serving the request or mutating the request or response.
-// The return values are a LookupResult and a boolean. The boolean will be true when a handler
-// was found or the lookup resulted in a redirect which will point to a real handler. It is false
-// for requests which would result in a `StatusNotFound` or `StatusMethodNotAllowed`.
-//
-// Regardless of the returned boolean's value, the LookupResult may be passed to ServeLookupResult
-// to be served appropriately.
-func (t *TreeMux) Lookup(w http.ResponseWriter, r *http.Request) (LookupResult, bool) {
-	return t.lookup(w, r)
-}
-
-// ServeLookupResult serves a request, given a lookup result from the Lookup function.
-func (t *TreeMux) ServeLookupResult(w http.ResponseWriter, req *http.Request, lr LookupResult) {
-	handler := lr.handler
-
-	if handler == nil {
-		if lr.StatusCode == http.StatusMethodNotAllowed {
-			handler = t.methodNotAllowedHandler
-		} else {
-			handler = t.notFoundHandler
-		}
-	}
-
+func (t *TreeMux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	handler, route, params := t.lookup(w, req)
 	reqWrapper := Request{
 		ctx:     req.Context(),
 		Request: req,
-		route:   lr.route,
-		Params:  lr.params,
+		route:   route,
+		Params:  params,
 	}
 	_ = handler(w, reqWrapper)
-}
-
-func (t *TreeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	result, _ := t.lookup(w, r)
-	t.ServeLookupResult(w, r, result)
 }
 
 // methodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,
