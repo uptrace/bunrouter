@@ -302,7 +302,9 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 	return newNode, i
 }
 
-func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []Param) {
+func (n *node) search(
+	method, path string, level int,
+) (found *node, handler HandlerFunc, params []Param) {
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
@@ -322,7 +324,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 			childPathLen := len(child.path)
 			if pathLen >= childPathLen && child.path == path[:childPathLen] {
 				nextPath := path[childPathLen:]
-				found, handler, params = child.search(method, nextPath)
+				found, handler, params = child.search(method, nextPath, level)
 				if handler != nil {
 					return found, handler, params
 				}
@@ -342,7 +344,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 		nextToken := path[nextSlash:]
 
 		if len(thisToken) > 0 { // Don't match on empty tokens.
-			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken)
+			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken, level+1)
 			if wcHandler != nil || (found == nil && wcNode != nil) {
 				unescaped, err := url.PathUnescape(thisToken)
 				if err != nil {
@@ -350,16 +352,12 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 				}
 
 				if wcParams == nil {
-					wcParams = []Param{{
-						Name:  wcNode.paramName(len(wcParams)),
-						Value: unescaped,
-					}}
-				} else {
-					wcParams = append(wcParams, Param{
-						Name:  wcNode.paramName(len(wcParams)),
-						Value: unescaped,
-					})
+					wcParams = make([]Param, 0, level+1)
 				}
+				wcParams = append(wcParams, Param{
+					Name:  wcNode.paramName(len(wcParams)),
+					Value: unescaped,
+				})
 
 				if wcHandler != nil {
 					return wcNode, wcHandler, wcParams
@@ -375,8 +373,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 		}
 	}
 
-	catchAllChild := n.catchAllChild
-	if catchAllChild != nil {
+	if catchAllChild := n.catchAllChild; catchAllChild != nil {
 		// Hit the catchall, so just assign the whole remaining path if it
 		// has a matching handler.
 		handler = catchAllChild.handlerMap.Get(method)
@@ -393,7 +390,6 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 				Value: unescaped,
 			}}
 		}
-
 	}
 
 	return found, handler, params

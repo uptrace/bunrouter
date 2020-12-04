@@ -151,13 +151,13 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, s
 		unescapedPath = unescapedPath[:len(unescapedPath)-1]
 	}
 
-	n, handler, params := t.root.search(r.Method, path[1:])
+	n, handler, params := t.root.search(r.Method, path[1:], 0)
 	if n == nil {
 		if t.redirectCleanPath {
 			// Path was not found. Try cleaning it up and search again.
 			// TODO Test this
 			cleanPath := Clean(unescapedPath)
-			n, handler, params = t.root.search(r.Method, cleanPath[1:])
+			n, handler, params = t.root.search(r.Method, cleanPath[1:], 0)
 			if n == nil {
 				return t.notFoundHandler, "", nil
 			}
