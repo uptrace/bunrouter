@@ -323,15 +323,12 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 			if pathLen >= childPathLen && child.path == path[:childPathLen] {
 				nextPath := path[childPathLen:]
 				found, handler, params = child.search(method, nextPath)
+				if handler != nil {
+					return found, handler, params
+				}
 			}
 			break
 		}
-	}
-
-	// If we found a node and it had a valid handler, then return here. Otherwise
-	// let's remember that we found this one, but look for a better match.
-	if handler != nil {
-		return
 	}
 
 	if n.wildcardChild != nil {
@@ -354,7 +351,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 
 				if wcParams == nil {
 					wcParams = []Param{{
-						Name:  wcNode.paramName(0),
+						Name:  wcNode.paramName(len(wcParams)),
 						Value: unescaped,
 					}}
 				} else {
