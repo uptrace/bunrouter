@@ -16,8 +16,88 @@
 - [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
 
-High-speed, flexible, tree-based HTTP router for Go. It is like Julien Schmidt's httprouter, but
-supports more flexible routing.
+High-speed, flexible, tree-based HTTP router for Go. It is as fast as httprouter, but with relaxed
+routing rules.
+
+<details>
+  <summary>Benchmark results</summary>
+
+  ```
+    #GithubAPI Routes: 203
+       HttpRouter: 37088 Bytes
+       HttpTreeMux: 78800 Bytes
+       VmihailencoTreemux: 58208 Bytes
+
+    #GPlusAPI Routes: 13
+       HttpRouter: 2760 Bytes
+       HttpTreeMux: 7440 Bytes
+       VmihailencoTreemux: 5760 Bytes
+
+    #ParseAPI Routes: 26
+       HttpRouter: 5024 Bytes
+       HttpTreeMux: 7848 Bytes
+       VmihailencoTreemux: 5816 Bytes
+
+    #Static Routes: 157
+       HttpRouter: 21680 Bytes
+       HttpTreeMux: 73448 Bytes
+       VmihailencoTreemux: 49496 Bytes
+
+    goos: linux
+    goarch: amd64
+    pkg: github.com/julienschmidt/go-http-routing-benchmark
+    cpu: AMD Ryzen 5 2600 Six-Core Processor
+    BenchmarkHttpRouter_Param                	13176325	        90.69 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_Param               	 2846073	       422.0 ns/op	     352 B/op	       3 allocs/op
+    BenchmarkVmihailencoTreemux_Param        	 8060584	       149.0 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpRouter_Param5               	 5219818	       230.9 ns/op	     160 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_Param5              	 1000000	      1054 ns/op	     576 B/op	       6 allocs/op
+    BenchmarkVmihailencoTreemux_Param5       	 3114952	       386.3 ns/op	     160 B/op	       1 allocs/op
+    BenchmarkHttpRouter_Param20              	 1790470	       670.3 ns/op	     640 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_Param20             	  250482	      4890 ns/op	    3196 B/op	      10 allocs/op
+    BenchmarkVmihailencoTreemux_Param20      	 1000000	      1179 ns/op	     640 B/op	       1 allocs/op
+    BenchmarkHttpRouter_ParamWrite           	 9207016	       131.3 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_ParamWrite          	 2607104	       461.4 ns/op	     352 B/op	       3 allocs/op
+    BenchmarkVmihailencoTreemux_ParamWrite   	 6644600	       181.0 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpRouter_GithubStatic         	28477857	        42.21 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpTreeMux_GithubStatic        	21255450	        54.35 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkVmihailencoTreemux_GithubStatic 	23992582	        50.81 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpRouter_GithubParam          	 5901350	       202.7 ns/op	      96 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_GithubParam         	 1801438	       667.4 ns/op	     384 B/op	       4 allocs/op
+    BenchmarkVmihailencoTreemux_GithubParam  	 3858866	       310.4 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpRouter_GithubAll            	   29740	     40436 ns/op	   13792 B/op	     167 allocs/op
+    BenchmarkHttpTreeMux_GithubAll           	   10000	    121313 ns/op	   65856 B/op	     671 allocs/op
+    BenchmarkVmihailencoTreemux_GithubAll    	   21978	     54883 ns/op	   10848 B/op	     167 allocs/op
+    BenchmarkHttpRouter_GPlusStatic          	45898861	        25.99 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpTreeMux_GPlusStatic         	33262026	        35.88 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkVmihailencoTreemux_GPlusStatic  	41993342	        28.61 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpRouter_GPlusParam           	 8516348	       142.3 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_GPlusParam          	 2606780	       460.0 ns/op	     352 B/op	       3 allocs/op
+    BenchmarkVmihailencoTreemux_GPlusParam   	 6475717	       186.5 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpRouter_GPlus2Params         	 6980588	       173.2 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_GPlus2Params        	 1829535	       656.7 ns/op	     384 B/op	       4 allocs/op
+    BenchmarkVmihailencoTreemux_GPlus2Params 	 3930752	       305.9 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpRouter_GPlusAll             	  642843	      1940 ns/op	     640 B/op	      11 allocs/op
+    BenchmarkHttpTreeMux_GPlusAll            	  188905	      6437 ns/op	    4032 B/op	      38 allocs/op
+    BenchmarkVmihailencoTreemux_GPlusAll     	  474685	      2808 ns/op	     512 B/op	      11 allocs/op
+    BenchmarkHttpRouter_ParseStatic          	44829891	        26.75 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpTreeMux_ParseStatic         	22076780	        54.17 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkVmihailencoTreemux_ParseStatic  	22923108	        52.60 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpRouter_ParseParam           	 9637926	       124.6 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_ParseParam          	 2794585	       429.7 ns/op	     352 B/op	       3 allocs/op
+    BenchmarkVmihailencoTreemux_ParseParam   	 7717832	       155.2 ns/op	      32 B/op	       1 allocs/op
+    BenchmarkHttpRouter_Parse2Params         	 8440347	       142.8 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpTreeMux_Parse2Params        	 2006734	       600.1 ns/op	     384 B/op	       4 allocs/op
+    BenchmarkVmihailencoTreemux_Parse2Params 	 4927276	       243.5 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkHttpRouter_ParseAll             	  435433	      2870 ns/op	     640 B/op	      16 allocs/op
+    BenchmarkHttpTreeMux_ParseAll            	  126555	      9631 ns/op	    5728 B/op	      51 allocs/op
+    BenchmarkVmihailencoTreemux_ParseAll     	  263841	      4452 ns/op	     608 B/op	      16 allocs/op
+    BenchmarkHttpRouter_StaticAll            	   98608	     12278 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkHttpTreeMux_StaticAll           	   98220	     12231 ns/op	       0 B/op	       0 allocs/op
+    BenchmarkVmihailencoTreemux_StaticAll    	   97520	     12241 ns/op	       0 B/op	       0 allocs/op
+
+````
+</details>
 
 ## Installing with Go Modules
 
@@ -39,15 +119,15 @@ router := treemux.New()
 group := router.NewGroup("/api/v1")
 
 group.GET("/:id", func(w http.ResponseWriter, req treemux.Request) error {
-    id := req.Param("id")
-    return treemux.JSON(w, treemux.H{
-        "url": fmt.Sprintf("GET /api/v1/%s", id),
-        "route": req.Route(),
-    })
+  id := req.Param("id")
+  return treemux.JSON(w, treemux.H{
+      "url": fmt.Sprintf("GET /api/v1/%s", id),
+      "route": req.Route(),
+  })
 })
 
 log.Println(http.ListenAndServe(":8080", router))
-```
+````
 
 ## Middlewares
 
