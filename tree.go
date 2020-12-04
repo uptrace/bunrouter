@@ -26,10 +26,6 @@ func newHandlerMap() *handlerMap {
 	return new(handlerMap)
 }
 
-func (h *handlerMap) Map() map[string]HandlerFunc {
-	return h.m
-}
-
 func (h *handlerMap) Get(name string) HandlerFunc {
 	switch name {
 	case http.MethodGet:
@@ -67,12 +63,12 @@ func (h *handlerMap) Set(name string, handler HandlerFunc) {
 		h.options = handler
 	case http.MethodPatch:
 		h.patch = handler
+	default:
+		if h.m == nil {
+			h.m = make(map[string]HandlerFunc)
+		}
+		h.m[name] = handler
 	}
-
-	if h.m == nil {
-		h.m = make(map[string]HandlerFunc)
-	}
-	h.m[name] = handler
 }
 
 type node struct {
