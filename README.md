@@ -143,13 +143,13 @@ Those 2 tiny changes bring us:
 - **Easier debugging**. Since middlewares have access to errors you can [log errors](/extra/reqlog/)
   along with other debugging information. OpenTelemetry [integration](/extra/treemuxotel/) uses that
   to record the error.
-- **Route name and params**. `*http.Request` was not designed to carry the route name and the
-  params. You can store that information in the request `context.Context`, but that clones the
-  request and therefore requires an allocation
+- **Route name and params**. `*http.Request` was not designed to carry the route name and params.
+  You can store that information in the request `context.Context`, but that clones the request and
+  therefore requires an allocation
 - **Effeciency**. `treemux.Request` is designed so `req.WithContext(ctx)` does not allocate.
 
 Treemux comes with middlewares that handle [gzip compression](/extra/treemuxgzip/),
-[CORS](/extra/cors/), [OpenTelemetry integration](/extra/treemuxotel/), and
+[CORS](/example/cors/), [OpenTelemetry integration](/extra/treemuxotel/), and
 [request logging](/extra/reqlog/). So with minimal changes you can make treemux work nicely with
 existing libraries.
 
