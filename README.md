@@ -129,6 +129,20 @@ group.GET("/:id", func(w http.ResponseWriter, req treemux.Request) error {
 log.Println(http.ListenAndServe(":8080", router))
 ```
 
+### Why not http.HandlerFunc?
+
+`treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc` which brings:
+
+- **Shorter and simpler error handling**. In your handlers you just return the error and deal with
+  it in a [middleware](/example/error_handling/) in a centralized fashion.
+- **Easier debugging**. Since middlewares have access to errors you can [log errors](/extra/reqlog/)
+  along with other debugging information. OpenTelemetry [integration](/extra/treemuxotel/) uses that
+  to record the error.
+- **Route name and params**. `*http.Request` was not designed to carry the route name and the
+  params. You can store that information in the request `context.Context`, but that clones the
+  request and therefore requires an allocation
+- **Effeciency**. `req.WithContext(ctx)` does not allocate.
+
 ## Middlewares
 
 Middleware is a function that wraps a handler with another function:
