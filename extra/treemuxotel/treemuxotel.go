@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/vmihailenco/treemux"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
@@ -56,7 +57,12 @@ func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 
 		span.SetAttributes(attrs...)
 
-		return next(w, req)
+		if err := next(w, req); err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+
+		return nil
 	}
 }
 
