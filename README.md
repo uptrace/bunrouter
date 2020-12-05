@@ -141,7 +141,7 @@ log.Println(http.ListenAndServe(":8080", router))
 - **Route name and params**. `*http.Request` was not designed to carry the route name and the
   params. You can store that information in the request `context.Context`, but that clones the
   request and therefore requires an allocation
-- **Effeciency**. `req.WithContext(ctx)` does not allocate.
+- **Effeciency**. `treemux.Request` is designed so `req.WithContext(ctx)` does not allocate.
 
 ## Middlewares
 
