@@ -131,7 +131,12 @@ log.Println(http.ListenAndServe(":8080", router))
 
 ### Why not http.HandlerFunc?
 
-`treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc` which brings:
+`treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc`:
+
+- `treemux.Request` replaces `*http.Request`. You can get the original request via `req.Request`.
+- Handler returns an error just like any other Go function.
+
+Those 2 tiny changes bring us:
 
 - **Shorter and simpler error handling**. In your handlers you just return the error and deal with
   it in a [middleware](/example/error_handling/) in a centralized fashion.
@@ -142,6 +147,11 @@ log.Println(http.ListenAndServe(":8080", router))
   params. You can store that information in the request `context.Context`, but that clones the
   request and therefore requires an allocation
 - **Effeciency**. `treemux.Request` is designed so `req.WithContext(ctx)` does not allocate.
+
+Treemux comes with middlewares that handle [gzip compression](/extra/treemuxgzip/),
+[CORS](/extra/cors/), [OpenTelemetry integration](/extra/treemuxotel/), and
+[request logging](/extra/reqlog/). So with minimal changes you can make treemux work nicely with
+existing libraries.
 
 ## Middlewares
 
