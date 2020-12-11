@@ -7,13 +7,6 @@ import (
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
-func handlerWithMiddlewares(handler HandlerFunc, stack []MiddlewareFunc) HandlerFunc {
-	for i := len(stack) - 1; i >= 0; i-- {
-		handler = stack[i](handler)
-	}
-	return handler
-}
-
 // Group is a group of routes and middlewares.
 type Group struct {
 	mux   *TreeMux
@@ -114,7 +107,7 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 	defer g.mux.mu.Unlock()
 
 	if len(g.stack) > 0 {
-		handler = handlerWithMiddlewares(handler, g.stack)
+		handler = g.handlerWithMiddlewares(handler)
 	}
 
 	var addSlash bool
@@ -184,6 +177,13 @@ func (g *Group) HEAD(path string, handler HandlerFunc) {
 // Syntactic sugar for Handle("OPTIONS", path, handler)
 func (g *Group) OPTIONS(path string, handler HandlerFunc) {
 	g.Handle("OPTIONS", path, handler)
+}
+
+func (g *Group) handlerWithMiddlewares(handler HandlerFunc) HandlerFunc {
+	for i := len(g.stack) - 1; i >= 0; i-- {
+		handler = g.stack[i](handler)
+	}
+	return handler
 }
 
 func joinPath(base, path string) string {

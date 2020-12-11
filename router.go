@@ -10,6 +10,17 @@ import (
 	"sync"
 )
 
+func HTTPHandler(handler http.Handler) HandlerFunc {
+	return func(w http.ResponseWriter, req Request) error {
+		handler.ServeHTTP(w, req.Request)
+		return nil
+	}
+}
+
+func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
+	return HTTPHandler(http.HandlerFunc(handler))
+}
+
 type HandlerFunc func(http.ResponseWriter, Request) error
 
 // RedirectBehavior sets the behavior when the router redirects the request to the

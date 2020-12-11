@@ -20,7 +20,7 @@ type config struct {
 }
 
 func (c *config) wrapHandler(handler HandlerFunc) HandlerFunc {
-	return handlerWithMiddlewares(handler, c.group.stack)
+	return c.group.handlerWithMiddlewares(handler)
 }
 
 type Option func(*config)

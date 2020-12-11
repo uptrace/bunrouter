@@ -14,6 +14,13 @@ type Request struct {
 	Params Params
 }
 
+func NewRequest(req *http.Request) Request {
+	return Request{
+		ctx:     req.Context(),
+		Request: req,
+	}
+}
+
 func (req Request) Context() context.Context {
 	return req.ctx
 }
