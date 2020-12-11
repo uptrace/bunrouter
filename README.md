@@ -153,14 +153,17 @@ Treemux comes with middlewares that handle [gzip compression](/extra/treemuxgzip
 [request logging](/extra/reqlog/). So with minimal changes you can make treemux work nicely with
 existing libraries.
 
-## Converting http.HandlerFunc to treemux.Handler
+## Converting http.HandlerFunc to treemux.HandlerFunc
 
 treemux provides helpers to convert existing `http.HandlerFunc` and `http.Handler` into
 `treemux.HandlerFunc`:
 
 ```go
+// http.HandlerFunc -> treemux.HandlerFunc
 router.GET("/foo", treemux.HTTPHandlerFunc(existingHandlerFunc))
-router.GET("/bar", treemux.HTTPHandler(existingHandlerFunc))
+
+// http.Handler -> treemux.HandlerFunc
+router.GET("/bar", treemux.HTTPHandler(existingHandler))
 ```
 
 ## Middlewares
