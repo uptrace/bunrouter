@@ -185,7 +185,7 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 router = treemux.New(treemux.WithMiddleware(corsMiddleware))
 ```
 
-Middlewares can be used for [error handling](/example/error_handler/).
+Middlewares are also used for [error handling](/example/error_handler/).
 
 ## Routing Rules
 
@@ -329,11 +329,6 @@ enabled by default.
 
 Go's http.ServeContent and related functions already handle the HEAD method correctly by sending
 only the header, so in most cases your handlers will not need any special cases for it.
-
-By default TreeMux.OptionsHandler is a null handler that doesn't affect your routing. If you set the
-handler, it will be called on OPTIONS requests to a path already registered by another method. If
-you set a path specific handler by using `router.OPTIONS`, it will override the global Options
-Handler for that path.
 
 ### Trailing Slashes
 
