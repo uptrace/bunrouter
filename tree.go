@@ -126,7 +126,7 @@ func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
 }
 
 func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *node {
-	leaf := len(path) == 0
+	leaf := path == ""
 	if leaf {
 		if wildcards != nil {
 			// Make sure the current wildcards are the same as the old ones.

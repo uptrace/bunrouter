@@ -132,7 +132,7 @@ func (g *Group) Handle(method string, path string, handler HandlerFunc) {
 
 	checkPath(path)
 	path = g.path + path
-	if len(path) == 0 {
+	if path == "" {
 		panic("Cannot map an empty path")
 	}
 
