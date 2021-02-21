@@ -139,7 +139,7 @@ log.Println(http.ListenAndServe(":8080", router))
 Those 2 tiny changes bring us:
 
 - **Shorter and simpler error handling**. In your handlers you just return the error and deal with
-  it in a [middleware](/example/error_handling/) in a centralized fashion.
+  it in a [middleware](/example/error_handling/) in centralized fashion.
 - **Easier debugging**. Since middlewares have access to errors you can [log errors](/extra/reqlog/)
   along with other debugging information. OpenTelemetry [integration](/extra/treemuxotel/) uses that
   to record the error.

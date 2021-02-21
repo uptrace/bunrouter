@@ -62,6 +62,6 @@ func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 		gw := hgz.ResponseWriter(w)
 		defer gw.Close()
 
-		return next(w, req)
+		return next(gw, req)
 	}
 }
