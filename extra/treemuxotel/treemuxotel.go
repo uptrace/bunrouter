@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/vmihailenco/treemux"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -40,7 +40,7 @@ func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 			return next(w, req)
 		}
 
-		attrs := make([]label.KeyValue, 0, 2+len(req.Params))
+		attrs := make([]attribute.KeyValue, 0, 2+len(req.Params))
 		attrs = append(attrs, semconv.HTTPRouteKey.String(req.Route()))
 		if c.clientIP {
 			attrs = append(attrs, semconv.HTTPClientIPKey.String(remoteAddr(req.Request)))
@@ -52,7 +52,7 @@ func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 				name = "*"
 			}
 
-			attrs = append(attrs, label.String("http.route.param."+name, param.Value))
+			attrs = append(attrs, attribute.String("http.route.param."+name, param.Value))
 		}
 
 		span.SetAttributes(attrs...)
