@@ -1,15 +1,20 @@
+<p align="center">
+  <a href="https://uptrace.dev/?utm_source=gh-redis&utm_campaign=gh-redis-banner1">
+    <img src="https://raw.githubusercontent.com/uptrace/roadmap/master/banner1.png" alt="All-in-one tool to optimize performance and monitor errors & logs">
+  </a>
+</p>
+
 # treemux - fast and flexible HTTP router
 
 [![Build Status](https://travis-ci.com/vmihailenco/treemux.png?branch=master)](https://travis-ci.com/vmihailenco/treemux)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
-> :heart: [**Uptrace.dev** - distributed traces, logs, and errors in one place](https://uptrace.dev)
-
 - [Basic example](/example/basic/)
-- [CORS example](/example/cors/)
-- [Error handling example](/example/error_handling/)
 - [Debug logging](/extra/reqlog/)
+- [CORS example](/example/cors/)
+- [Error handling](/example/error-handling/)
+- [Rate limiting with Redis](/example/rate-limiting/)
 - [Gzip compression](/extra/treemuxgzip/)
 - [OpenTelemetry integration](/extra/treemuxotel/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
@@ -139,7 +144,7 @@ log.Println(http.ListenAndServe(":8080", router))
 Those 2 tiny changes bring us:
 
 - **Shorter and simpler error handling**. In your handlers you just return the error and deal with
-  it in a [middleware](/example/error_handling/) in centralized fashion.
+  it in a [middleware](/example/error-handling/) in centralized fashion.
 - **Easier debugging**. Since middlewares have access to errors you can [log errors](/extra/reqlog/)
   along with other debugging information. OpenTelemetry [integration](/extra/treemuxotel/) uses that
   to record the error.
@@ -185,7 +190,7 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 router = treemux.New(treemux.WithMiddleware(corsMiddleware))
 ```
 
-Middlewares are also used for [error handling](/example/error_handler/).
+Middlewares are also used for [error handling](/example/error-handling/).
 
 ## Routing Rules
 

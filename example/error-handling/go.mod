@@ -1,4 +1,4 @@
-module github.com/vmihailenco/treemux/example/basic
+module github.com/vmihailenco/treemux/example/error-handling
 
 go 1.16
 

@@ -39,17 +39,18 @@ func errorHandler(next treemux.HandlerFunc) treemux.HandlerFunc {
 		err := next(w, req)
 
 		switch err {
+		case nil:
+			// ok
 		case err1:
 			w.WriteHeader(http.StatusBadRequest)
 			_ = treemux.JSON(w, treemux.H{
 				"message": "bad request",
 			})
-		case err2:
+		default:
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = treemux.JSON(w, treemux.H{
-				"message": "internal server error",
+				"message": err.Error(),
 			})
-		default:
 		}
 
 		return err
