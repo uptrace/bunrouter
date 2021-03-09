@@ -339,8 +339,8 @@ func (n *node) search(
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
-	pathLen := len(path)
-	if pathLen == 0 {
+
+	if path == "" {
 		if n.handlerMap == nil {
 			return nil, nil, nil
 		}
@@ -352,9 +352,8 @@ func (n *node) search(
 	for i, staticIndex := range n.staticIndices {
 		if staticIndex == firstChar {
 			child := n.staticChild[i]
-			childPathLen := len(child.path)
-			if pathLen >= childPathLen && child.path == path[:childPathLen] {
-				nextPath := path[childPathLen:]
+			if strings.HasPrefix(path, child.path) {
+				nextPath := path[len(child.path):]
 				found, handler, params = child.search(method, nextPath, level)
 				if handler != nil {
 					return found, handler, params
@@ -368,7 +367,7 @@ func (n *node) search(
 		// Didn't find a static token, so check for a wildcard.
 		nextSlash := strings.IndexByte(path, '/')
 		if nextSlash < 0 {
-			nextSlash = pathLen
+			nextSlash = len(path)
 		}
 
 		thisToken := path[:nextSlash]
