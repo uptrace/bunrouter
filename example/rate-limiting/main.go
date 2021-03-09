@@ -51,12 +51,16 @@ func rateLimit(next treemux.HandlerFunc) treemux.HandlerFunc {
 		h.Set("RateLimit-Remaining", strconv.Itoa(res.Remaining))
 
 		if res.Allowed == 0 {
+			// We are rate limited.
+
 			seconds := int(res.RetryAfter / time.Second)
 			h.Set("RateLimit-RetryAfter", strconv.Itoa(seconds))
 
+			// Stop processing and return the error.
 			return ErrRateLimited
 		}
 
+		// Continue processing as normal.
 		return next(w, req)
 	}
 }

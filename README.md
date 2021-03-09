@@ -14,7 +14,7 @@
 - [Debug logging](/extra/reqlog/)
 - [CORS example](/example/cors/)
 - [Error handling](/example/error-handling/)
-- [Rate limiting with Redis](/example/rate-limiting/)
+- [Rate limiting using Redis](/example/rate-limiting/)
 - [Gzip compression](/extra/treemuxgzip/)
 - [OpenTelemetry integration](/extra/treemuxotel/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
