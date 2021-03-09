@@ -108,9 +108,8 @@ type staticNode struct {
 }
 
 type node struct {
-	route string
-	path  string
-
+	route    string
+	path     string
 	priority int
 
 	// The list of static children to check.
@@ -326,7 +325,6 @@ func (n *node) splitCommonPrefix(childNode *node, path string) (*node, int) {
 	newNode := &node{
 		path:     commonPrefix,
 		priority: childNode.priority,
-		// Index is the first letter of the non-common part of the path.
 		staticChild: []staticNode{{
 			firstChar: childNode.path[0],
 			node:      childNode,
@@ -336,9 +334,7 @@ func (n *node) splitCommonPrefix(childNode *node, path string) (*node, int) {
 	return newNode, i
 }
 
-func (n *node) search(
-	method, path string, level int,
-) (found *node, handler HandlerFunc, params []Param) {
+func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []Param) {
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
@@ -356,7 +352,7 @@ func (n *node) search(
 		if child.firstChar == firstChar {
 			if strings.HasPrefix(path, child.path) {
 				nextPath := path[len(child.path):]
-				found, handler, params = child.search(method, nextPath, level)
+				found, handler, params = child.search(method, nextPath)
 				if handler != nil {
 					return found, handler, params
 				}
@@ -376,7 +372,7 @@ func (n *node) search(
 		nextToken := path[nextSlash:]
 
 		if len(thisToken) > 0 { // Don't match on empty tokens.
-			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken, level+1)
+			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken)
 			if wcHandler != nil || (found == nil && wcNode != nil) {
 				unescaped, err := url.PathUnescape(thisToken)
 				if err != nil {
@@ -384,7 +380,7 @@ func (n *node) search(
 				}
 
 				if wcParams == nil {
-					wcParams = make([]Param, 0, level+1)
+					wcParams = make([]Param, 0, len(wcNode.leafWildcardNames))
 				}
 				wcParams = append(wcParams, Param{
 					Name:  wcNode.paramName(len(wcParams)),
