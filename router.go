@@ -164,20 +164,20 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, s
 
 	n, handler, params := t.root.search(r.Method, path[1:], 0)
 	if n == nil {
-		if t.redirectCleanPath {
-			// Path was not found. Try cleaning it up and search again.
-			// TODO Test this
-			cleanPath := Clean(unescapedPath)
-			n, handler, params = t.root.search(r.Method, cleanPath[1:], 0)
-			if n == nil {
-				return t.notFoundHandler, "", nil
-			}
-			if statusCode, ok := t.redirectStatusCode(r.Method); ok {
-				// Redirect to the actual path
-				return redirectHandler(cleanPath, statusCode), "", nil
-			}
-		} else {
+		if !t.redirectCleanPath {
 			return t.notFoundHandler, "", nil
+		}
+
+		// Path was not found. Try cleaning it up and search again.
+		// TODO Test this
+		cleanPath := Clean(unescapedPath)
+		n, handler, params = t.root.search(r.Method, cleanPath[1:], 0)
+		if n == nil {
+			return t.notFoundHandler, "", nil
+		}
+		if statusCode, ok := t.redirectStatusCode(r.Method); ok {
+			// Redirect to the actual path
+			return redirectHandler(cleanPath, statusCode), "", nil
 		}
 	}
 

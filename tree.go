@@ -102,6 +102,11 @@ func (h *handlerMap) Set(name string, handler HandlerFunc) {
 	}
 }
 
+type staticNode struct {
+	*node
+	firstChar byte
+}
+
 type node struct {
 	route string
 	path  string
@@ -109,8 +114,7 @@ type node struct {
 	priority int
 
 	// The list of static children to check.
-	staticIndices []byte
-	staticChild   []*node
+	staticChild []staticNode
 
 	// If none of the above match, check the wildcard children
 	wildcardChild *node
@@ -137,7 +141,6 @@ func (n *node) paramName(i int) string {
 func (n *node) sortStaticChild(i int) {
 	for i > 0 && n.staticChild[i].priority > n.staticChild[i-1].priority {
 		n.staticChild[i], n.staticChild[i-1] = n.staticChild[i-1], n.staticChild[i]
-		n.staticIndices[i], n.staticIndices[i-1] = n.staticIndices[i-1], n.staticIndices[i]
 		i -= 1
 	}
 }
@@ -266,11 +269,12 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	inStaticToken = (c != '/')
 
 	// Do we have an existing node that starts with the same letter?
-	for i, index := range n.staticIndices {
-		if c == index {
+	for i, staticChild := range n.staticChild {
+		if staticChild.firstChar == c {
 			// Yes. Split it based on the common prefix of the existing
 			// node and the new one.
-			child, prefixSplit := n.splitCommonPrefix(i, thisToken)
+			child, prefixSplit := n.splitCommonPrefix(staticChild.node, thisToken)
+			n.staticChild[i].node = child
 
 			child.priority++
 			n.sortStaticChild(i)
@@ -285,19 +289,15 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	// No existing node starting with this letter, so create it.
 	child := &node{path: thisToken}
 
-	if n.staticIndices == nil {
-		n.staticIndices = []byte{c}
-		n.staticChild = []*node{child}
+	if n.staticChild == nil {
+		n.staticChild = []staticNode{{firstChar: c, node: child}}
 	} else {
-		n.staticIndices = append(n.staticIndices, c)
-		n.staticChild = append(n.staticChild, child)
+		n.staticChild = append(n.staticChild, staticNode{firstChar: c, node: child})
 	}
 	return child.addPath(remainingPath, wildcards, inStaticToken)
 }
 
-func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int) {
-	childNode := n.staticChild[existingNodeIndex]
-
+func (n *node) splitCommonPrefix(childNode *node, path string) (*node, int) {
 	if strings.HasPrefix(path, childNode.path) {
 		// No split needs to be done. Rather, the new path shares the entire
 		// prefix with the existing node, so the new node is just a child of
@@ -318,7 +318,7 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 		}
 	}
 
-	commonPrefix := path[0:i]
+	commonPrefix := path[:i]
 	childNode.path = childNode.path[i:]
 
 	// Create a new intermediary node in the place of the existing node, with
@@ -327,10 +327,11 @@ func (n *node) splitCommonPrefix(existingNodeIndex int, path string) (*node, int
 		path:     commonPrefix,
 		priority: childNode.priority,
 		// Index is the first letter of the non-common part of the path.
-		staticIndices: []byte{childNode.path[0]},
-		staticChild:   []*node{childNode},
+		staticChild: []staticNode{{
+			firstChar: childNode.path[0],
+			node:      childNode,
+		}},
 	}
-	n.staticChild[existingNodeIndex] = newNode
 
 	return newNode, i
 }
@@ -351,9 +352,8 @@ func (n *node) search(
 
 	// First see if this matches a static token.
 	firstChar := path[0]
-	for i, staticIndex := range n.staticIndices {
-		if staticIndex == firstChar {
-			child := n.staticChild[i]
+	for _, child := range n.staticChild {
+		if child.firstChar == firstChar {
 			if strings.HasPrefix(path, child.path) {
 				nextPath := path[len(child.path):]
 				found, handler, params = child.search(method, nextPath, level)
