@@ -157,26 +157,28 @@ func (n *node) setHandler(verb string, handler HandlerFunc, implicitHead bool) {
 }
 
 func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *node {
-	leaf := path == ""
-	if leaf {
-		if wildcards != nil {
-			// Make sure the current wildcards are the same as the old ones.
-			// If not then we have an ambiguous path.
-			if n.leafWildcardNames != nil {
-				if len(n.leafWildcardNames) != len(wildcards) {
-					// This should never happen.
-					panic("Reached leaf node with differing wildcard array length. Please report this as a bug.")
-				}
+	if path == "" { // leaf
+		if wildcards == nil {
+			return n
+		}
 
-				for i := 0; i < len(wildcards); i++ {
-					if n.leafWildcardNames[i] != wildcards[i] {
-						panic(fmt.Sprintf("Wildcards %v are ambiguous with wildcards %v",
-							n.leafWildcardNames, wildcards))
-					}
-				}
-			} else {
-				// No wildcards yet, so just add the existing set.
-				n.leafWildcardNames = wildcards
+		if n.leafWildcardNames == nil {
+			// No wildcards yet, so just add the existing set.
+			n.leafWildcardNames = wildcards
+			return n
+		}
+
+		// Make sure the current wildcards are the same as the old ones.
+		// If not then we have an ambiguous path.
+		if len(n.leafWildcardNames) != len(wildcards) {
+			// This should never happen.
+			panic("Reached leaf node with differing wildcard array length. Please report this as a bug.")
+		}
+
+		for i := 0; i < len(wildcards); i++ {
+			if n.leafWildcardNames[i] != wildcards[i] {
+				panic(fmt.Sprintf("Wildcards %v are ambiguous with wildcards %v",
+					n.leafWildcardNames, wildcards))
 			}
 		}
 
