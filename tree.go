@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -24,6 +25,36 @@ type handlerMap struct {
 
 func newHandlerMap() *handlerMap {
 	return new(handlerMap)
+}
+
+func (h *handlerMap) String() string {
+	var ss []string
+	if h.get != nil {
+		ss = append(ss, http.MethodGet)
+	}
+	if h.post != nil {
+		ss = append(ss, http.MethodPost)
+	}
+	if h.put != nil {
+		ss = append(ss, http.MethodPut)
+	}
+	if h.delete != nil {
+		ss = append(ss, http.MethodDelete)
+	}
+	if h.head != nil {
+		ss = append(ss, http.MethodHead)
+	}
+	if h.options != nil {
+		ss = append(ss, http.MethodOptions)
+	}
+	if h.patch != nil {
+		ss = append(ss, http.MethodPatch)
+	}
+	for k := range h.m {
+		ss = append(ss, k)
+	}
+	sort.Strings(ss)
+	return "[" + strings.Join(ss, " ") + "]"
 }
 
 func (h *handlerMap) Get(name string) HandlerFunc {
