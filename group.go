@@ -9,7 +9,7 @@ type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
 // Group is a group of routes and middlewares.
 type Group struct {
-	mux   *TreeMux
+	mux   *Router
 	path  string
 	stack []MiddlewareFunc
 }

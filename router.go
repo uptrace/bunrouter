@@ -54,7 +54,7 @@ const (
 	URLPath                      // Use r.URL.Path
 )
 
-type TreeMux struct {
+type Router struct {
 	config
 	Group
 
@@ -62,8 +62,8 @@ type TreeMux struct {
 	root *node
 }
 
-func New(opts ...Option) *TreeMux {
-	tm := &TreeMux{
+func New(opts ...Option) *Router {
+	tm := &Router{
 		config: config{
 			notFoundHandler:         nil,
 			methodNotAllowedHandler: nil,
@@ -99,11 +99,11 @@ func New(opts ...Option) *TreeMux {
 }
 
 // Dump returns a text representation of the routing tree.
-func (t *TreeMux) Dump() string {
+func (t *Router) Dump() string {
 	return t.root.dumpTree("", "")
 }
 
-func (t *TreeMux) redirectStatusCode(method string) (int, bool) {
+func (t *Router) redirectStatusCode(method string) (int, bool) {
 	var behavior RedirectBehavior
 	var ok bool
 	if behavior, ok = t.redirectMethodBehavior[method]; !ok {
@@ -137,7 +137,7 @@ func redirectHandler(newPath string, statusCode int) HandlerFunc {
 	}
 }
 
-func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, string, []Param) {
+func (t *Router) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, string, []Param) {
 	path := r.RequestURI
 	unescapedPath := r.URL.Path
 	pathLen := len(path)
@@ -204,7 +204,7 @@ func (t *TreeMux) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, s
 	return handler, n.route, params
 }
 
-func (t *TreeMux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (t *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	handler, route, params := t.lookup(w, req)
 	reqWrapper := Request{
 		ctx:     req.Context(),

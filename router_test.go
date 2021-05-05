@@ -198,7 +198,7 @@ func testRedirect(t *testing.T, defaultBehavior, getBehavior, postBehavior Redir
 	}
 
 	expectedCodeMap := map[string]int{"PUT": behaviorToCode(defaultBehavior)}
-	var router *TreeMux
+	var router *Router
 
 	if customMethods {
 		router = New(
@@ -345,7 +345,7 @@ func TestSkipRedirect(t *testing.T) {
 }
 
 func TestCatchAllTrailingSlashRedirect(t *testing.T) {
-	var router *TreeMux
+	var router *Router
 
 	testPath := func(path string) {
 		r, _ := newRequest("GET", "/abc/"+path, nil)
@@ -536,7 +536,7 @@ func TestPathSource(t *testing.T) {
 		return nil
 	}
 
-	var router *TreeMux
+	var router *Router
 
 	newRouter := func(opts ...Option) {
 		router = New(opts...)
