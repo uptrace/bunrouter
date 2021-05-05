@@ -6,7 +6,7 @@
 
 # treemux - fast and flexible HTTP router
 
-[![Build Status](https://travis-ci.com/vmihailenco/treemux.png?branch=master)](https://travis-ci.com/vmihailenco/treemux)
+![build workflow](https://github.com/vmihailenco/treemux/actions/workflows/build.yml/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 

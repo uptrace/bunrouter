@@ -1,12 +1,11 @@
 ALL_GO_MOD_DIRS := $(shell find . -type f -name 'go.mod' -exec dirname {} \; | sort)
 
-all:
+test:
 	go test ./...
 	go test ./... -short -race
 	go test ./... -run=NONE -bench=. -benchmem
 	env GOOS=linux GOARCH=386 go test ./...
 	go vet
-	golangci-lint run
 
 tag:
 	git tag $(VERSION)
