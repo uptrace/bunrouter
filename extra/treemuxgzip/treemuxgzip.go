@@ -17,7 +17,7 @@ type config struct {
 	contentTypes     []string
 }
 
-type RouterOption func(c *config)
+type Option func(c *config)
 
 func WithCompressionLevel(level int) Option {
 	return func(c *config) {
