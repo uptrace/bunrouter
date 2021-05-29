@@ -7,10 +7,9 @@ import (
 )
 
 type Request struct {
-	ctx context.Context
 	*http.Request
-	route string
-
+	ctx    context.Context
+	route  string
 	Params Params
 }
 

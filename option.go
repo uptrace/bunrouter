@@ -60,9 +60,9 @@ func WithRedirectCleanPath(on bool) Option {
 	}
 }
 
-// WithRedirectTrailingSlash enables automatic redirection in case router doesn't find a matching route
-// for the current request path but a handler for the path with or without the trailing
-// slash exists. This is true by default.
+// WithRedirectTrailingSlash enables automatic redirection in case router doesn't find
+// a matching route for the current request path but a handler for the path with or
+// without the trailing slash exists. This is true by default.
 func WithRedirectTrailingSlash(on bool) Option {
 	return func(c *config) {
 		c.redirectTrailingSlash = on
@@ -114,7 +114,7 @@ func WithMiddleware(fn MiddlewareFunc) Option {
 	}
 }
 
-// WithHandler is like WithMiddleware, but it can't modify the request.
+// WithHandler is like WithMiddleware, but the handler can't modify the request.
 func WithHandler(fn HandlerFunc) Option {
 	return func(c *config) {
 		middleware := func(next HandlerFunc) HandlerFunc {
