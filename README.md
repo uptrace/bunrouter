@@ -18,7 +18,7 @@
 - [Gzip compression](/extra/treemuxgzip/)
 - [OpenTelemetry integration](/extra/treemuxotel/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
-- [RealWorld example application](https://github.com/uptrace/go-treemux-realworld-example-app)
+- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
 
 High-speed, flexible, tree-based HTTP router for Go. It is as fast as httprouter, but with relaxed
