@@ -123,14 +123,14 @@ type node struct {
 
 	// Data for the node is below.
 
-	addSlash   bool
-	isCatchAll bool
-
 	// If this node is the end of the URL, then call the handler, if applicable.
 	handlerMap *handlerMap
 
 	// The names of the parameters to apply.
 	leafWildcardNames []string
+
+	addSlash   bool
+	isCatchAll bool
 }
 
 func (n *node) paramName(i int) string {
@@ -335,7 +335,7 @@ func (n *node) splitCommonPrefix(childNode *node, path string) (*node, int) {
 	return newNode, i
 }
 
-func (n *node) search(method, path string) (found *node, handler HandlerFunc, params []Param) {
+func (n *node) search(method, path string) (*node, HandlerFunc, []Param) {
 	// if test != nil {
 	// 	test.Logf("Searching for %s in %s", path, n.dumpTree("", ""))
 	// }
@@ -347,16 +347,19 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 		return n, n.handlerMap.Get(method), nil
 	}
 
+	var lastNode *node
+
 	// First see if this matches a static token.
 	firstChar := path[0]
 	for _, child := range n.staticChildren {
 		if child.firstChar == firstChar {
 			if strings.HasPrefix(path, child.path) {
 				nextPath := path[len(child.path):]
-				found, handler, params = child.search(method, nextPath)
+				node, handler, params := child.search(method, nextPath)
 				if handler != nil {
-					return found, handler, params
+					return node, handler, params
 				}
+				lastNode = node
 			}
 			break
 		}
@@ -373,55 +376,53 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 		nextToken := path[nextSlash:]
 
 		if len(thisToken) > 0 { // Don't match on empty tokens.
-			wcNode, wcHandler, wcParams := n.wildcardChild.search(method, nextToken)
-			if wcHandler != nil || (found == nil && wcNode != nil) {
+			node, handler, params := n.wildcardChild.search(method, nextToken)
+			if handler != nil || (lastNode == nil && node != nil) {
 				unescaped, err := url.PathUnescape(thisToken)
 				if err != nil {
 					unescaped = thisToken
 				}
 
-				if wcParams == nil {
-					wcParams = make([]Param, 0, len(wcNode.leafWildcardNames))
+				if params == nil {
+					params = make([]Param, 0, len(node.leafWildcardNames))
 				}
-				wcParams = append(wcParams, Param{
-					Name:  wcNode.paramName(len(wcParams)),
+				params = append(params, Param{
+					Name:  node.paramName(len(params)),
 					Value: unescaped,
 				})
 
-				if wcHandler != nil {
-					return wcNode, wcHandler, wcParams
+				if handler != nil {
+					return node, handler, params
 				}
 
 				// Didn't actually find a handler here, so remember that we
 				// found a node but also see if we can fall through to the
 				// catchall.
-				found = wcNode
-				handler = wcHandler
-				params = wcParams
+				lastNode = node
 			}
 		}
 	}
 
-	if catchAllChild := n.catchAllChild; catchAllChild != nil {
+	if n.catchAllChild != nil {
 		// Hit the catchall, so just assign the whole remaining path if it
 		// has a matching handler.
-		handler = catchAllChild.handlerMap.Get(method)
+		handler := n.catchAllChild.handlerMap.Get(method)
 		// Found a handler, or we found a catchall node without a handler.
 		// Either way, return it since there's nothing left to check after this.
-		if handler != nil || found == nil {
+		if handler != nil || lastNode == nil {
 			unescaped, err := url.PathUnescape(path)
 			if err != nil {
 				unescaped = path
 			}
 
-			return catchAllChild, handler, []Param{{
-				Name:  catchAllChild.paramName(0),
+			return n.catchAllChild, handler, []Param{{
+				Name:  n.catchAllChild.paramName(0),
 				Value: unescaped,
 			}}
 		}
 	}
 
-	return found, handler, params
+	return lastNode, nil, nil
 }
 
 func (n *node) dumpTree(prefix, nodeType string) string {
