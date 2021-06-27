@@ -113,7 +113,7 @@ type node struct {
 	priority int
 
 	// The list of static children to check.
-	staticChild []staticNode
+	staticChildren []staticNode
 
 	// If none of the above match, check the wildcard children
 	wildcardChild *node
@@ -137,9 +137,9 @@ func (n *node) paramName(i int) string {
 	return n.leafWildcardNames[len(n.leafWildcardNames)-1-i]
 }
 
-func (n *node) sortStaticChild(i int) {
-	for i > 0 && n.staticChild[i].priority > n.staticChild[i-1].priority {
-		n.staticChild[i], n.staticChild[i-1] = n.staticChild[i-1], n.staticChild[i]
+func (n *node) sortStaticChildren(i int) {
+	for i > 0 && n.staticChildren[i].priority > n.staticChildren[i-1].priority {
+		n.staticChildren[i], n.staticChildren[i-1] = n.staticChildren[i-1], n.staticChildren[i]
 		i -= 1
 	}
 }
@@ -268,15 +268,16 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	inStaticToken = (c != '/')
 
 	// Do we have an existing node that starts with the same letter?
-	for i, staticChild := range n.staticChild {
-		if staticChild.firstChar == c {
+	for i, staticChildren := range n.staticChildren {
+		if staticChildren.firstChar == c {
 			// Yes. Split it based on the common prefix of the existing
 			// node and the new one.
-			child, prefixSplit := n.splitCommonPrefix(staticChild.node, thisToken)
-			n.staticChild[i].node = child
+			child, prefixSplit := n.splitCommonPrefix(staticChildren.node, thisToken)
+			n.staticChildren[i].node = child
 
 			child.priority++
-			n.sortStaticChild(i)
+			n.sortStaticChildren(i)
+
 			if unescaped {
 				// Account for the removed backslash.
 				prefixSplit++
@@ -288,10 +289,10 @@ func (n *node) addPath(path string, wildcards []string, inStaticToken bool) *nod
 	// No existing node starting with this letter, so create it.
 	child := &node{path: thisToken}
 
-	if n.staticChild == nil {
-		n.staticChild = []staticNode{{firstChar: c, node: child}}
+	if n.staticChildren == nil {
+		n.staticChildren = []staticNode{{firstChar: c, node: child}}
 	} else {
-		n.staticChild = append(n.staticChild, staticNode{firstChar: c, node: child})
+		n.staticChildren = append(n.staticChildren, staticNode{firstChar: c, node: child})
 	}
 	return child.addPath(remainingPath, wildcards, inStaticToken)
 }
@@ -325,7 +326,7 @@ func (n *node) splitCommonPrefix(childNode *node, path string) (*node, int) {
 	newNode := &node{
 		path:     commonPrefix,
 		priority: childNode.priority,
-		staticChild: []staticNode{{
+		staticChildren: []staticNode{{
 			firstChar: childNode.path[0],
 			node:      childNode,
 		}},
@@ -348,7 +349,7 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 
 	// First see if this matches a static token.
 	firstChar := path[0]
-	for _, child := range n.staticChild {
+	for _, child := range n.staticChildren {
 		if child.firstChar == firstChar {
 			if strings.HasPrefix(path, child.path) {
 				nextPath := path[len(child.path):]
@@ -425,9 +426,9 @@ func (n *node) search(method, path string) (found *node, handler HandlerFunc, pa
 
 func (n *node) dumpTree(prefix, nodeType string) string {
 	line := fmt.Sprintf("%s %02d %s%s [%d] %v wildcards %v\n", prefix, n.priority, nodeType, n.path,
-		len(n.staticChild), n.handlerMap, n.leafWildcardNames)
+		len(n.staticChildren), n.handlerMap, n.leafWildcardNames)
 	prefix += "  "
-	for _, node := range n.staticChild {
+	for _, node := range n.staticChildren {
 		line += node.dumpTree(prefix, "")
 	}
 	if n.wildcardChild != nil {
