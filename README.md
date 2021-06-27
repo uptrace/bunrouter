@@ -139,7 +139,7 @@ log.Println(http.ListenAndServe(":8080", router))
 `treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc`:
 
 - `treemux.Request` replaces `*http.Request`. You can get the original request via `req.Request`.
-- Handler returns an error just like any other Go function.
+- Handlers return errors just like other Go functions.
 
 Those 2 tiny changes bring us:
 
@@ -187,7 +187,7 @@ func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
     }
 }
 
-router = treemux.New(treemux.WithMiddleware(corsMiddleware))
+router := treemux.New(treemux.WithMiddleware(corsMiddleware))
 ```
 
 Middlewares are also used for [error handling](/example/error-handling/).
