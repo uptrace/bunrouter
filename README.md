@@ -21,7 +21,8 @@
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 - [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
 
-High-speed, flexible, tree-based HTTP router for Go. It is as fast as httprouter, but with relaxed
+High-speed, flexible, tree-based HTTP router for Go. It is as fast as httprouter (if configured like
+httprouter for maximum performance, not [correctness](#requesturi-vs-urlpath)), but with relaxed
 routing rules.
 
 <details>
@@ -29,77 +30,97 @@ routing rules.
 
 ```
 #GithubAPI Routes: 203
+   Gin: 58280 Bytes
    GorillaMux: 1319632 Bytes
    HttpRouter: 37088 Bytes
-   VmihailencoTreemux: 55056 Bytes
+   VmihailencoTreemux: 52784 Bytes
 
 #GPlusAPI Routes: 13
+   Gin: 4376 Bytes
    GorillaMux: 66016 Bytes
    HttpRouter: 2760 Bytes
-   VmihailencoTreemux: 5392 Bytes
+   VmihailencoTreemux: 5200 Bytes
 
 #ParseAPI Routes: 26
+   Gin: 7696 Bytes
    GorillaMux: 105448 Bytes
    HttpRouter: 5024 Bytes
-   VmihailencoTreemux: 5472 Bytes
+   VmihailencoTreemux: 5248 Bytes
 
 #Static Routes: 157
+   Gin: 34488 Bytes
    GorillaMux: 582520 Bytes
    HttpRouter: 21680 Bytes
-   VmihailencoTreemux: 46768 Bytes
+   VmihailencoTreemux: 44256 Bytes
 
 goos: linux
 goarch: amd64
 pkg: github.com/julienschmidt/go-http-routing-benchmark
 cpu: AMD Ryzen 5 2600 Six-Core Processor
-BenchmarkGorillaMux_Param                	  482310	      2466 ns/op	    1312 B/op	      10 allocs/op
-BenchmarkHttpRouter_Param                	11034873	        98.17 ns/op	      32 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_Param        	 7469511	       159.0 ns/op	      32 B/op	       1 allocs/op
-BenchmarkGorillaMux_Param5               	  315780	      3630 ns/op	    1376 B/op	      10 allocs/op
-BenchmarkHttpRouter_Param5               	 4141971	       284.0 ns/op	     160 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_Param5       	 2814357	       433.4 ns/op	     160 B/op	       1 allocs/op
-BenchmarkGorillaMux_Param20              	  153157	      7711 ns/op	    3483 B/op	      12 allocs/op
-BenchmarkHttpRouter_Param20              	 1311662	       902.1 ns/op	     640 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_Param20      	  939973	      1449 ns/op	     640 B/op	       1 allocs/op
-BenchmarkGorillaMux_ParamWrite           	  444409	      2533 ns/op	    1312 B/op	      10 allocs/op
-BenchmarkHttpRouter_ParamWrite           	 8234792	       145.1 ns/op	      32 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_ParamWrite   	 6130166	       191.2 ns/op	      32 B/op	       1 allocs/op
-BenchmarkGorillaMux_GithubStatic         	  221184	      5321 ns/op	    1008 B/op	       9 allocs/op
-BenchmarkHttpRouter_GithubStatic         	27660388	        43.66 ns/op	       0 B/op	       0 allocs/op
-BenchmarkVmihailencoTreemux_GithubStatic 	21185312	        56.69 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GithubParam          	  148010	      8032 ns/op	    1328 B/op	      10 allocs/op
-BenchmarkHttpRouter_GithubParam          	 4974057	       237.6 ns/op	      96 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_GithubParam  	 3405594	       351.2 ns/op	      64 B/op	       1 allocs/op
-BenchmarkGorillaMux_GithubAll            	     319	   3641622 ns/op	  258152 B/op	    1994 allocs/op
-BenchmarkHttpRouter_GithubAll            	   26018	     47075 ns/op	   13792 B/op	     167 allocs/op
-BenchmarkVmihailencoTreemux_GithubAll    	   19554	     63180 ns/op	   10848 B/op	     167 allocs/op
-BenchmarkGorillaMux_GPlusStatic          	  802489	      1811 ns/op	    1008 B/op	       9 allocs/op
-BenchmarkHttpRouter_GPlusStatic          	38865102	        31.89 ns/op	       0 B/op	       0 allocs/op
-BenchmarkVmihailencoTreemux_GPlusStatic  	41022703	        29.31 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GPlusParam           	  356788	      3449 ns/op	    1312 B/op	      10 allocs/op
-BenchmarkHttpRouter_GPlusParam           	 6561582	       164.7 ns/op	      64 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_GPlusParam   	 6196903	       193.5 ns/op	      32 B/op	       1 allocs/op
-BenchmarkGorillaMux_GPlus2Params         	  201336	      6237 ns/op	    1328 B/op	      10 allocs/op
-BenchmarkHttpRouter_GPlus2Params         	 5670499	       197.0 ns/op	      64 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_GPlus2Params 	 3671635	       337.5 ns/op	      64 B/op	       1 allocs/op
-BenchmarkGorillaMux_GPlusAll             	   24546	     50849 ns/op	   16528 B/op	     128 allocs/op
-BenchmarkHttpRouter_GPlusAll             	  616034	      2250 ns/op	     640 B/op	      11 allocs/op
-BenchmarkVmihailencoTreemux_GPlusAll     	  441236	      3026 ns/op	     512 B/op	      11 allocs/op
-BenchmarkGorillaMux_ParseStatic          	  632019	      2185 ns/op	    1008 B/op	       9 allocs/op
-BenchmarkHttpRouter_ParseStatic          	44729970	        27.70 ns/op	       0 B/op	       0 allocs/op
-BenchmarkVmihailencoTreemux_ParseStatic  	22529782	        54.80 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_ParseParam           	  498606	      2423 ns/op	    1312 B/op	      10 allocs/op
-BenchmarkHttpRouter_ParseParam           	 7737769	       145.6 ns/op	      64 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_ParseParam   	 7123089	       168.0 ns/op	      32 B/op	       1 allocs/op
-BenchmarkGorillaMux_Parse2Params         	  419157	      2924 ns/op	    1328 B/op	      10 allocs/op
-BenchmarkHttpRouter_Parse2Params         	 7583847	       165.6 ns/op	      64 B/op	       1 allocs/op
-BenchmarkVmihailencoTreemux_Parse2Params 	 4374222	       272.1 ns/op	      64 B/op	       1 allocs/op
-BenchmarkGorillaMux_ParseAll             	   12295	     99150 ns/op	   31120 B/op	     250 allocs/op
-BenchmarkHttpRouter_ParseAll             	  388022	      3227 ns/op	     640 B/op	      16 allocs/op
-BenchmarkVmihailencoTreemux_ParseAll     	  235298	      4937 ns/op	     608 B/op	      16 allocs/op
-BenchmarkGorillaMux_StaticAll            	    1122	    967515 ns/op	  158261 B/op	    1413 allocs/op
-BenchmarkHttpRouter_StaticAll            	   88946	     12589 ns/op	       0 B/op	       0 allocs/op
-BenchmarkVmihailencoTreemux_StaticAll    	   96432	     12494 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_Param                       	13445883	        90.91 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param                	  497948	      2323 ns/op	    1312 B/op	      10 allocs/op
+BenchmarkHttpRouter_Param                	11621246	       103.3 ns/op	      32 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_Param        	 8076144	       150.1 ns/op	      32 B/op	       1 allocs/op
+BenchmarkGin_Param5                      	 7001068	       172.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param5               	  346927	      3547 ns/op	    1376 B/op	      10 allocs/op
+BenchmarkHttpRouter_Param5               	 4407726	       271.0 ns/op	     160 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_Param5       	 2972869	       412.1 ns/op	     160 B/op	       1 allocs/op
+BenchmarkGin_Param20                     	 3334362	       363.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param20              	  160214	      7475 ns/op	    3483 B/op	      12 allocs/op
+BenchmarkHttpRouter_Param20              	 1375376	       834.6 ns/op	     640 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_Param20      	 1000000	      1415 ns/op	     640 B/op	       1 allocs/op
+BenchmarkGin_ParamWrite                  	 6975416	       164.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParamWrite           	  476827	      2439 ns/op	    1312 B/op	      10 allocs/op
+BenchmarkHttpRouter_ParamWrite           	 8530756	       139.6 ns/op	      32 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_ParamWrite   	 6340944	       187.2 ns/op	      32 B/op	       1 allocs/op
+BenchmarkGin_GithubStatic                	11209341	       107.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubStatic         	  236701	      5205 ns/op	    1008 B/op	       9 allocs/op
+BenchmarkHttpRouter_GithubStatic         	27611305	        43.33 ns/op	       0 B/op	       0 allocs/op
+BenchmarkVmihailencoTreemux_GithubStatic 	19998584	        60.99 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GithubParam                 	 5821226	       203.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubParam          	  146994	      7959 ns/op	    1328 B/op	      10 allocs/op
+BenchmarkHttpRouter_GithubParam          	 5160134	       233.1 ns/op	      96 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_GithubParam  	 3622098	       331.1 ns/op	      64 B/op	       1 allocs/op
+BenchmarkGin_GithubAll                   	   29200	     40809 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubAll            	     313	   3685931 ns/op	  258152 B/op	    1994 allocs/op
+BenchmarkHttpRouter_GithubAll            	   26196	     47213 ns/op	   13792 B/op	     167 allocs/op
+BenchmarkVmihailencoTreemux_GithubAll    	   20058	     59828 ns/op	   10848 B/op	     167 allocs/op
+BenchmarkGin_GPlusStatic                 	13594092	        85.63 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusStatic          	  637002	      1737 ns/op	    1008 B/op	       9 allocs/op
+BenchmarkHttpRouter_GPlusStatic          	37554530	        29.70 ns/op	       0 B/op	       0 allocs/op
+BenchmarkVmihailencoTreemux_GPlusStatic  	33921577	        34.39 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GPlusParam                  	 8665750	       138.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusParam           	  369037	      3147 ns/op	    1312 B/op	      10 allocs/op
+BenchmarkHttpRouter_GPlusParam           	 7316545	       163.8 ns/op	      64 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_GPlusParam   	 6544346	       183.0 ns/op	      32 B/op	       1 allocs/op
+BenchmarkGin_GPlus2Params                	 5480659	       215.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlus2Params         	  187828	      6270 ns/op	    1328 B/op	      10 allocs/op
+BenchmarkHttpRouter_GPlus2Params         	 6125556	       193.1 ns/op	      64 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_GPlus2Params 	 3724188	       322.7 ns/op	      64 B/op	       1 allocs/op
+BenchmarkGin_GPlusAll                    	  558418	      2137 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusAll             	   24033	     49393 ns/op	   16528 B/op	     128 allocs/op
+BenchmarkHttpRouter_GPlusAll             	  600092	      2270 ns/op	     640 B/op	      11 allocs/op
+BenchmarkVmihailencoTreemux_GPlusAll     	  387855	      2923 ns/op	     512 B/op	      11 allocs/op
+BenchmarkGin_ParseStatic                 	13975424	        84.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseStatic          	  556461	      2130 ns/op	    1008 B/op	       9 allocs/op
+BenchmarkHttpRouter_ParseStatic          	43666348	        27.57 ns/op	       0 B/op	       0 allocs/op
+BenchmarkVmihailencoTreemux_ParseStatic  	20183964	        59.89 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_ParseParam                  	11734768	       102.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseParam           	  477866	      2429 ns/op	    1312 B/op	      10 allocs/op
+BenchmarkHttpRouter_ParseParam           	 8223655	       146.3 ns/op	      64 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_ParseParam   	 7149213	       167.5 ns/op	      32 B/op	       1 allocs/op
+BenchmarkGin_Parse2Params                	 9245916	       129.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Parse2Params         	  396586	      3003 ns/op	    1328 B/op	      10 allocs/op
+BenchmarkHttpRouter_Parse2Params         	 7201134	       168.7 ns/op	      64 B/op	       1 allocs/op
+BenchmarkVmihailencoTreemux_Parse2Params 	 4365876	       273.0 ns/op	      64 B/op	       1 allocs/op
+BenchmarkGin_ParseAll                    	  317048	      3631 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseAll             	   12296	     96610 ns/op	   31120 B/op	     250 allocs/op
+BenchmarkHttpRouter_ParseAll             	  398336	      3190 ns/op	     640 B/op	      16 allocs/op
+BenchmarkVmihailencoTreemux_ParseAll     	  231426	      5115 ns/op	     608 B/op	      16 allocs/op
+BenchmarkGin_StaticAll                   	   45273	     26511 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_StaticAll            	    1189	    973675 ns/op	  158261 B/op	    1413 allocs/op
+BenchmarkHttpRouter_StaticAll            	   95552	     12534 ns/op	       0 B/op	       0 allocs/op
+BenchmarkVmihailencoTreemux_StaticAll    	   69766	     17071 ns/op	       0 B/op	       0 allocs/op
 ```
 
 </details>
