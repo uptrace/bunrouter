@@ -218,7 +218,7 @@ Then you can get the route information from the context:
 
 ```go
 route := treemux.RouteFromContext(req.Context())
-fmt.Println(route.Name(), route.Params())
+fmt.Println(route.Name(), route.Params)
 ```
 
 ## Middlewares

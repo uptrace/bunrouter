@@ -34,7 +34,7 @@ func indexHandler(w http.ResponseWriter, req *http.Request) {
 func userHandler(w http.ResponseWriter, req *http.Request) {
 	route := treemux.RouteFromContext(req.Context())
 
-	id, err := route.Params().Uint64("id")
+	id, err := route.Params.Uint64("id")
 	if err != nil {
 		panic(err)
 	}
