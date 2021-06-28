@@ -456,13 +456,6 @@ If a pattern matches, but the pattern does not have an associated handler for th
 the router calls the MethodNotAllowedHandler. The default version of this handler just writes the
 status code `http.StatusMethodNotAllowed`.
 
-## Unexpected Differences from Other Routers
-
-This router is intentionally light on features in the name of simplicity and performance. When
-coming from another router that does heavier processing behind the scenes, you may encounter some
-unexpected behavior. This list is by no means exhaustive, but covers some nonobvious cases that
-users have encountered.
-
 ### httprouter and catch-all parameters
 
 When using `httprouter`, a route with a catch-all parameter (e.g. `/images/*path`) will match on
@@ -472,18 +465,15 @@ catch-all parameters, but the behavior can be duplicated by adding a route witho
 
 ## httptreemux
 
-This is a fork of [httptreemux](https://github.com/dimfeld/httptreemux). The original code was
+treemux is a fork of [httptreemux](https://github.com/dimfeld/httptreemux). The original code was
 written by [Daniel Imfeld](https://github.com/dimfeld/).
 
-### Changes from httptreemux
+The following changes have been made:
 
-- Thin wrapper `treemux.Request` around `http.Request` to expose route via `Request.Route` and route
-  params via `req.Params`.
-
-- Setting a `context.Context` does not require an allocation.
-
+- Added a thin wrapper `treemux.Request` around `http.Request` to expose route via `Request.Route`
+  and route params via `Request.Params`.
+- Setting `context.Context` does not require an allocation.
 - More efficient params encoding using a slice instead of a map.
-
 - Reworked configuration.
-
-- `Group` is immutable to avoid accidental leaking of middlewares into the group.
+- `Group` is immutable to avoid accidental middlewares leaking into parent groups.
+- treemux is 2-3 times faster.
