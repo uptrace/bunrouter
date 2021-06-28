@@ -4,7 +4,7 @@
   </a>
 </p>
 
-# treemux - fast and flexible HTTP router
+# High-speed and flexible HTTP router for Go
 
 ![build workflow](https://github.com/vmihailenco/treemux/actions/workflows/build.yml/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
