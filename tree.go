@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 )
 
@@ -19,8 +18,6 @@ type handlerMap struct {
 
 	// If true, the head handler was set implicitly, so let it also be set explicitly.
 	implicitHead bool
-
-	m map[string]HandlerFunc
 }
 
 func newHandlerMap() *handlerMap {
@@ -50,15 +47,11 @@ func (h *handlerMap) String() string {
 	if h.patch != nil {
 		ss = append(ss, http.MethodPatch)
 	}
-	for k := range h.m {
-		ss = append(ss, k)
-	}
-	sort.Strings(ss)
 	return "[" + strings.Join(ss, " ") + "]"
 }
 
-func (h *handlerMap) Get(name string) HandlerFunc {
-	switch name {
+func (h *handlerMap) Get(meth string) HandlerFunc {
+	switch meth {
 	case http.MethodGet:
 		return h.get
 	case http.MethodPost:
@@ -74,12 +67,12 @@ func (h *handlerMap) Get(name string) HandlerFunc {
 	case http.MethodPatch:
 		return h.patch
 	default:
-		return h.m[name]
+		return nil
 	}
 }
 
-func (h *handlerMap) Set(name string, handler HandlerFunc) {
-	switch name {
+func (h *handlerMap) Set(meth string, handler HandlerFunc) {
+	switch meth {
 	case http.MethodGet:
 		h.get = handler
 	case http.MethodPost:
@@ -95,10 +88,7 @@ func (h *handlerMap) Set(name string, handler HandlerFunc) {
 	case http.MethodPatch:
 		h.patch = handler
 	default:
-		if h.m == nil {
-			h.m = make(map[string]HandlerFunc)
-		}
-		h.m[name] = handler
+		panic(fmt.Errorf("unknown HTTP method: %s", meth))
 	}
 }
 
