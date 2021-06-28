@@ -12,12 +12,11 @@ import (
 func main() {
 	router := treemux.New(
 		treemux.WithMiddleware(reqlog.NewMiddleware()),
-	)
+	).Compat()
 
-	compat := router.Compat()
-	compat.GET("/", indexHandler)
+	router.GET("/", indexHandler)
 
-	compat.WithGroup("/api", func(g *treemux.CompatGroup) {
+	router.WithGroup("/api", func(g *treemux.CompatGroup) {
 		g.GET("/users/:id", userHandler)
 		g.GET("/images/*path", imageHandler)
 	})
