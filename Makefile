@@ -24,3 +24,7 @@ go_mod_tidy:
 	    go get -d ./... && \
 	    go mod tidy); \
 	done
+
+fmt:
+	gofmt -w -s ./
+	goimports -w  -local github.com/vmihailenco/treemux ./

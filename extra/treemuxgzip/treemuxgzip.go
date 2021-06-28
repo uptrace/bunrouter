@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/vmihailenco/httpgzip"
+
 	"github.com/vmihailenco/treemux"
 )
 

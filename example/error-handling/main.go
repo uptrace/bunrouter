@@ -23,8 +23,8 @@ func main() {
 
 	router.GET("/", indexHandler)
 
-	log.Println("listening on http://localhost:9080")
-	log.Println(http.ListenAndServe(":9080", router))
+	log.Println("listening on http://localhost:8888")
+	log.Println(http.ListenAndServe(":8888", router))
 }
 
 func indexHandler(w http.ResponseWriter, req treemux.Request) error {
@@ -45,11 +45,13 @@ func errorHandler(next treemux.HandlerFunc) treemux.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			_ = treemux.JSON(w, treemux.H{
 				"message": "bad request",
+				"hint":    "reload to see how error message is changed",
 			})
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = treemux.JSON(w, treemux.H{
 				"message": err.Error(),
+				"hint":    "reload to see how error message is changed",
 			})
 		}
 

@@ -10,7 +10,7 @@ type Request struct {
 	*http.Request
 	ctx    context.Context
 	route  string
-	Params Params
+	params Params
 }
 
 func NewRequest(req *http.Request) Request {
@@ -33,9 +33,15 @@ func (req Request) Route() string {
 	return req.route
 }
 
-func (req Request) Param(key string) string {
-	return req.Params.Text(key)
+func (req Request) Params() Params {
+	return req.params
 }
+
+func (req Request) Param(key string) string {
+	return req.params.Text(key)
+}
+
+//------------------------------------------------------------------------------
 
 type Param struct {
 	Name  string
@@ -85,4 +91,37 @@ func (ps Params) Map() map[string]string {
 		m[param.Name] = param.Value
 	}
 	return m
+}
+
+//------------------------------------------------------------------------------
+
+type routeCtxKey struct{}
+
+func RouteFromContext(ctx context.Context) *RouteInfo {
+	route, _ := ctx.Value(routeCtxKey{}).(*RouteInfo)
+	return route
+}
+
+func contextWithRoute(ctx context.Context, route string, params Params) context.Context {
+	return context.WithValue(ctx, routeCtxKey{}, &RouteInfo{
+		name:   route,
+		params: params,
+	})
+}
+
+type RouteInfo struct {
+	name   string
+	params Params
+}
+
+func (r *RouteInfo) Name() string {
+	return r.name
+}
+
+func (r *RouteInfo) Params() Params {
+	return r.params
+}
+
+func (r *RouteInfo) Param(name string) string {
+	return r.params.Text(name)
 }

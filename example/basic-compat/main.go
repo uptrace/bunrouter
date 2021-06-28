@@ -14,9 +14,10 @@ func main() {
 		treemux.WithMiddleware(reqlog.NewMiddleware()),
 	)
 
-	router.GET("/", indexHandler)
+	compat := router.Compat()
+	compat.GET("/", indexHandler)
 
-	router.WithGroup("/api", func(g *treemux.Group) {
+	compat.WithGroup("/api", func(g *treemux.CompatGroup) {
 		g.GET("/users/:id", userHandler)
 		g.GET("/images/*path", imageHandler)
 	})
@@ -25,27 +26,37 @@ func main() {
 	log.Println(http.ListenAndServe(":8888", router))
 }
 
-func indexHandler(w http.ResponseWriter, req treemux.Request) error {
-	return indexTemplate().Execute(w, nil)
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	if err := indexTemplate().Execute(w, nil); err != nil {
+		panic(err)
+	}
 }
 
-func userHandler(w http.ResponseWriter, req treemux.Request) error {
-	id, err := req.Params().Uint64("id")
+func userHandler(w http.ResponseWriter, req *http.Request) {
+	route := treemux.RouteFromContext(req.Context())
+
+	id, err := route.Params().Uint64("id")
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	return treemux.JSON(w, treemux.H{
-		"route": req.Route(),
+	if err := treemux.JSON(w, treemux.H{
+		"route": route.Name(),
 		"id":    id,
-	})
+	}); err != nil {
+		panic(err)
+	}
 }
 
-func imageHandler(w http.ResponseWriter, req treemux.Request) error {
-	return treemux.JSON(w, treemux.H{
-		"route": req.Route(),
-		"path":  req.Param("path"),
-	})
+func imageHandler(w http.ResponseWriter, req *http.Request) {
+	route := treemux.RouteFromContext(req.Context())
+
+	if err := treemux.JSON(w, treemux.H{
+		"route": route.Name(),
+		"path":  route.Param("path"),
+	}); err != nil {
+		panic(err)
+	}
 }
 
 var indexTmpl = `

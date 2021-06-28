@@ -4,11 +4,12 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/vmihailenco/treemux"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/vmihailenco/treemux"
 )
 
 type config struct {

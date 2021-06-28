@@ -137,22 +137,43 @@ The handler is a simple function with the prototype
 and parameters parsed from wildcards and catch-alls in the URL. This type is aliased as
 `treemux.HandlerFunc`.
 
+The following [example](example/basic) writes the route name and the param in JSON format:
+
 ```go
 import "github.com/vmihailenco/treemux"
 
 router := treemux.New()
 
-group := router.NewGroup("/api/v1")
+group := router.NewGroup("/api")
 
 group.GET("/:id", func(w http.ResponseWriter, req treemux.Request) error {
-  id := req.Param("id")
   return treemux.JSON(w, treemux.H{
-      "url": fmt.Sprintf("GET /api/v1/%s", id),
       "route": req.Route(),
+      "id":    req.Param("id"),
   })
 })
 
-log.Println(http.ListenAndServe(":8080", router))
+log.Println(http.ListenAndServe(":8888", router))
+```
+
+Alternatively, you can also [use](example/basic-compat) `http.HandlerFunc`:
+
+```go
+import "github.com/vmihailenco/treemux"
+
+router := treemux.New().Compat()
+
+group := router.NewGroup("/api")
+
+group.GET("/:id", func(w http.ResponseWriter, req *http.Request) {
+  route := treemux.RouteFromContext(req.Context())
+  _ = treemux.JSON(w, treemux.H{
+      "route": route.Name(),
+      "id":    route.Param("id"),
+  })
+})
+
+log.Println(http.ListenAndServe(":8888", router))
 ```
 
 ### Why not http.HandlerFunc?
@@ -176,12 +197,12 @@ Those 2 tiny changes bring us:
 
 Treemux comes with middlewares that handle [gzip compression](/extra/treemuxgzip/),
 [CORS](/example/cors/), [OpenTelemetry integration](/extra/treemuxotel/), and
-[request logging](/extra/reqlog/). So with minimal changes you can make treemux work nicely with
-existing libraries.
+[request logging](/extra/reqlog/). So with minimal changes you can work with existing libraries
+using `treemux.HandlerFunc`.
 
 ## Converting http.HandlerFunc to treemux.HandlerFunc
 
-treemux provides helpers to convert existing `http.HandlerFunc` and `http.Handler` into
+treemux also provides helpers to convert existing `http.HandlerFunc` and `http.Handler` into
 `treemux.HandlerFunc`:
 
 ```go
@@ -190,6 +211,13 @@ router.GET("/foo", treemux.HTTPHandlerFunc(existingHandlerFunc))
 
 // http.Handler -> treemux.HandlerFunc
 router.GET("/bar", treemux.HTTPHandler(existingHandler))
+```
+
+Then you can get the route information from the context:
+
+```go
+route := treemux.RouteFromContext(req.Context())
+fmt.Println(route.Name(), route.Params())
 ```
 
 ## Middlewares

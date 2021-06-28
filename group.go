@@ -19,7 +19,7 @@ func (g *Group) NewGroup(path string, opts ...Option) *Group {
 	group := &Group{
 		mux:   g.mux,
 		path:  joinPath(g.path, path),
-		stack: g.stack[:len(g.stack):len(g.stack)],
+		stack: g.cloneStack(),
 	}
 
 	cfg := &config{
@@ -30,6 +30,14 @@ func (g *Group) NewGroup(path string, opts ...Option) *Group {
 	}
 
 	return group
+}
+
+func (g *Group) cloneStack() []MiddlewareFunc {
+	return g.stack[:len(g.stack):len(g.stack)]
+}
+
+func (g *Group) Compat() *CompatGroup {
+	return &CompatGroup{group: g}
 }
 
 func (g *Group) WithMiddleware(middleware MiddlewareFunc) *Group {
@@ -185,6 +193,58 @@ func (g *Group) handlerWithMiddlewares(handler HandlerFunc) HandlerFunc {
 	}
 	return handler
 }
+
+//------------------------------------------------------------------------------
+
+type CompatGroup struct {
+	group *Group
+}
+
+func (g CompatGroup) NewGroup(path string, opts ...Option) *CompatGroup {
+	return &CompatGroup{group: g.group.NewGroup(path, opts...)}
+}
+
+func (g CompatGroup) WithMiddleware(middleware MiddlewareFunc) *CompatGroup {
+	return &CompatGroup{group: g.group.WithMiddleware(middleware)}
+}
+
+func (g CompatGroup) WithGroup(path string, fn func(g *CompatGroup)) {
+	fn(g.NewGroup(path))
+}
+
+func (g CompatGroup) Handle(method string, path string, handler http.HandlerFunc) {
+	g.group.Handle(method, path, HTTPHandler(handler))
+}
+
+func (g CompatGroup) GET(path string, handler http.HandlerFunc) {
+	g.Handle(http.MethodGet, path, handler)
+}
+
+func (g CompatGroup) POST(path string, handler http.HandlerFunc) {
+	g.Handle("POST", path, handler)
+}
+
+func (g CompatGroup) PUT(path string, handler http.HandlerFunc) {
+	g.Handle("PUT", path, handler)
+}
+
+func (g CompatGroup) DELETE(path string, handler http.HandlerFunc) {
+	g.Handle("DELETE", path, handler)
+}
+
+func (g CompatGroup) PATCH(path string, handler http.HandlerFunc) {
+	g.Handle("PATCH", path, handler)
+}
+
+func (g CompatGroup) HEAD(path string, handler http.HandlerFunc) {
+	g.Handle("HEAD", path, handler)
+}
+
+func (g CompatGroup) OPTIONS(path string, handler http.HandlerFunc) {
+	g.Handle("OPTIONS", path, handler)
+}
+
+//------------------------------------------------------------------------------
 
 func joinPath(base, path string) string {
 	checkPath(path)

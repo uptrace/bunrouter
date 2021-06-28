@@ -12,7 +12,8 @@ import (
 
 func HTTPHandler(handler http.Handler) HandlerFunc {
 	return func(w http.ResponseWriter, req Request) error {
-		handler.ServeHTTP(w, req.Request)
+		ctx := contextWithRoute(req.Context(), req.route, req.params)
+		handler.ServeHTTP(w, req.Request.WithContext(ctx))
 		return nil
 	}
 }
@@ -210,7 +211,7 @@ func (t *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		ctx:     req.Context(),
 		Request: req,
 		route:   route,
-		Params:  params,
+		params:  params,
 	}
 	_ = handler(w, reqWrapper)
 }

@@ -32,10 +32,10 @@ type TestScenario struct {
 }
 
 var scenarios = []TestScenario{
-	TestScenario{newRequest, false, "Test with RequestURI and normal ServeHTTP"},
-	TestScenario{http.NewRequest, false, "Test with URL.Path and normal ServeHTTP"},
-	TestScenario{newRequest, true, "Test with RequestURI and LookupResult"},
-	TestScenario{http.NewRequest, true, "Test with URL.Path and LookupResult"},
+	{newRequest, false, "Test with RequestURI and normal ServeHTTP"},
+	{http.NewRequest, false, "Test with URL.Path and normal ServeHTTP"},
+	{newRequest, true, "Test with RequestURI and LookupResult"},
+	{http.NewRequest, true, "Test with URL.Path and LookupResult"},
 }
 
 // This type and the benchRequest function are modified from go-http-routing-benchmark.

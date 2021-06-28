@@ -24,8 +24,8 @@ func main() {
 			g.GET("/users/:id", userHandler)
 		}))
 
-	log.Println("listening on http://localhost:8080")
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Println("listening on http://localhost:8888")
+	log.Println(http.ListenAndServe(":8888", router))
 }
 
 func corsMiddleware(next treemux.HandlerFunc) treemux.HandlerFunc {
@@ -59,7 +59,7 @@ func indexHandler(w http.ResponseWriter, req treemux.Request) error {
 }
 
 func userHandler(w http.ResponseWriter, req treemux.Request) error {
-	id, err := req.Params.Uint64("id")
+	id, err := req.Params().Uint64("id")
 	if err != nil {
 		return err
 	}
