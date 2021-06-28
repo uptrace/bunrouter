@@ -11,6 +11,7 @@
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
 - [Basic example](/example/basic/)
+- [http.HandlerFunc example](/example/basic-compat/)
 - [Debug logging](/extra/reqlog/)
 - [CORS example](/example/cors/)
 - [Error handling](/example/error-handling/)
