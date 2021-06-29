@@ -43,16 +43,11 @@ type HandlerFunc func(http.ResponseWriter, Request) error
 // Finally, the UseHandler value will simply call the handler function for the pattern.
 type RedirectBehavior int
 
-type PathSource int
-
 const (
 	Redirect301 RedirectBehavior = iota // Return 301 Moved Permanently
 	Redirect307                         // Return 307 HTTP/1.1 Temporary Redirect
 	Redirect308                         // Return a 308 RFC7538 Permanent Redirect
 	UseHandler                          // Just call the handler function
-
-	RequestURI PathSource = iota // Use r.RequestURI
-	URLPath                      // Use r.URL.Path
 )
 
 type Router struct {
@@ -75,8 +70,6 @@ func New(opts ...Option) *Router {
 
 			redirectBehavior:       Redirect301,
 			redirectMethodBehavior: make(map[string]RedirectBehavior),
-
-			pathSource: RequestURI,
 		},
 
 		root: &node{path: "/"},
@@ -142,7 +135,8 @@ func (t *Router) lookup(w http.ResponseWriter, r *http.Request) (HandlerFunc, st
 	path := r.RequestURI
 	unescapedPath := r.URL.Path
 	pathLen := len(path)
-	if pathLen > 0 && t.pathSource == RequestURI {
+
+	if pathLen > 0 && !t.useURLPath {
 		rawQueryLen := len(r.URL.RawQuery)
 
 		if rawQueryLen != 0 || path[pathLen-1] == '?' {

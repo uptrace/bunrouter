@@ -556,13 +556,13 @@ func TestPathSource(t *testing.T) {
 		t.Error("Using default, expected bananas but saw", called)
 	}
 
-	newRouter(WithPathSource(URLPath))
+	newRouter(UseURLPath())
 	router.ServeHTTP(w, r)
 	if called != "apples" {
 		t.Error("Using URLPath, expected apples but saw", called)
 	}
 
-	newRouter(WithPathSource(RequestURI))
+	newRouter()
 	router.ServeHTTP(w, r)
 	if called != "bananas" {
 		t.Error("Using RequestURI, expected bananas but saw", called)

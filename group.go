@@ -196,6 +196,7 @@ func (g *Group) handlerWithMiddlewares(handler HandlerFunc) HandlerFunc {
 
 //------------------------------------------------------------------------------
 
+// CompatGroup is like Group, but it works with http.HandlerFunc instead of treemux handler.
 type CompatGroup struct {
 	group *Group
 }

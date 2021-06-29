@@ -14,7 +14,7 @@ type config struct {
 	redirectBehavior       RedirectBehavior
 	redirectMethodBehavior map[string]RedirectBehavior
 
-	pathSource PathSource
+	useURLPath bool
 
 	group *Group
 }
@@ -93,7 +93,7 @@ func WithRedirectMethodBehavior(value map[string]RedirectBehavior) Option {
 	}
 }
 
-// WithPathSource determines from where the router gets its path to search.
+// UseURLPath determines from where the router gets its path to search.
 // By default it pulls the data from the RequestURI member, but this can
 // be overridden to use URL.Path instead.
 //
@@ -101,9 +101,9 @@ func WithRedirectMethodBehavior(value map[string]RedirectBehavior) Option {
 // encoded slashes (i.e. %2f) in the URL properly, while URL.Path provides
 // better compatibility with some utility functions in the http
 // library that modify the Request before passing it to the router.
-func WithPathSource(value PathSource) Option {
+func UseURLPath() Option {
 	return func(c *config) {
-		c.pathSource = value
+		c.useURLPath = true
 	}
 }
 
