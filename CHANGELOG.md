@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.7.1 - Jun 29 2021
+## v0.7.2 - Jun 29 2021
 
 - Changed `Request.Params` is be a getter method.
 - Added `Request.WithParams` to set params.
