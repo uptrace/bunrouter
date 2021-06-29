@@ -41,13 +41,13 @@ func (c *config) Middleware(next treemux.HandlerFunc) treemux.HandlerFunc {
 			return next(w, req)
 		}
 
-		attrs := make([]attribute.KeyValue, 0, 2+len(req.Params))
+		attrs := make([]attribute.KeyValue, 0, 2+len(req.Params()))
 		attrs = append(attrs, semconv.HTTPRouteKey.String(req.Route()))
 		if c.clientIP {
 			attrs = append(attrs, semconv.HTTPClientIPKey.String(remoteAddr(req.Request)))
 		}
 
-		for _, param := range req.Params {
+		for _, param := range req.Params() {
 			name := param.Name
 			if name == "" {
 				name = "*"
