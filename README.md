@@ -133,10 +133,11 @@ ensure that you get the right version.
 
 ## Handler
 
-The handler is a simple function with the prototype
+treemux supports 2 types of handlers: `treemux.HandlerFunc` (recommended) and `http.HandlerFunc`.
+
+The treemux handler is a simple function with the prototype
 `func(w http.ResponseWriter, req treemux.Request) error`. A `treemux.Request` contains route name
-and parameters parsed from wildcards and catch-alls in the URL. This type is aliased as
-`treemux.HandlerFunc`.
+and parameters parsed from wildcards and catch-alls in the URL.
 
 The following [example](example/basic) writes the route name and the param in JSON format:
 
@@ -181,8 +182,8 @@ log.Println(http.ListenAndServe(":8888", router))
 
 `treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc`:
 
-- `treemux.Request` replaces `*http.Request`. You can get the original request via `req.Request`.
-- Handlers return errors just like other Go functions.
+1. `treemux.Request` replaces `*http.Request`. You can get the original request via `req.Request`.
+2. Treemux handlers return errors just like other Go functions.
 
 Those 2 tiny changes bring us:
 
@@ -218,7 +219,7 @@ Then you can get the route information from the context:
 
 ```go
 route := treemux.RouteFromContext(req.Context())
-fmt.Println(route.Name(), route.Params)
+fmt.Println(route.Name(), route.Params())
 ```
 
 ## Middlewares

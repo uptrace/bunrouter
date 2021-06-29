@@ -13,8 +13,9 @@ func addPath(t *testing.T, tree *node, path string) {
 	t.Logf("Adding path %s", path)
 	n := tree.addPath(path[1:], nil, false)
 	handler := func(w http.ResponseWriter, r Request) error {
-		for i := range r.Params {
-			p := &r.Params[i]
+		params := r.Params()
+		for i := range params {
+			p := &params[i]
 			if p.Name == "path" {
 				p.Value = path
 				break
@@ -61,10 +62,9 @@ func testPath(t *testing.T, tree *node, path string, expectPath string, expected
 		return
 	}
 
-	r := Request{}
-	r.Params = append(r.Params, Param{"path", ""})
+	r := Request{}.WithParams([]Param{{"path", ""}})
 	_ = handler(nil, r)
-	matchedPath := r.Params.Text("path")
+	matchedPath := r.Params().Text("path")
 
 	if matchedPath != expectPath {
 		t.Errorf("Path %s matched %s, expected %s", path, matchedPath, expectPath)
@@ -238,10 +238,9 @@ func TestTree(t *testing.T) {
 		handler := n.handlerMap.Get(http.MethodGet)
 		matchPath := ""
 		if handler != nil {
-			r := Request{}
-			r.Params = append(r.Params, Param{"path", ""})
+			r := Request{}.WithParams([]Param{{"path", ""}})
 			_ = handler(nil, r)
-			matchPath = r.Params.Text("path")
+			matchPath = r.Params().Text("path")
 		}
 
 		if len(matchPath) < 2 || matchPath[1:] != p {

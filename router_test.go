@@ -410,8 +410,8 @@ func TestRoot(t *testing.T) {
 func TestWildcardAtSplitNode(t *testing.T) {
 	var suppliedParam string
 	simpleHandler := func(w http.ResponseWriter, r Request) error {
-		t.Log(r.Params.Map())
-		suppliedParam, _ = r.Params.Get("slug")
+		t.Log(r.Params().Map())
+		suppliedParam, _ = r.Params().Get("slug")
 		return nil
 	}
 
@@ -460,11 +460,11 @@ func TestWildcardAtSplitNode(t *testing.T) {
 func TestSlash(t *testing.T) {
 	param := ""
 	handler := func(w http.ResponseWriter, r Request) error {
-		param = r.Params.Text("param")
+		param = r.Params().Text("param")
 		return nil
 	}
 	ymHandler := func(w http.ResponseWriter, r Request) error {
-		param = r.Params.Text("year") + " " + r.Params.Text("month")
+		param = r.Params().Text("year") + " " + r.Params().Text("month")
 		return nil
 	}
 	router := New()
@@ -492,7 +492,7 @@ func TestQueryString(t *testing.T) {
 		t.Log(scenario.description)
 		param := ""
 		handler := func(w http.ResponseWriter, r Request) error {
-			param = r.Params.Text("param")
+			param = r.Params().Text("param")
 			return nil
 		}
 		router := New()
@@ -674,16 +674,16 @@ func TestMiddleware(t *testing.T) {
 		g := g.NewGroup("/g2", WithMiddleware(func(next HandlerFunc) HandlerFunc {
 			return func(w http.ResponseWriter, r Request) error {
 				record("m4")
-				r.Params = append(r.Params, Param{
+				r = r.WithParams(append(r.Params(), Param{
 					Name:  "foo",
 					Value: "bar",
-				})
+				}))
 				return next(w, r)
 			}
 		}))
 		g.GET("/h6", func(w http.ResponseWriter, r Request) error {
 			record("h6")
-			if v := r.Params.Text("foo"); v != "bar" {
+			if v := r.Params().Text("foo"); v != "bar" {
 				t.Fatalf("got %q, wanted %q", v, "bar")
 			}
 			return nil

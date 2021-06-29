@@ -8,9 +8,10 @@ import (
 
 type Request struct {
 	*http.Request
-	ctx    context.Context
+	ctx context.Context
+
 	route  string
-	Params Params
+	params Params
 }
 
 func NewRequest(req *http.Request) Request {
@@ -29,12 +30,21 @@ func (req Request) WithContext(ctx context.Context) Request {
 	return req
 }
 
+func (req Request) WithParams(params Params) Request {
+	req.params = params
+	return req
+}
+
 func (req Request) Route() string {
 	return req.route
 }
 
+func (req Request) Params() Params {
+	return req.params
+}
+
 func (req Request) Param(key string) string {
-	return req.Params.Text(key)
+	return req.params.Text(key)
 }
 
 //------------------------------------------------------------------------------
@@ -101,19 +111,23 @@ func RouteFromContext(ctx context.Context) *RouteInfo {
 func contextWithRoute(ctx context.Context, route string, params Params) context.Context {
 	return context.WithValue(ctx, routeCtxKey{}, &RouteInfo{
 		name:   route,
-		Params: params,
+		params: params,
 	})
 }
 
 type RouteInfo struct {
 	name   string
-	Params Params
+	params Params // exported so users can change params
 }
 
 func (r *RouteInfo) Name() string {
 	return r.name
 }
 
+func (r *RouteInfo) Params() Params {
+	return r.params
+}
+
 func (r *RouteInfo) Param(name string) string {
-	return r.Params.Text(name)
+	return r.params.Text(name)
 }

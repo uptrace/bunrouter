@@ -59,7 +59,7 @@ func indexHandler(w http.ResponseWriter, req treemux.Request) error {
 }
 
 func userHandler(w http.ResponseWriter, req treemux.Request) error {
-	id, err := req.Params.Uint64("id")
+	id, err := req.Params().Uint64("id")
 	if err != nil {
 		return err
 	}
