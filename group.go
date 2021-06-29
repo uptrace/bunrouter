@@ -7,6 +7,48 @@ import (
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
+type GroupOption interface {
+	Option
+	groupOption()
+}
+
+type groupOption func(cfg *config)
+
+func (fn groupOption) apply(cfg *config) {
+	fn(cfg)
+}
+
+func (fn groupOption) groupOption() {}
+
+// WithGroup calls the fn with the current Group.
+func WithGroup(fn func(g *Group)) GroupOption {
+	return groupOption(func(c *config) {
+		fn(c.group)
+	})
+}
+
+// WithMiddleware adds a middleware handler to the Group's middleware stack.
+func WithMiddleware(fn MiddlewareFunc) GroupOption {
+	return groupOption(func(c *config) {
+		c.group.stack = append(c.group.stack, fn)
+	})
+}
+
+// WithHandler is like WithMiddleware, but the handler can't modify the request.
+func WithHandler(fn HandlerFunc) GroupOption {
+	return groupOption(func(c *config) {
+		middleware := func(next HandlerFunc) HandlerFunc {
+			return func(w http.ResponseWriter, req Request) error {
+				if err := fn(w, req); err != nil {
+					return err
+				}
+				return next(w, req)
+			}
+		}
+		c.group.stack = append(c.group.stack, middleware)
+	})
+}
+
 // Group is a group of routes and middlewares.
 type Group struct {
 	mux   *Router
@@ -15,7 +57,7 @@ type Group struct {
 }
 
 // NewGroup adds a sub-group to this group.
-func (g *Group) NewGroup(path string, opts ...Option) *Group {
+func (g *Group) NewGroup(path string, opts ...GroupOption) *Group {
 	group := &Group{
 		mux:   g.mux,
 		path:  joinPath(g.path, path),
@@ -26,7 +68,7 @@ func (g *Group) NewGroup(path string, opts ...Option) *Group {
 		group: group,
 	}
 	for _, opt := range opts {
-		opt(cfg)
+		opt.apply(cfg)
 	}
 
 	return group
@@ -201,7 +243,7 @@ type CompatGroup struct {
 	group *Group
 }
 
-func (g CompatGroup) NewGroup(path string, opts ...Option) *CompatGroup {
+func (g CompatGroup) NewGroup(path string, opts ...GroupOption) *CompatGroup {
 	return &CompatGroup{group: g.group.NewGroup(path, opts...)}
 }
 

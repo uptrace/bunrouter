@@ -59,7 +59,7 @@ type Router struct {
 }
 
 func New(opts ...Option) *Router {
-	tm := &Router{
+	router := &Router{
 		config: config{
 			notFoundHandler:         nil,
 			methodNotAllowedHandler: nil,
@@ -75,21 +75,21 @@ func New(opts ...Option) *Router {
 		root: &node{path: "/"},
 	}
 
-	tm.Group.mux = tm
-	tm.config.group = &tm.Group
+	router.Group.mux = router
+	router.config.group = &router.Group
 
 	for _, opt := range opts {
-		opt(&tm.config)
+		opt.apply(&router.config)
 	}
 
-	if tm.notFoundHandler == nil {
-		tm.notFoundHandler = tm.config.wrapHandler(notFoundHandler)
+	if router.notFoundHandler == nil {
+		router.notFoundHandler = router.config.wrapHandler(notFoundHandler)
 	}
-	if tm.methodNotAllowedHandler == nil {
-		tm.methodNotAllowedHandler = tm.config.wrapHandler(methodNotAllowedHandler)
+	if router.methodNotAllowedHandler == nil {
+		router.methodNotAllowedHandler = router.config.wrapHandler(methodNotAllowedHandler)
 	}
 
-	return tm
+	return router
 }
 
 // Dump returns a text representation of the routing tree.
