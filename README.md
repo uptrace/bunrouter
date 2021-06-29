@@ -6,7 +6,7 @@
 
 # High-speed and flexible HTTP router for Go
 
-![build workflow](https://github.com/vmihailenco/treemux/actions/workflows/build.yml/badge.svg)
+[![build workflow](https://github.com/vmihailenco/treemux/actions/workflows/build.yml/badge.svg)](https://github.com/vmihailenco/treemux/actions)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
