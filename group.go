@@ -287,10 +287,6 @@ func (g CompatGroup) OPTIONS(path string, handler http.HandlerFunc) {
 	g.Handle("OPTIONS", path, handler)
 }
 
-func (g CompatGroup) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	g.group.mux.ServeHTTP(w, req)
-}
-
 //------------------------------------------------------------------------------
 
 func joinPath(base, path string) string {

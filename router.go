@@ -82,6 +82,7 @@ func New(opts ...Option) *Router {
 		opt.apply(&router.config)
 	}
 
+	// Do it after processing middlewares from the options.
 	if router.notFoundHandler == nil {
 		router.notFoundHandler = router.config.wrapHandler(notFoundHandler)
 	}
@@ -208,6 +209,18 @@ func (t *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		params:  params,
 	}
 	_ = handler(w, reqWrapper)
+}
+
+type CompatRouter struct {
+	*Router
+	*CompatGroup
+}
+
+func (r *Router) Compat() *CompatRouter {
+	return &CompatRouter{
+		Router:      r,
+		CompatGroup: r.Group.Compat(),
+	}
 }
 
 // methodNotAllowedHandler is the default handler for TreeMux.MethodNotAllowedHandler,
