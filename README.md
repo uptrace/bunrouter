@@ -178,12 +178,13 @@ group.GET("/:id", func(w http.ResponseWriter, req *http.Request) {
 log.Println(http.ListenAndServe(":8888", router))
 ```
 
-### Why not http.HandlerFunc?
+### Why treemux.HandlerFunc?
 
 `treemux.HandlerFunc` is a thin wrapper over `http.HandlerFunc`:
 
-1. `treemux.Request` replaces `*http.Request`. You can get the original request via `req.Request`.
-2. Treemux handlers return errors just like other Go functions.
+1. `treemux.Request` replaces `*http.Request`. You can get the original `http.Request` via
+   `req.Request`.
+2. `treemux.HandlerFunc` returns errors just like other Go functions.
 
 Those 2 tiny changes bring us:
 
