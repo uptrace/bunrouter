@@ -22,4 +22,4 @@ go_mod_tidy:
 
 fmt:
 	gofmt -w -s ./
-	goimports -w  -local github.com/vmihailenco/treemux ./
+	goimports -w  -local github.com/uptrace/treemux ./
