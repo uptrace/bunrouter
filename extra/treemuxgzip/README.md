@@ -3,13 +3,13 @@
 To install:
 
 ```bash
-go get github.com/vmihailenco/treemux/extra/treemuxgzip
+go get github.com/uptrace/treemux/extra/treemuxgzip
 ```
 
 To use:
 
 ```go
-import "github.com/vmihailenco/treemux/extra/treemuxgzip"
+import "github.com/uptrace/treemux/extra/treemuxgzip"
 
 router := treemux.New(
     // Compress everything with default compression level.
@@ -22,7 +22,7 @@ With options:
 ```go
 import (
     "github.com/klauspost/compress/gzip"
-    "github.com/vmihailenco/treemux/extra/treemuxgzip"
+    "github.com/uptrace/treemux/extra/treemuxgzip"
 )
 
 gzipMiddleware := treemuxgzip.NewMiddleware(

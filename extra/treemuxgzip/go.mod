@@ -1,11 +1,11 @@
-module github.com/vmihailenco/treemux/extra/treemuxgzip
+module github.com/uptrace/treemux/extra/treemuxgzip
 
 go 1.15
 
-replace github.com/vmihailenco/treemux => ../..
+replace github.com/uptrace/treemux => ../..
 
 require (
-	github.com/klauspost/compress v1.12.2 // indirect
+	github.com/klauspost/compress v1.13.5 // indirect
+	github.com/uptrace/treemux v0.7.3
 	github.com/vmihailenco/httpgzip v1.2.3
-	github.com/vmihailenco/treemux v0.6.0
 )

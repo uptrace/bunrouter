@@ -5,7 +5,7 @@ import (
 
 	"github.com/vmihailenco/httpgzip"
 
-	"github.com/vmihailenco/treemux"
+	"github.com/uptrace/treemux"
 )
 
 const (

@@ -3,13 +3,13 @@
 To install:
 
 ```bash
-go get github.com/vmihailenco/treemux/extra/treemuxotel
+go get github.com/uptrace/treemux/extra/treemuxotel
 ```
 
 To use:
 
 ```go
-import "github.com/vmihailenco/treemux/extra/treemuxotel"
+import "github.com/uptrace/treemux/extra/treemuxotel"
 
 router := treemux.New(
     treemux.WithMiddleware(treemuxotel.NewMiddleware()),
@@ -19,7 +19,7 @@ router := treemux.New(
 With options:
 
 ```go
-import "github.com/vmihailenco/treemux/extra/treemuxotel"
+import "github.com/uptrace/treemux/extra/treemuxotel"
 
 otelMiddleware := treemuxotel.NewMiddleware(
     treemuxotel.WithClientIP(false),
