@@ -3,13 +3,13 @@
 To install:
 
 ```bash
-go get github.com/vmihailenco/treemux/extra/reqlog
+go get github.com/uptrace/treemux/extra/reqlog
 ```
 
 To use:
 
 ```go
-import "github.com/vmihailenco/treemux/extra/reqlog"
+import "github.com/uptrace/treemux/extra/reqlog"
 
 router := treemux.New(
     treemux.WithMiddleware(reqlog.NewMiddleware()),
@@ -19,7 +19,7 @@ router := treemux.New(
 With options:
 
 ```go
-import "github.com/vmihailenco/treemux/extra/reqlog"
+import "github.com/uptrace/treemux/extra/reqlog"
 
 reqlogMiddleware := reqlog.NewMiddleware(reqlog.WithVerbose(false))
 

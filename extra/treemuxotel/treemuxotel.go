@@ -9,7 +9,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/vmihailenco/treemux"
+	"github.com/uptrace/treemux"
 )
 
 type config struct {

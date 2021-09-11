@@ -8,7 +8,7 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/vmihailenco/treemux"
+	"github.com/uptrace/treemux"
 )
 
 type config struct {
@@ -92,13 +92,13 @@ func formatStatus(code int) string {
 func statusColor(code int) *color.Color {
 	switch {
 	case code >= 200 && code < 300:
-		return color.New(color.BgGreen)
+		return color.New(color.BgGreen, color.FgHiWhite)
 	case code >= 300 && code < 400:
-		return color.New(color.BgWhite)
+		return color.New(color.BgWhite, color.FgHiBlack)
 	case code >= 400 && code < 500:
-		return color.New(color.BgYellow)
+		return color.New(color.BgYellow, color.FgHiBlack)
 	default:
-		return color.New(color.BgRed)
+		return color.New(color.BgRed, color.FgHiWhite)
 	}
 }
 
@@ -109,18 +109,18 @@ func formatMethod(method string) string {
 func methodColor(method string) *color.Color {
 	switch method {
 	case http.MethodGet:
-		return color.New(color.BgBlue)
+		return color.New(color.BgBlue, color.FgHiWhite)
 	case http.MethodPost:
-		return color.New(color.BgCyan)
+		return color.New(color.BgCyan, color.FgHiBlack)
 	case http.MethodPut:
-		return color.New(color.BgYellow)
+		return color.New(color.BgYellow, color.FgHiBlack)
 	case http.MethodDelete:
-		return color.New(color.BgRed)
+		return color.New(color.BgRed, color.FgHiWhite)
 	case http.MethodPatch:
-		return color.New(color.BgGreen)
+		return color.New(color.BgGreen, color.FgHiWhite)
 	case http.MethodHead:
-		return color.New(color.BgMagenta)
+		return color.New(color.BgMagenta, color.FgHiWhite)
 	default:
-		return color.New(color.BgWhite)
+		return color.New(color.BgWhite, color.FgHiBlack)
 	}
 }

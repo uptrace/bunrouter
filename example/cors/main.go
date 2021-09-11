@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/vmihailenco/treemux"
-	"github.com/vmihailenco/treemux/extra/reqlog"
+	"github.com/uptrace/treemux"
+	"github.com/uptrace/treemux/extra/reqlog"
 )
 
 func main() {

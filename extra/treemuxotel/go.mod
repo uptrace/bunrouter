@@ -1,11 +1,11 @@
-module github.com/vmihailenco/treemux/extra/treemuxotel
+module github.com/uptrace/treemux/extra/treemuxotel
 
 go 1.15
 
-replace github.com/vmihailenco/treemux => ../..
+replace github.com/uptrace/treemux => ../..
 
 require (
-	github.com/vmihailenco/treemux v0.6.1
-	go.opentelemetry.io/otel v1.0.0-RC1
-	go.opentelemetry.io/otel/trace v1.0.0-RC1
+	github.com/uptrace/treemux v0.7.3
+	go.opentelemetry.io/otel v1.0.0-RC3
+	go.opentelemetry.io/otel/trace v1.0.0-RC3
 )

@@ -1,11 +1,12 @@
-module github.com/vmihailenco/treemux/extra/reqlog
+module github.com/uptrace/treemux/extra/reqlog
 
 go 1.15
 
-replace github.com/vmihailenco/treemux => ../..
+replace github.com/uptrace/treemux => ../..
 
 require (
-	github.com/fatih/color v1.10.0
-	github.com/vmihailenco/treemux v0.6.0
-	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
+	github.com/fatih/color v1.12.0
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/uptrace/treemux v0.7.3
+	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
 )

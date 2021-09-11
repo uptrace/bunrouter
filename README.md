@@ -6,8 +6,8 @@
 
 # High-speed and flexible HTTP router for Go
 
-[![build workflow](https://github.com/vmihailenco/treemux/actions/workflows/build.yml/badge.svg)](https://github.com/vmihailenco/treemux/actions)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/vmihailenco/treemux)](https://pkg.go.dev/github.com/vmihailenco/treemux)
+[![build workflow](https://github.com/uptrace/treemux/actions/workflows/build.yml/badge.svg)](https://github.com/uptrace/treemux/actions)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/uptrace/treemux)](https://pkg.go.dev/github.com/uptrace/treemux)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
 - [Basic example](/example/basic/)
@@ -20,7 +20,7 @@
 - [OpenTelemetry integration](/extra/treemuxotel/)
 - [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
-- [Reference](https://pkg.go.dev/github.com/vmihailenco/treemux)
+- [Reference](https://pkg.go.dev/github.com/uptrace/treemux)
 
 High-speed, flexible, tree-based HTTP router for Go. It is as fast as httprouter (if configured like
 httprouter for maximum performance, not [correctness](#requesturi-vs-urlpath)), but with relaxed
@@ -128,8 +128,8 @@ BenchmarkVmihailencoTreemux_StaticAll    	   69766	     17071 ns/op	       0 B/o
 
 ## Installing with Go Modules
 
-When using Go Modules, import this repository with `import "github.com/vmihailenco/treemux"` to
-ensure that you get the right version.
+When using Go Modules, import this repository with `import "github.com/uptrace/treemux"` to ensure
+that you get the right version.
 
 ## Handler
 
@@ -142,7 +142,7 @@ and parameters parsed from wildcards and catch-alls in the URL.
 The following [example](example/basic) writes the route name and the param in JSON format:
 
 ```go
-import "github.com/vmihailenco/treemux"
+import "github.com/uptrace/treemux"
 
 router := treemux.New()
 
@@ -161,7 +161,7 @@ log.Println(http.ListenAndServe(":8888", router))
 Alternatively, you can also [use](example/basic-compat) `http.HandlerFunc`:
 
 ```go
-import "github.com/vmihailenco/treemux"
+import "github.com/uptrace/treemux"
 
 router := treemux.New().Compat()
 
@@ -196,7 +196,7 @@ Those 2 tiny changes bring us:
 - **Route name and params**. `*http.Request` was not designed to carry the route name and params.
   You can store that information in the request `context.Context`, but that clones the request and
   therefore requires an allocation
-- **Effeciency**. `treemux.Request` is designed so `req.WithContext(ctx)` does not allocate.
+- **Efficiency**. `treemux.Request` is designed so `req.WithContext(ctx)` does not allocate.
 
 Treemux comes with middlewares that handle [gzip compression](/extra/treemuxgzip/),
 [CORS](/example/cors/), [OpenTelemetry integration](/extra/treemuxotel/), and
