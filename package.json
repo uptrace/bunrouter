@@ -1,6 +1,6 @@
 {
   "name": "treemux",
-  "version": "0.0.0",
+  "version": "0.8.0",
   "main": "index.js",
   "repository": "git@github.com:uptrace/treemux.git",
   "author": "Vladimir Mihailenco <vladimir.webdev@gmail.com>",
