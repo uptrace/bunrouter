@@ -53,7 +53,7 @@ func imageHandler(w http.ResponseWriter, req *http.Request) {
 
 	if err := bunrouter.JSON(w, bunrouter.H{
 		"route": params.Route(),
-		"path":  params.Text("path"),
+		"path":  params.ByName("path"),
 	}); err != nil {
 		panic(err)
 	}

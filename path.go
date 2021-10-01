@@ -18,7 +18,7 @@ package bunrouter
 //	   that is, replace "/.." by "/" at the beginning of a path.
 //
 // If the result of this process is an empty string, "/" is returned
-func Clean(p string) string {
+func CleanPath(p string) string {
 	if p == "" {
 		return "/"
 	}

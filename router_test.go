@@ -349,7 +349,7 @@ func TestQueryString(t *testing.T) {
 		t.Log(scenario.description)
 		param := ""
 		handler := func(w http.ResponseWriter, r Request) error {
-			param = r.Params().Text("param")
+			param = r.Params().ByName("param")
 			return nil
 		}
 		router := New()

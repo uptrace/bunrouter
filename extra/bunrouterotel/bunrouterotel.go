@@ -49,7 +49,7 @@ func (c *config) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 		}
 
 		for _, param := range params {
-			attrs = append(attrs, attribute.String("http.route.param."+param.Name, param.Value))
+			attrs = append(attrs, attribute.String("http.route.param."+param.Key, param.Value))
 		}
 
 		span.SetAttributes(attrs...)

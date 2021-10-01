@@ -62,7 +62,7 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	node, handler, wildcardLen := r.tree.findRoute(req.Method, path[1:])
 	if node == nil {
 		// Path was not found. Try cleaning it up and search again.
-		cleanPath := Clean(unescapedPath)
+		cleanPath := CleanPath(unescapedPath)
 
 		node, _, _ = r.tree.findRoute(req.Method, cleanPath[1:])
 		if node == nil {

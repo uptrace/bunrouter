@@ -65,10 +65,10 @@ var cleanTests = []struct {
 
 func TestPathClean(t *testing.T) {
 	for _, test := range cleanTests {
-		if s := Clean(test.path); s != test.result {
+		if s := CleanPath(test.path); s != test.result {
 			t.Errorf("Clean(%q) = %q, want %q", test.path, s, test.result)
 		}
-		if s := Clean(test.result); s != test.result {
+		if s := CleanPath(test.result); s != test.result {
 			t.Errorf("Clean(%q) = %q, want %q", test.result, s, test.result)
 		}
 	}
@@ -84,7 +84,7 @@ func TestPathCleanMallocs(t *testing.T) {
 	}
 
 	for _, test := range cleanTests {
-		allocs := testing.AllocsPerRun(100, func() { Clean(test.result) })
+		allocs := testing.AllocsPerRun(100, func() { CleanPath(test.result) })
 		if allocs > 0 {
 			t.Errorf("Clean(%q): %v allocs, want zero", test.result, allocs)
 		}

@@ -70,7 +70,7 @@ func (req Request) Params() Params {
 }
 
 func (req Request) Param(key string) string {
-	return req.params.Text(key)
+	return req.params.ByName(key)
 }
 
 //------------------------------------------------------------------------------
@@ -143,27 +143,27 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 	return "", false
 }
 
-func (ps Params) Text(name string) string {
+func (ps Params) ByName(name string) string {
 	s, _ := ps.Get(name)
 	return s
 }
 
 func (ps Params) Uint32(name string) (uint32, error) {
-	n, err := strconv.ParseUint(ps.Text(name), 10, 32)
+	n, err := strconv.ParseUint(ps.ByName(name), 10, 32)
 	return uint32(n), err
 }
 
 func (ps Params) Uint64(name string) (uint64, error) {
-	return strconv.ParseUint(ps.Text(name), 10, 64)
+	return strconv.ParseUint(ps.ByName(name), 10, 64)
 }
 
 func (ps Params) Int32(name string) (int32, error) {
-	n, err := strconv.ParseInt(ps.Text(name), 10, 32)
+	n, err := strconv.ParseInt(ps.ByName(name), 10, 32)
 	return int32(n), err
 }
 
 func (ps Params) Int64(name string) (int64, error) {
-	return strconv.ParseInt(ps.Text(name), 10, 64)
+	return strconv.ParseInt(ps.ByName(name), 10, 64)
 }
 
 func (ps Params) Map() map[string]string {
@@ -180,7 +180,7 @@ func (ps Params) Map() map[string]string {
 }
 
 type Param struct {
-	Name  string
+	Key   string
 	Value string
 }
 
@@ -191,7 +191,7 @@ func (ps Params) Slice() []Param {
 	slice := make([]Param, len(ps.node.params))
 	for param, index := range ps.node.params {
 		if value, ok := ps.findParam(index); ok {
-			slice[index] = Param{Name: param, Value: value}
+			slice[index] = Param{Key: param, Value: value}
 		}
 	}
 	return slice
