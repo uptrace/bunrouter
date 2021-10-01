@@ -81,6 +81,13 @@ type Params struct {
 	wildcardLen int
 }
 
+func (ps Params) Route() string {
+	if ps.node != nil {
+		return ps.node.route
+	}
+	return ""
+}
+
 func (ps Params) Get(name string) (string, bool) {
 	if ps.node == nil {
 		return "", false
@@ -172,11 +179,22 @@ func (ps Params) Map() map[string]string {
 	return m
 }
 
-func (ps Params) Route() string {
-	if ps.node != nil {
-		return ps.node.route
+type Param struct {
+	Name  string
+	Value string
+}
+
+func (ps Params) Slice() []Param {
+	if len(ps.node.params) == 0 {
+		return nil
 	}
-	return ""
+	slice := make([]Param, len(ps.node.params))
+	for param, index := range ps.node.params {
+		if value, ok := ps.findParam(index); ok {
+			slice[index] = Param{Name: param, Value: value}
+		}
+	}
+	return slice
 }
 
 //------------------------------------------------------------------------------
