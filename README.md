@@ -1,0 +1,79 @@
+<p align="center">
+  <a href="https://uptrace.dev/?utm_source=gh-bunrouter&utm_campaign=gh-bunrouter-banner1">
+    <img src="https://raw.githubusercontent.com/uptrace/roadmap/master/banner1.png" alt="All-in-one tool to optimize performance and monitor errors & logs">
+  </a>
+</p>
+
+# Fast and flexible HTTP router for Go
+
+[![build workflow](https://github.com/uptrace/bunrouter/actions/workflows/build.yml/badge.svg)](https://github.com/uptrace/bunrouter/actions)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/uptrace/bunrouter)](https://pkg.go.dev/github.com/uptrace/bunrouter)
+[![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
+
+- [Basic example](/example/basic/)
+- [http.HandlerFunc example](/example/basic-compat/)
+- [Debug logging](/extra/reqlog/)
+- [CORS example](/example/cors/)
+- [Error handling](/example/error-handling/)
+- [Rate limiting using Redis](/example/rate-limiting/)
+- [Gzip compression](/extra/bunroutergzip/)
+- [OpenTelemetry integration](/extra/bunrouterotel/)
+- [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
+- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
+- [Reference](https://pkg.go.dev/github.com/uptrace/bunrouter)
+
+<details>
+  <summary>Benchmark results</summary>
+
+```
+BenchmarkGin_Param               	16019718	        74.16 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_Param        	12560001	        95.04 ns/op	      32 B/op	       1 allocs/op
+BenchmarkBunrouter_Param         	50015306	        23.81 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_Param5              	 8997234	       131.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_Param5       	 4809441	       261.3 ns/op	     160 B/op	       1 allocs/op
+BenchmarkBunrouter_Param5        	10789635	       114.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_Param20             	 3953041	       302.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_Param20      	 1661373	       743.3 ns/op	     640 B/op	       1 allocs/op
+BenchmarkBunrouter_Param20       	 2462354	       482.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_ParamWrite          	 9258986	       128.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_ParamWrite   	 9908178	       123.0 ns/op	      32 B/op	       1 allocs/op
+BenchmarkBunrouter_ParamWrite    	15511226	        70.62 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GithubStatic        	12781513	        94.17 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GithubStatic 	30077443	        37.36 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBunrouter_GithubStatic  	37160334	        32.41 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GithubParam         	 6971791	       169.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GithubParam  	 5464755	       217.4 ns/op	      96 B/op	       1 allocs/op
+BenchmarkBunrouter_GithubParam   	12047902	       101.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GithubAll           	   32758	     37382 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GithubAll    	   27324	     43932 ns/op	   13792 B/op	     167 allocs/op
+BenchmarkBunrouter_GithubAll     	   57910	     20914 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GPlusStatic         	17788194	        69.13 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GPlusStatic  	60191341	        19.84 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBunrouter_GPlusStatic   	87114368	        14.06 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GPlusParam          	10075399	       119.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GPlusParam   	 8272046	       149.2 ns/op	      64 B/op	       1 allocs/op
+BenchmarkBunrouter_GPlusParam    	37359979	        32.43 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GPlus2Params        	 7375279	       162.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GPlus2Params 	 6538942	       186.7 ns/op	      64 B/op	       1 allocs/op
+BenchmarkBunrouter_GPlus2Params  	19681939	        61.51 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_GPlusAll            	  647716	      1752 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GPlusAll     	  590356	      2085 ns/op	     640 B/op	      11 allocs/op
+BenchmarkBunrouter_GPlusAll      	 1685287	       712.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_ParseStatic         	14566458	        76.58 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_ParseStatic  	52994076	        21.02 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBunrouter_ParseStatic   	50583933	        23.83 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_ParseParam          	13443874	        90.66 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_ParseParam   	 8825664	       135.6 ns/op	      64 B/op	       1 allocs/op
+BenchmarkBunrouter_ParseParam    	38058278	        31.33 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_Parse2Params        	10179813	       118.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_Parse2Params 	 7801735	       152.9 ns/op	      64 B/op	       1 allocs/op
+BenchmarkBunrouter_Parse2Params  	23704574	        50.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_ParseAll            	  394884	      3073 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_ParseAll     	  410238	      3011 ns/op	     640 B/op	      16 allocs/op
+BenchmarkBunrouter_ParseAll      	  810908	      1487 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGin_StaticAll           	   50658	     23699 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_StaticAll    	  105313	     11518 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBunrouter_StaticAll     	   99674	     12188 ns/op	       0 B/op	       0 allocs/op
+```
+
+</details>

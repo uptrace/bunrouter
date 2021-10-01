@@ -33,7 +33,7 @@ func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
 	return HTTPHandler(http.HandlerFunc(handler))
 }
 
-type HandlerFunc func(http.ResponseWriter, Request) error
+type HandlerFunc func(w http.ResponseWriter, req Request) error
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 

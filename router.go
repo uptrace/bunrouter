@@ -97,8 +97,6 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 
 //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-
 type CompatRouter struct {
 	*Router
 	*CompatGroup
@@ -108,6 +106,18 @@ func (r *Router) Compat() *CompatRouter {
 	return &CompatRouter{
 		Router:      r,
 		CompatGroup: r.Group.Compat(),
+	}
+}
+
+type VerboseRouter struct {
+	*Router
+	*VerboseGroup
+}
+
+func (r *Router) Verbose() *VerboseRouter {
+	return &VerboseRouter{
+		Router:       r,
+		VerboseGroup: r.Group.Verbose(),
 	}
 }
 

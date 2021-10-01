@@ -34,10 +34,6 @@ func (g *Group) cloneStack() []MiddlewareFunc {
 	return g.stack[:len(g.stack):len(g.stack)]
 }
 
-func (g *Group) Compat() *CompatGroup {
-	return &CompatGroup{group: g}
-}
-
 func (g *Group) WithMiddleware(middleware MiddlewareFunc) *Group {
 	return g.NewGroup("", WithMiddleware(middleware))
 }
@@ -167,6 +163,14 @@ func (g *Group) handlerWithMiddlewares(handler HandlerFunc) HandlerFunc {
 	return handler
 }
 
+func (g *Group) Compat() *CompatGroup {
+	return &CompatGroup{group: g}
+}
+
+func (g *Group) Verbose() *VerboseGroup {
+	return &VerboseGroup{group: g}
+}
+
 //------------------------------------------------------------------------------
 
 // CompatGroup is like Group, but it works with http.HandlerFunc instead of bunrouter handler.
@@ -215,6 +219,62 @@ func (g CompatGroup) HEAD(path string, handler http.HandlerFunc) {
 }
 
 func (g CompatGroup) OPTIONS(path string, handler http.HandlerFunc) {
+	g.Handle("OPTIONS", path, handler)
+}
+
+//------------------------------------------------------------------------------
+
+type VerboseHandlerFunc func(w http.ResponseWriter, req *http.Request, ps Params)
+
+// VerboseGroup is like Group, but it works with VerboseHandlerFunc instead of bunrouter handler.
+type VerboseGroup struct {
+	group *Group
+}
+
+func (g VerboseGroup) NewGroup(path string, opts ...GroupOption) *VerboseGroup {
+	return &VerboseGroup{group: g.group.NewGroup(path, opts...)}
+}
+
+func (g VerboseGroup) WithMiddleware(middleware MiddlewareFunc) *VerboseGroup {
+	return &VerboseGroup{group: g.group.WithMiddleware(middleware)}
+}
+
+func (g VerboseGroup) WithGroup(path string, fn func(g *VerboseGroup)) {
+	fn(g.NewGroup(path))
+}
+
+func (g VerboseGroup) Handle(method string, path string, handler VerboseHandlerFunc) {
+	g.group.Handle(method, path, func(w http.ResponseWriter, req Request) error {
+		handler(w, req.Request, req.Params())
+		return nil
+	})
+}
+
+func (g VerboseGroup) GET(path string, handler VerboseHandlerFunc) {
+	g.Handle(http.MethodGet, path, handler)
+}
+
+func (g VerboseGroup) POST(path string, handler VerboseHandlerFunc) {
+	g.Handle("POST", path, handler)
+}
+
+func (g VerboseGroup) PUT(path string, handler VerboseHandlerFunc) {
+	g.Handle("PUT", path, handler)
+}
+
+func (g VerboseGroup) DELETE(path string, handler VerboseHandlerFunc) {
+	g.Handle("DELETE", path, handler)
+}
+
+func (g VerboseGroup) PATCH(path string, handler VerboseHandlerFunc) {
+	g.Handle("PATCH", path, handler)
+}
+
+func (g VerboseGroup) HEAD(path string, handler VerboseHandlerFunc) {
+	g.Handle("HEAD", path, handler)
+}
+
+func (g VerboseGroup) OPTIONS(path string, handler VerboseHandlerFunc) {
 	g.Handle("OPTIONS", path, handler)
 }
 

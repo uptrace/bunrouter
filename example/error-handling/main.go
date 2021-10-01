@@ -1,7 +1,9 @@
 package main
 
 import (
-	"errors"
+	"database/sql"
+	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -10,51 +12,80 @@ import (
 	"github.com/uptrace/bunrouter/extra/reqlog"
 )
 
-var (
-	err1 = errors.New("error1")
-	err2 = errors.New("error2")
-)
-
 func main() {
 	router := bunrouter.New(
 		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
-		bunrouter.WithMiddleware(errorHandler),
 	)
 
-	router.GET("/", indexHandler)
+	group := router.WithMiddleware(errorHandler)
+	group.GET("/", indexHandler)
 
 	log.Println("listening on http://localhost:9999")
 	log.Println(http.ListenAndServe(":9999", router))
 }
 
 func indexHandler(w http.ResponseWriter, req bunrouter.Request) error {
-	if rand.Float64() > 0.5 {
-		return err1
+	rnd := rand.Float64()
+	if rnd < 0.3 {
+		return io.EOF
 	}
-	return err2
+	if rnd < 0.6 {
+		return sql.ErrNoRows
+	}
+	return fmt.Errorf("hello world")
 }
 
 func errorHandler(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 	return func(w http.ResponseWriter, req bunrouter.Request) error {
 		err := next(w, req)
 
-		switch err {
-		case nil:
-			// ok
-		case err1:
-			w.WriteHeader(http.StatusBadRequest)
-			_ = bunrouter.JSON(w, bunrouter.H{
-				"message": "bad request",
-				"hint":    "reload to see how error message is changed",
-			})
+		switch err := err.(type) {
+		case HTTPError:
+			w.WriteHeader(err.statusCode)
+			_ = bunrouter.JSON(w, err)
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = bunrouter.JSON(w, bunrouter.H{
-				"message": err.Error(),
-				"hint":    "reload to see how error message is changed",
-			})
+			httpErr := NewHTTPError(err)
+			w.WriteHeader(httpErr.statusCode)
+			_ = bunrouter.JSON(w, httpErr)
 		}
 
 		return err
+	}
+}
+
+type HTTPError struct {
+	statusCode int
+
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e HTTPError) Error() string {
+	return e.Message
+}
+
+func NewHTTPError(err error) HTTPError {
+	switch err {
+	case io.EOF:
+		return HTTPError{
+			statusCode: http.StatusBadRequest,
+
+			Code:    "eof",
+			Message: "EOF reading HTTP request body",
+		}
+	case sql.ErrNoRows:
+		return HTTPError{
+			statusCode: http.StatusNotFound,
+
+			Code:    "not_found",
+			Message: "Page Not Found",
+		}
+	}
+
+	return HTTPError{
+		statusCode: http.StatusInternalServerError,
+
+		Code:    "internal",
+		Message: "Internal server error",
 	}
 }

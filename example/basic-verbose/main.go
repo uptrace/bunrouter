@@ -12,11 +12,11 @@ import (
 func main() {
 	router := bunrouter.New(
 		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
-	)
+	).Verbose()
 
 	router.GET("/", indexHandler)
 
-	router.WithGroup("/api", func(g *bunrouter.Group) {
+	router.WithGroup("/api", func(g *bunrouter.VerboseGroup) {
 		g.GET("/users/:id", debugHandler)
 		g.GET("/images/*path", debugHandler)
 		g.GET("/images/my.jpg", debugHandler)
@@ -26,14 +26,14 @@ func main() {
 	log.Println(http.ListenAndServe(":9999", router))
 }
 
-func indexHandler(w http.ResponseWriter, req bunrouter.Request) error {
-	return indexTemplate().Execute(w, nil)
+func indexHandler(w http.ResponseWriter, req *http.Request, params bunrouter.Params) {
+	_ = indexTemplate().Execute(w, nil)
 }
 
-func debugHandler(w http.ResponseWriter, req bunrouter.Request) error {
-	return bunrouter.JSON(w, bunrouter.H{
-		"route":  req.Route(),
-		"params": req.Params().Map(),
+func debugHandler(w http.ResponseWriter, req *http.Request, params bunrouter.Params) {
+	_ = bunrouter.JSON(w, bunrouter.H{
+		"route":  params.Route(),
+		"params": params.Map(),
 	})
 }
 

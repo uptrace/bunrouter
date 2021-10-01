@@ -31,8 +31,8 @@ func WithNotFoundHandler(handler HandlerFunc) Option {
 	})
 }
 
-// MethodNotAllowedHandler is called when a pattern matches, but that
-// pattern does not have a handler for the requested method. The default
+// MethodNotAllowedHandler is called when a route matches, but that
+// route does not have a handler for the requested method. The default
 // handler just writes the status code http.StatusMethodNotAllowed.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 	return option(func(c *config) {

@@ -17,9 +17,9 @@ func main() {
 	router.GET("/", indexHandler)
 
 	router.WithGroup("/api", func(g *bunrouter.CompatGroup) {
-		g.GET("/users/:id", userHandler)
-		g.GET("/images/*path", imageHandler)
-		g.GET("/images/my.jpg", customImageHandler)
+		g.GET("/users/:id", debugHandler)
+		g.GET("/images/*path", debugHandler)
+		g.GET("/images/my.jpg", debugHandler)
 	})
 
 	log.Println("listening on http://localhost:9999")
@@ -32,41 +32,13 @@ func indexHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func userHandler(w http.ResponseWriter, req *http.Request) {
+func debugHandler(w http.ResponseWriter, req *http.Request) {
 	params := bunrouter.ParamsFromContext(req.Context())
 
-	id, err := params.Uint64("id")
-	if err != nil {
-		panic(err)
-	}
-
-	if err := bunrouter.JSON(w, bunrouter.H{
-		"route": params.Route(),
-		"id":    id,
-	}); err != nil {
-		panic(err)
-	}
-}
-
-func imageHandler(w http.ResponseWriter, req *http.Request) {
-	params := bunrouter.ParamsFromContext(req.Context())
-
-	if err := bunrouter.JSON(w, bunrouter.H{
-		"route": params.Route(),
-		"path":  params.ByName("path"),
-	}); err != nil {
-		panic(err)
-	}
-}
-
-func customImageHandler(w http.ResponseWriter, req *http.Request) {
-	params := bunrouter.ParamsFromContext(req.Context())
-
-	if err := bunrouter.JSON(w, bunrouter.H{
-		"route": params.Route(),
-	}); err != nil {
-		panic(err)
-	}
+	_ = bunrouter.JSON(w, bunrouter.H{
+		"route":  params.Route(),
+		"params": params.Map(),
+	})
 }
 
 var indexTmpl = `
