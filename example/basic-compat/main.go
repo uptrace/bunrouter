@@ -18,8 +18,8 @@ func main() {
 
 	router.WithGroup("/api", func(g *bunrouter.CompatGroup) {
 		g.GET("/users/:id", debugHandler)
-		g.GET("/images/*path", debugHandler)
-		g.GET("/images/my.jpg", debugHandler)
+		g.GET("/users/current", debugHandler)
+		g.GET("/users/*path", debugHandler)
 	})
 
 	log.Println("listening on http://localhost:9999")
@@ -46,8 +46,8 @@ var indexTmpl = `
   <h1>Welcome</h1>
   <ul>
     <li><a href="/api/users/123">/api/users/123</a></li>
-    <li><a href="/api/images/path/to/image.jpg">/images/path/to/image.jpg</a></li>
-    <li><a href="/api/images/my.jpg">/images/my.jpg</a></li>
+    <li><a href="/api/users/current">/api/users/current</a></li>
+    <li><a href="/api/users/foo/bar">/api/users/foo/bar</a></li>
   </ul>
 </html>
 `

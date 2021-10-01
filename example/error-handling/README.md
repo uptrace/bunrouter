@@ -1,7 +1,7 @@
 # Error handling
 
-To run this example:
+This is an example for []() article. To run it:
 
 ```shell
-go run main.go
+go run .
 ```
