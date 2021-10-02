@@ -1,7 +1,7 @@
 # bunrouter basic example with http.HandlerFunc
 
-This example demonstrates how to use bunrouter in http.HandlerFunc compatibility mode:
+This example demonstrates how to use bunrouter with http.HandlerFunc in compatibility mode:
 
 ```go
-go run main.go
+go run .
 ```

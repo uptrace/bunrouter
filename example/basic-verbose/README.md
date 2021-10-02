@@ -1,7 +1,7 @@
-# bunrouter basic example
+# bunrouter basic example with httprouter-like handlers
 
 To run this example:
 
 ```go
-go run main.go
+go run .
 ```

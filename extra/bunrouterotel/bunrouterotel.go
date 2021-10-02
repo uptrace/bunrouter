@@ -18,15 +18,15 @@ type config struct {
 
 type Option func(c *config)
 
-func WithClientIP(on bool) Option {
+func WithClientIP() Option {
 	return func(c *config) {
-		c.clientIP = on
+		c.clientIP = true
 	}
 }
 
 func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
 	c := &config{
-		clientIP: true,
+		clientIP: false,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -41,14 +41,17 @@ func (c *config) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 			return next(w, req)
 		}
 
-		params := req.Params().Slice()
-		attrs := make([]attribute.KeyValue, 0, 2+len(params))
+		params := req.Params()
+		span.SetName(req.Method + " " + params.Route())
+
+		paramSlice := params.Slice()
+		attrs := make([]attribute.KeyValue, 0, 2+len(paramSlice))
 		attrs = append(attrs, semconv.HTTPRouteKey.String(req.Route()))
 		if c.clientIP {
 			attrs = append(attrs, semconv.HTTPClientIPKey.String(remoteAddr(req.Request)))
 		}
 
-		for _, param := range params {
+		for _, param := range paramSlice {
 			attrs = append(attrs, attribute.String("http.route.param."+param.Key, param.Value))
 		}
 

@@ -15,7 +15,9 @@ type Router struct {
 }
 
 func New(opts ...Option) *Router {
-	r := &Router{}
+	r := &Router{
+		tree: node{route: "/", part: "/"},
+	}
 
 	r.Group.router = r
 	r.config.group = &r.Group
