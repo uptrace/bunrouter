@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
+	"github.com/klauspost/compress/gzhttp"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/bunrouterotel"
 	"github.com/uptrace/bunrouter/extra/reqlog"
@@ -38,7 +39,10 @@ func main() {
 		g.GET("/users/*path", debugHandler)
 	})
 
-	handler := otelhttp.NewHandler(router, "")
+	handler := http.Handler(router)
+	handler = gzhttp.GzipHandler(handler)
+	handler = otelhttp.NewHandler(router, "")
+
 	httpServer := &http.Server{
 		Addr:         ":9999",
 		ReadTimeout:  5 * time.Second,
