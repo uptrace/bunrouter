@@ -8,5 +8,5 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/uptrace/bunrouter v1.0.0-rc.1
-	golang.org/x/sys v0.0.0-20211001092434-39dca1131b70 // indirect
+	golang.org/x/sys v0.0.0-20211002104244-808efd93c36d // indirect
 )

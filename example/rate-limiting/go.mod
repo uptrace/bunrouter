@@ -12,4 +12,5 @@ require (
 	github.com/go-redis/redis_rate/v9 v9.1.1
 	github.com/uptrace/bunrouter v1.0.0-rc.1
 	github.com/uptrace/bunrouter/extra/reqlog v1.0.0-rc.1
+	golang.org/x/sys v0.0.0-20211002104244-808efd93c36d // indirect
 )
