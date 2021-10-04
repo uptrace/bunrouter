@@ -20,19 +20,20 @@ Features:
 - **Auto-correction**. Bunrouter redirects users to the right route in case of extra/missing/double
   slashes.
 
-Resources:
+Learn:
 
+- [Documentation](https://bunrouter.uptrace.dev/)
+- [Reference](https://pkg.go.dev/github.com/uptrace/bunrouter)
+
+Examples:
+
+- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 - [Basic example](/example/basic/)
 - [http.HandlerFunc example](/example/basic-compat/)
 - [Debug logging](/extra/reqlog/)
 - [CORS example](/example/cors/)
 - [Error handling](/example/error-handling/)
 - [Rate limiting using Redis](/example/rate-limiting/)
-- [Gzip compression](/extra/bunroutergzip/)
-- [OpenTelemetry integration](/extra/bunrouterotel/)
-- [Writing REST API with Go and PostgreSQL](https://pg.uptrace.dev/rest-api/)
-- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
-- [Reference](https://pkg.go.dev/github.com/uptrace/bunrouter)
 
 <details>
   <summary>Benchmark results</summary>
@@ -92,6 +93,14 @@ BenchmarkBunrouter_StaticAll     	   99674	     12188 ns/op	       0 B/op	      
 
 ## Quickstart
 
+Install:
+
+```shell
+go get github.com/uptrace/bunrouter
+```
+
+Run the [example](/example/basic/):
+
 ```go
 package main
 
@@ -148,4 +157,4 @@ func indexTemplate() *template.Template {
 }
 ```
 
-See [documentation](https://bunrouter.uptrace.dev/) for details.
+See the [documentation](https://bunrouter.uptrace.dev/) for details.
