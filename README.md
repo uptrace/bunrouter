@@ -13,10 +13,10 @@ Features:
   retrieving parameters.
 - **Compatible API**. Out-of-the box works with standard http.HandlerFunc and httprouter-like
   handlers.
-- **Middlewares**. Extract common operations from your handlers into reusable wrapper functions
-  (middlewares).
-- **Error handling**. Just return errors from route handlers and handle all of them from a single
-  middleware.
+- [**Middlewares**](https://bunrouter.uptrace.dev/guide/middlewares.html). Extract common operations
+  from your handlers into reusable wrapper functions (middlewares).
+- [**Error handling**](https://bunrouter.uptrace.dev/guide/error-handling.html). Just return errors
+  from route handlers and handle all of them from a single middleware.
 - **Auto-correction**. Bunrouter redirects users to the right route in case of extra/missing/double
   slashes.
 
@@ -27,13 +27,10 @@ Learn:
 
 Examples:
 
-- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 - [Basic example](/example/basic/)
 - [http.HandlerFunc example](/example/basic-compat/)
-- [Debug logging](/extra/reqlog/)
-- [CORS example](/example/cors/)
-- [Error handling](/example/error-handling/)
-- [Rate limiting using Redis](/example/rate-limiting/)
+- [httprouter.Handle example](/example/basic-verbose/)
+- [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 
 <details>
   <summary>Benchmark results</summary>
