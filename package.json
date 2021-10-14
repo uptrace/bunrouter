@@ -1,6 +1,6 @@
 {
   "name": "bunrouter",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0",
   "main": "index.js",
   "repository": "git@github.com:uptrace/bunrouter.git",
   "author": "Vladimir Mihailenco <vladimir.webdev@gmail.com>",
