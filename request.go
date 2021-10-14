@@ -167,7 +167,7 @@ func (ps Params) Int64(name string) (int64, error) {
 }
 
 func (ps Params) Map() map[string]string {
-	if len(ps.node.params) == 0 {
+	if ps.node == nil || len(ps.node.params) == 0 {
 		return nil
 	}
 	m := make(map[string]string, len(ps.node.params))
@@ -185,7 +185,7 @@ type Param struct {
 }
 
 func (ps Params) Slice() []Param {
-	if len(ps.node.params) == 0 {
+	if ps.node == nil || len(ps.node.params) == 0 {
 		return nil
 	}
 	slice := make([]Param, len(ps.node.params))
