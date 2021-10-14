@@ -40,7 +40,6 @@ func New(opts ...Option) *Router {
 func (t *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	handler, params := t.lookup(w, req)
 	reqWrapper := Request{
-		ctx:     req.Context(),
 		Request: req,
 		params:  params,
 	}

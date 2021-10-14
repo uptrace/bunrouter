@@ -41,24 +41,19 @@ type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
 type Request struct {
 	*http.Request
-	ctx    context.Context
 	params Params
 }
 
 func NewRequest(req *http.Request) Request {
 	return Request{
-		ctx:     req.Context(),
 		Request: req,
 	}
 }
 
-func (req Request) Context() context.Context {
-	return req.ctx
-}
-
 func (req Request) WithContext(ctx context.Context) Request {
-	req.ctx = ctx
-	return req
+	return Request{
+		Request: req.Request.WithContext(ctx),
+	}
 }
 
 func (req Request) Route() string {
