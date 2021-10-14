@@ -11,7 +11,9 @@ import (
 
 func main() {
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
+		bunrouter.WithMiddleware(reqlog.NewMiddleware(
+			reqlog.FromEnv("BUNDEBUG"),
+		)),
 	)
 
 	router.GET("/", indexHandler)

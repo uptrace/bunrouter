@@ -40,6 +40,8 @@ func errorHandler(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 		err := next(w, req)
 
 		switch err := err.(type) {
+		case nil:
+			// no error
 		case HTTPError:
 			w.WriteHeader(err.statusCode)
 			_ = bunrouter.JSON(w, err)

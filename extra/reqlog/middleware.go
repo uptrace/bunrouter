@@ -3,6 +3,7 @@ package reqlog
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"time"
 
@@ -11,20 +12,47 @@ import (
 	"github.com/uptrace/bunrouter"
 )
 
-type config struct {
+type middleware struct {
+	enabled bool
 	verbose bool
 }
 
-type Option func(c *config)
+type Option func(m *middleware)
 
+// WithEnabled enables/disables the middleware.
+func WithEnabled(on bool) Option {
+	return func(m *middleware) {
+		m.enabled = on
+	}
+}
+
+// WithVerbose configures the middleware to log all requests.
 func WithVerbose(on bool) Option {
-	return func(c *config) {
-		c.verbose = on
+	return func(m *middleware) {
+		m.verbose = on
+	}
+}
+
+// WithEnv configures the middleware using the environment variable value.
+// For example, WithEnv("BUNDEBUG"):
+//    - BUNDEBUG=0 - disables the middleware.
+//    - BUNDEBUG=1 - enables the middleware.
+//    - BUNDEBUG=2 - enables the middleware and verbose mode.
+func FromEnv(key string) Option {
+	if key == "" {
+		key = "BUNDEBUG"
+	}
+	return func(m *middleware) {
+		if env, ok := os.LookupEnv(key); ok {
+			m.enabled = env != "" && env != "0"
+			m.verbose = env == "2"
+		}
 	}
 }
 
 func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
-	c := &config{
+	c := &middleware{
+		enabled: true,
 		verbose: true,
 	}
 	for _, opt := range opts {
@@ -33,7 +61,11 @@ func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
 	return c.Middleware
 }
 
-func (cfg *config) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
+func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
+	if !m.enabled {
+		return next
+	}
+
 	return func(w http.ResponseWriter, req bunrouter.Request) error {
 		rec := &statusCodeRecorder{
 			ResponseWriter: w,
@@ -44,7 +76,7 @@ func (cfg *config) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc 
 		err := next(rec, req)
 		dur := time.Since(now)
 
-		if !cfg.verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
+		if !m.verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
 			return nil
 		}
 
