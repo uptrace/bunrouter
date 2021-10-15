@@ -1,6 +1,7 @@
 package bunrouter
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -57,6 +58,23 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	}
 }
 
+func TestRequestWithContext(t *testing.T) {
+	router := New()
+	router.GET("/user/:param", func(w http.ResponseWriter, req Request) error {
+		value1 := req.Param("param")
+		require.Equal(t, "hello", value1)
+
+		value2 := req.WithContext(context.TODO()).Param("param")
+		require.Equal(t, value1, value2)
+
+		return nil
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/user/hello", nil)
+	router.ServeHTTP(w, req)
+}
+
 func TestMethods(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Log(scenario.description)
@@ -82,7 +100,8 @@ func testMethods(t *testing.T) {
 	router.DELETE("/user/:param", makeHandler("DELETE"))
 
 	testMethod := func(method, expect string) {
-		result = ""
+		result = "" // reset
+
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest(method, "/user/"+method, nil)
 		router.ServeHTTP(w, r)

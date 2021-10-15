@@ -92,7 +92,7 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	return handler.fn, Params{
 		node:        node,
 		path:        path,
-		wildcardLen: wildcardLen,
+		wildcardLen: uint16(wildcardLen),
 	}
 }
 

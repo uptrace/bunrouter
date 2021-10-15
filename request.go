@@ -53,6 +53,7 @@ func NewRequest(req *http.Request) Request {
 func (req Request) WithContext(ctx context.Context) Request {
 	return Request{
 		Request: req.Request.WithContext(ctx),
+		params:  req.params,
 	}
 }
 
@@ -73,7 +74,7 @@ func (req Request) Param(key string) string {
 type Params struct {
 	path        string
 	node        *node
-	wildcardLen int
+	wildcardLen uint16
 }
 
 func (ps Params) Route() string {
@@ -101,7 +102,7 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 
 	// Wildcard can be only in the final node.
 	if ps.node.part[0] == '*' {
-		pathLen -= ps.wildcardLen
+		pathLen -= int(ps.wildcardLen)
 		if currParamIndex == paramIndex {
 			return path[pathLen:], true
 		}
