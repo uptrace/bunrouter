@@ -381,14 +381,17 @@ func TestQueryString(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "/static?abc=def&ghi=jkl", nil)
 	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "", param)
 
 	req, _ = http.NewRequest("GET", "/named/aaa?abc=def", nil)
 	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "aaa", param)
 
 	req, _ = http.NewRequest("GET", "/wildcard/bbb?abc=def", nil)
 	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "bbb", param)
 }
 
@@ -608,7 +611,7 @@ func TestMethodNotAllowedFallthrough(t *testing.T) {
 
 	// And some 404 tests for good measure
 	checkRoute("GET", "/abc", "", "", 404, nil)
-	checkRoute("OPTIONS", "/apple", "", "", 301, nil)
+	checkRoute("OPTIONS", "/apple", "", "", 404, nil)
 }
 
 func TestWildcardNode(t *testing.T) {
@@ -622,18 +625,21 @@ func TestWildcardNode(t *testing.T) {
 	}
 
 	router := New()
+	router.GET("/", handler)
 	router.GET("/*path", handler)
+	router.GET("/static/", handler)
 	router.GET("/static/*path", handler)
 
 	type Test struct {
 		path   string
+		route  string
 		params map[string]string
 	}
 
 	for _, test := range []Test{
-		{"/", map[string]string{"path": ""}},
-		{"/foo", map[string]string{"path": "foo"}},
-		{"/foo/bar", map[string]string{"path": "foo/bar"}},
+		{"/", "/", nil},
+		{"/foo", "/*path", map[string]string{"path": "foo"}},
+		{"/foo/bar", "/*path", map[string]string{"path": "foo/bar"}},
 	} {
 		t.Run(fmt.Sprintf("path=%s", test.path), func(t *testing.T) {
 			w := httptest.NewRecorder()
@@ -641,15 +647,15 @@ func TestWildcardNode(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusOK, w.Code)
-			require.Equal(t, "/*path", route)
+			require.Equal(t, test.route, route)
 			require.Equal(t, test.params, params)
 		})
 	}
 
 	for _, test := range []Test{
-		{"/static/", map[string]string{"path": ""}},
-		{"/static/foo", map[string]string{"path": "foo"}},
-		{"/static/foo/bar", map[string]string{"path": "foo/bar"}},
+		{"/static/", "/static/", nil},
+		{"/static/foo", "/static/*path", map[string]string{"path": "foo"}},
+		{"/static/foo/bar", "/static/*path", map[string]string{"path": "foo/bar"}},
 	} {
 		t.Run(fmt.Sprintf("path=%s", test.path), func(t *testing.T) {
 			w := httptest.NewRecorder()
@@ -657,7 +663,7 @@ func TestWildcardNode(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusOK, w.Code)
-			require.Equal(t, "/static/*path", route)
+			require.Equal(t, test.route, route)
 			require.Equal(t, test.params, params)
 		})
 	}
@@ -684,10 +690,10 @@ func TestSplitRoute(t *testing.T) {
 		{"/static/foo", []string{"static/foo"}, nil, false},
 		{"/static/:foo", []string{"static/", ":"}, map[string]int{"foo": 0}, false},
 		{"/static/:foo/bar", []string{"static/", ":", "/bar"}, map[string]int{"foo": 0}, false},
-		{"/static/*path", []string{"static", "*"}, map[string]int{"path": 0}, true},
+		{"/static/*path", []string{"static/", "*"}, map[string]int{"path": 0}, false},
 		{"/*path", []string{"*"}, map[string]int{"path": 0}, false},
-		{"/:foo/*path", []string{":", "*"}, map[string]int{"foo": 0, "path": 1}, true},
-		{"/:foo/static/*path", []string{":", "/static", "*"}, map[string]int{"foo": 0, "path": 1}, true},
+		{"/:foo/*path", []string{":", "/", "*"}, map[string]int{"foo": 0, "path": 1}, false},
+		{"/:foo/static/*path", []string{":", "/static/", "*"}, map[string]int{"foo": 0, "path": 1}, false},
 	}
 
 	for _, test := range tests {
