@@ -103,7 +103,7 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 	currParamIndex := len(ps.node.params) - 1
 
 	// Wildcard can be only in the final node.
-	if ps.node.part[0] == '*' {
+	if ps.node.isWildcard {
 		pathLen -= int(ps.wildcardLen)
 		if currParamIndex == paramIndex {
 			return path[pathLen:], true

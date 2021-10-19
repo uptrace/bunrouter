@@ -110,14 +110,7 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 		handler = g.handlerWithMiddlewares(handler)
 	}
 
-	var slash bool
-
-	if len(path) > 1 && path[len(path)-1] == '/' {
-		slash = true
-		path = path[:len(path)-1]
-	}
-
-	node := g.router.tree.addRoute(path)
+	node, slash := g.router.tree.addRoute(path)
 	node.setHandler(meth, routeHandler{fn: handler, slash: slash})
 }
 

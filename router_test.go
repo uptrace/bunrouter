@@ -2,6 +2,7 @@ package bunrouter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -364,39 +365,31 @@ func TestWildcardAtSplitNode(t *testing.T) {
 }
 
 func TestQueryString(t *testing.T) {
-	for _, scenario := range scenarios {
-		t.Log(scenario.description)
-		param := ""
-		handler := func(w http.ResponseWriter, r Request) error {
-			param = r.Params().ByName("param")
-			return nil
-		}
-		router := New()
-		router.GET("/static", handler)
-		router.GET("/wildcard/:param", handler)
-		router.GET("/catchall/*param", handler)
+	var param string
 
-		r, _ := http.NewRequest("GET", "/static?abc=def&ghi=jkl", nil)
-		w := new(mockResponseWriter)
-
-		param = "nomatch"
-		router.ServeHTTP(w, r)
-		if param != "" {
-			t.Error("No match on", r.RequestURI)
-		}
-
-		r, _ = http.NewRequest("GET", "/wildcard/aaa?abc=def", nil)
-		router.ServeHTTP(w, r)
-		if param != "aaa" {
-			t.Error("Expected wildcard to match aaa, saw", param)
-		}
-
-		r, _ = http.NewRequest("GET", "/catchall/bbb?abc=def", nil)
-		router.ServeHTTP(w, r)
-		if param != "bbb" {
-			t.Error("Expected wildcard to match bbb, saw", param)
-		}
+	handler := func(w http.ResponseWriter, r Request) error {
+		param = r.Params().ByName("param")
+		return nil
 	}
+
+	router := New()
+	router.GET("/static", handler)
+	router.GET("/named/:param", handler)
+	router.GET("/wildcard/*param", handler)
+
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest("GET", "/static?abc=def&ghi=jkl", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, "", param)
+
+	req, _ = http.NewRequest("GET", "/named/aaa?abc=def", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, "aaa", param)
+
+	req, _ = http.NewRequest("GET", "/wildcard/bbb?abc=def", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, "bbb", param)
 }
 
 func TestRedirectEscapedPath(t *testing.T) {
@@ -615,5 +608,94 @@ func TestMethodNotAllowedFallthrough(t *testing.T) {
 
 	// And some 404 tests for good measure
 	checkRoute("GET", "/abc", "", "", 404, nil)
-	checkRoute("OPTIONS", "/apple", "", "", 404, nil)
+	checkRoute("OPTIONS", "/apple", "", "", 301, nil)
+}
+
+func TestWildcardNode(t *testing.T) {
+	var route string
+	var params map[string]string
+
+	handler := func(w http.ResponseWriter, req Request) error {
+		route = req.Params().Route()
+		params = req.Params().Map()
+		return nil
+	}
+
+	router := New()
+	router.GET("/*path", handler)
+	router.GET("/static/*path", handler)
+
+	type Test struct {
+		path   string
+		params map[string]string
+	}
+
+	for _, test := range []Test{
+		{"/", map[string]string{"path": ""}},
+		{"/foo", map[string]string{"path": "foo"}},
+		{"/foo/bar", map[string]string{"path": "foo/bar"}},
+	} {
+		t.Run(fmt.Sprintf("path=%s", test.path), func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodGet, test.path, nil)
+			router.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, "/*path", route)
+			require.Equal(t, test.params, params)
+		})
+	}
+
+	for _, test := range []Test{
+		{"/static/", map[string]string{"path": ""}},
+		{"/static/foo", map[string]string{"path": "foo"}},
+		{"/static/foo/bar", map[string]string{"path": "foo/bar"}},
+	} {
+		t.Run(fmt.Sprintf("path=%s", test.path), func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodGet, test.path, nil)
+			router.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, "/static/*path", route)
+			require.Equal(t, test.params, params)
+		})
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/static", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusMovedPermanently, w.Code)
+	require.Equal(t, "/static/", w.Header().Get("Location"))
+}
+
+func TestSplitRoute(t *testing.T) {
+	type Test struct {
+		route  string
+		parts  []string
+		params map[string]int
+		slash  bool
+	}
+
+	tests := []Test{
+		{"/", []string{}, nil, false},
+		{"/static", []string{"static"}, nil, false},
+		{"/static/", []string{"static"}, nil, true},
+		{"/static/foo", []string{"static/foo"}, nil, false},
+		{"/static/:foo", []string{"static/", ":"}, map[string]int{"foo": 0}, false},
+		{"/static/:foo/bar", []string{"static/", ":", "/bar"}, map[string]int{"foo": 0}, false},
+		{"/static/*path", []string{"static", "*"}, map[string]int{"path": 0}, true},
+		{"/*path", []string{"*"}, map[string]int{"path": 0}, false},
+		{"/:foo/*path", []string{":", "*"}, map[string]int{"foo": 0, "path": 1}, true},
+		{"/:foo/static/*path", []string{":", "/static", "*"}, map[string]int{"foo": 0, "path": 1}, true},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("route=%s", test.route), func(t *testing.T) {
+			parts, params, slash := splitRoute(test.route)
+			require.Equal(t, test.parts, parts)
+			require.Equal(t, test.params, params)
+			require.Equal(t, test.slash, slash)
+		})
+	}
 }
