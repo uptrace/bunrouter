@@ -23,6 +23,7 @@ func main() {
 	)
 
 	router.GET("/", indexHandler)
+	router.GET("/files/", bunrouter.HTTPHandler(fileServer))
 	router.GET("/files/*path", bunrouter.HTTPHandler(fileServer))
 
 	log.Println("listening on http://localhost:9999")
@@ -37,6 +38,7 @@ var indexTmpl = `
 <html>
   <h1>Welcome</h1>
   <ul>
+    <li><a href="/files/">/files/</a></li>
     <li><a href="/files/hello.txt">/files/hello.txt</a></li>
     <li><a href="/files/world.txt">/files/world.txt</a></li>
   </ul>
