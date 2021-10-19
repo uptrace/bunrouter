@@ -37,6 +37,7 @@ var indexTmpl = `
 <html>
   <h1>Welcome</h1>
   <ul>
+    <li><a href="/files">/files</a></li>
     <li><a href="/files/">/files/</a></li>
     <li><a href="/files/hello.txt">/files/hello.txt</a></li>
     <li><a href="/files/world.txt">/files/world.txt</a></li>
