@@ -14,9 +14,9 @@ type node struct {
 	params     map[string]int // param name => param position
 	handlerMap *handlerMap
 
-	parent   *node
-	wildcard *node
-	colon    *node
+	parent     *node
+	colon      *node
+	isWildcard bool
 
 	nodes []*node
 	index struct {
@@ -26,12 +26,12 @@ type node struct {
 	}
 }
 
-func (n *node) addRoute(route string) *node {
+func (n *node) addRoute(route string) (*node, bool) {
 	if route == "/" {
-		return n
+		return n, false
 	}
 
-	parts, params := splitRoute(route[1:])
+	parts, params, slash := splitRoute(route)
 	currNode := n
 
 	for _, part := range parts {
@@ -42,15 +42,13 @@ func (n *node) addRoute(route string) *node {
 	currNode.params = params
 	n.indexNodes()
 
-	return currNode
+	return currNode, slash
 }
 
 func (n *node) addPart(part string) *node {
 	if part == "*" {
-		if n.wildcard == nil {
-			n.wildcard = &node{part: "*"}
-		}
-		return n.wildcard
+		n.isWildcard = true
+		return n
 	}
 
 	if part == ":" {
@@ -132,9 +130,9 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 			} else {
 				partLen := len(childNode.part)
 				if strings.HasPrefix(path, childNode.part) {
-					node, handler, wildcard := childNode.findRoute(meth, path[partLen:])
+					node, handler, wildcardLen := childNode.findRoute(meth, path[partLen:])
 					if handler.fn != nil {
-						return node, handler, wildcard
+						return node, handler, wildcardLen
 					}
 					if node != nil {
 						found = node
@@ -160,12 +158,15 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 		}
 	}
 
-	if n.wildcard != nil {
-		if handler := n.wildcard.handler(meth); handler.fn != nil {
-			return n.wildcard, handler, pathLen
+	if n.isWildcard {
+		if handler := n.handler(meth); handler.fn != nil {
+			if handler.slash {
+				pathLen--
+			}
+			return n, handler, pathLen
 		}
 		if found == nil {
-			return n.wildcard, routeHandler{}, 0
+			return n, routeHandler{}, 0
 		}
 	}
 
@@ -204,11 +205,6 @@ func (n *node) indexNodes() {
 		n.colon.parent = n
 		n.colon.indexNodes()
 	}
-
-	if n.wildcard != nil {
-		n.wildcard.parent = n
-		n.wildcard.indexNodes()
-	}
 }
 
 func (n *node) setHandler(verb string, handler routeHandler) {
@@ -230,55 +226,103 @@ func (n *node) handler(verb string) routeHandler {
 
 //------------------------------------------------------------------------------
 
-func splitRoute(route string) ([]string, map[string]int) {
-	var parts []string
-	var params []string
+type routeParser struct {
+	segments []string
+	i        int
+
+	acc   []string
+	parts []string
+}
+
+func (p *routeParser) valid() bool {
+	return p.i < len(p.segments)
+}
+
+func (p *routeParser) next() string {
+	s := p.segments[p.i]
+	p.i++
+	return s
+}
+
+func (p *routeParser) accumulate(s string) {
+	p.acc = append(p.acc, s)
+}
+
+func (p *routeParser) finalizePart(withSlash bool) {
+	if part := join(p.acc, withSlash); part != "" {
+		p.parts = append(p.parts, part)
+		p.acc = p.acc[:0]
+	}
+	if p.valid() {
+		p.acc = append(p.acc, "")
+	}
+}
+
+func join(ss []string, withSlash bool) string {
+	s := strings.Join(ss, "/")
+	if s == "" {
+		return s
+	}
+	if withSlash {
+		return s + "/"
+	}
+	return s
+}
+
+func splitRoute(route string) (_ []string, _ map[string]int, slash bool) {
+	if route == "" || route[0] != '/' {
+		panic(fmt.Errorf("invalid route: %q", route))
+	}
+
+	if route == "/" {
+		return []string{}, nil, false
+	}
+	route = route[1:] // trim "/"
+
+	if strings.HasSuffix(route, "/") {
+		slash = true
+		route = route[:len(route)-1]
+	}
 
 	ss := strings.Split(route, "/")
 	if len(ss) == 0 {
 		panic(fmt.Errorf("invalid route: %q", route))
 	}
 
-	var acc []string
-	for i, part := range ss {
-		if part == "" {
-			acc = append(acc, "")
+	p := routeParser{
+		segments: ss,
+	}
+	var params []string
+
+	for p.valid() {
+		segment := p.next()
+
+		if segment == "" {
+			p.accumulate("")
 			continue
 		}
 
-		switch firstChar := part[0]; firstChar {
-		case ':', '*':
-			if firstChar == '*' && i != len(ss)-1 {
-				panic(fmt.Errorf("wildcard must be in the end of the route: %q", route))
-			}
-
-			if len(acc) > 0 {
-				parts = append(parts, strings.Join(acc, "/")+"/")
-				acc = acc[:0]
-			}
-			if i != len(ss)-1 {
-				acc = append(acc, "")
-			}
-
-			parts = append(parts, string(firstChar))
-			params = append(params, part[1:])
+		switch firstChar := segment[0]; firstChar {
+		case ':':
+			p.finalizePart(true)
+			p.parts = append(p.parts, string(firstChar))
+			params = append(params, segment[1:])
+		case '*':
+			p.finalizePart(false)
+			slash = len(p.parts) > 0
+			p.parts = append(p.parts, string(firstChar))
+			params = append(params, segment[1:])
 		default:
-			acc = append(acc, part)
+			p.accumulate(segment)
 		}
 	}
 
-	if len(acc) > 0 {
-		part := strings.Join(acc, "/")
-		if part == "" {
-			part = "/"
-		}
-		parts = append(parts, part)
-	}
+	p.finalizePart(false)
 
 	if len(params) > 0 {
-		return parts, paramMap(route, params)
+		return p.parts, paramMap(route, params), slash
 	}
-	return parts, nil
+	return p.parts, nil, slash
 }
 
 func paramMap(route string, params []string) map[string]int {

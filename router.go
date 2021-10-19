@@ -54,7 +54,7 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 		return r.notFoundHandler, Params{}
 	}
 
-	trailingSlash := path[len(path)-1] == '/' && len(path) > 1
+	trailingSlash := len(path) > 1 && path[len(path)-1] == '/'
 	if trailingSlash {
 		path = path[:len(path)-1]
 		unescapedPath = unescapedPath[:len(unescapedPath)-1]
@@ -77,7 +77,7 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 		return r.methodNotAllowedHandler, Params{}
 	}
 
-	if trailingSlash != handler.slash {
+	if wildcardLen == 0 && trailingSlash != handler.slash {
 		if handler.slash {
 			// Need to add a slash.
 			return redirectHandler(unescapedPath + "/"), Params{}
