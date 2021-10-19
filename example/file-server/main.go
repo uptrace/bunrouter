@@ -23,6 +23,7 @@ func main() {
 	)
 
 	router.GET("/", indexHandler)
+	router.GET("/files/", bunrouter.HTTPHandler(fileServer))
 	router.GET("/files/*path", bunrouter.HTTPHandler(fileServer))
 
 	log.Println("listening on http://localhost:9999")

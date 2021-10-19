@@ -14,9 +14,9 @@ type node struct {
 	params     map[string]int // param name => param position
 	handlerMap *handlerMap
 
-	parent     *node
-	colon      *node
-	isWildcard bool
+	parent   *node
+	wildcard *node
+	colon    *node
 
 	nodes []*node
 	index struct {
@@ -31,7 +31,7 @@ func (n *node) addRoute(route string) (*node, bool) {
 		return n, false
 	}
 
-	parts, params, slash := splitRoute(route)
+	parts, params, addSlash := splitRoute(route)
 	currNode := n
 
 	for _, part := range parts {
@@ -42,13 +42,15 @@ func (n *node) addRoute(route string) (*node, bool) {
 	currNode.params = params
 	n.indexNodes()
 
-	return currNode, slash
+	return currNode, addSlash
 }
 
 func (n *node) addPart(part string) *node {
 	if part == "*" {
-		n.isWildcard = true
-		return n
+		if n.wildcard == nil {
+			n.wildcard = &node{part: "*"}
+		}
+		return n.wildcard
 	}
 
 	if part == ":" {
@@ -110,7 +112,7 @@ func (n *node) addPart(part string) *node {
 	return node
 }
 
-func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
+func (n *node) findRoute(meth, path string) (*node, *routeHandler, int) {
 	if path == "" {
 		return n, n.handler(meth), 0
 	}
@@ -123,7 +125,7 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 			childNode := n.nodes[i-1]
 
 			if childNode.part == path {
-				if handler := childNode.handler(meth); handler.fn != nil {
+				if handler := childNode.handler(meth); handler != nil {
 					return childNode, handler, 0
 				}
 				found = childNode
@@ -131,7 +133,7 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 				partLen := len(childNode.part)
 				if strings.HasPrefix(path, childNode.part) {
 					node, handler, wildcardLen := childNode.findRoute(meth, path[partLen:])
-					if handler.fn != nil {
+					if handler != nil {
 						return node, handler, wildcardLen
 					}
 					if node != nil {
@@ -145,11 +147,11 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 	if n.colon != nil {
 		if i := strings.IndexByte(path, '/'); i > 0 {
 			node, handler, wildcardLen := n.colon.findRoute(meth, path[i:])
-			if handler.fn != nil {
+			if handler != nil {
 				return node, handler, wildcardLen
 			}
 		} else {
-			if handler := n.colon.handler(meth); handler.fn != nil {
+			if handler := n.colon.handler(meth); handler != nil {
 				return n.colon, handler, 0
 			}
 			if found == nil {
@@ -158,19 +160,16 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 		}
 	}
 
-	if n.isWildcard {
-		if handler := n.handler(meth); handler.fn != nil {
-			if handler.slash {
-				pathLen--
-			}
-			return n, handler, pathLen
+	if n.wildcard != nil {
+		if handler := n.wildcard.handler(meth); handler != nil {
+			return n.wildcard, handler, pathLen
 		}
 		if found == nil {
-			return n, routeHandler{}, 0
+			return n, nil, 0
 		}
 	}
 
-	return found, routeHandler{}, 0
+	return found, nil, 0
 }
 
 func (n *node) indexNodes() {
@@ -201,25 +200,30 @@ func (n *node) indexNodes() {
 		}
 	}
 
+	if n.wildcard != nil {
+		n.wildcard.parent = n
+		n.wildcard.indexNodes()
+	}
+
 	if n.colon != nil {
 		n.colon.parent = n
 		n.colon.indexNodes()
 	}
 }
 
-func (n *node) setHandler(verb string, handler routeHandler) {
+func (n *node) setHandler(verb string, handler *routeHandler) {
 	if n.handlerMap == nil {
 		n.handlerMap = newHandlerMap()
 	}
-	if h := n.handlerMap.Get(verb); h.fn != nil {
+	if h := n.handlerMap.Get(verb); h != nil && h.fn != nil {
 		panic(fmt.Sprintf("%s already handles %s", n.route, verb))
 	}
 	n.handlerMap.Set(verb, handler)
 }
 
-func (n *node) handler(verb string) routeHandler {
+func (n *node) handler(verb string) *routeHandler {
 	if n.handlerMap == nil {
-		return routeHandler{}
+		return nil
 	}
 	return n.handlerMap.Get(verb)
 }
@@ -249,8 +253,8 @@ func (p *routeParser) accumulate(s string) {
 }
 
 func (p *routeParser) finalizePart(withSlash bool) {
-	if part := join(p.acc, withSlash); part != "" {
-		p.parts = append(p.parts, part)
+	if len(p.acc) > 0 {
+		p.parts = append(p.parts, join(p.acc, withSlash))
 		p.acc = p.acc[:0]
 	}
 	if p.valid() {
@@ -260,9 +264,6 @@ func (p *routeParser) finalizePart(withSlash bool) {
 
 func join(ss []string, withSlash bool) string {
 	s := strings.Join(ss, "/")
-	if s == "" {
-		return s
-	}
 	if withSlash {
 		return s + "/"
 	}
@@ -303,13 +304,8 @@ func splitRoute(route string) (_ []string, _ map[string]int, slash bool) {
 		}
 
 		switch firstChar := segment[0]; firstChar {
-		case ':':
+		case ':', '*':
 			p.finalizePart(true)
-			p.parts = append(p.parts, string(firstChar))
-			params = append(params, segment[1:])
-		case '*':
-			p.finalizePart(false)
-			slash = len(p.parts) > 0
 			p.parts = append(p.parts, string(firstChar))
 			params = append(params, segment[1:])
 		default:
@@ -339,25 +335,25 @@ func paramMap(route string, params []string) map[string]int {
 //------------------------------------------------------------------------------
 
 type handlerMap struct {
-	get     routeHandler
-	post    routeHandler
-	put     routeHandler
-	delete  routeHandler
-	head    routeHandler
-	options routeHandler
-	patch   routeHandler
+	get     *routeHandler
+	post    *routeHandler
+	put     *routeHandler
+	delete  *routeHandler
+	head    *routeHandler
+	options *routeHandler
+	patch   *routeHandler
 }
 
 type routeHandler struct {
-	fn    HandlerFunc
-	slash bool // redirect with/without a slash
+	fn       HandlerFunc
+	addSlash bool // redirect with/without a slash
 }
 
 func newHandlerMap() *handlerMap {
 	return new(handlerMap)
 }
 
-func (h *handlerMap) Get(meth string) routeHandler {
+func (h *handlerMap) Get(meth string) *routeHandler {
 	switch meth {
 	case http.MethodGet:
 		return h.get
@@ -374,11 +370,11 @@ func (h *handlerMap) Get(meth string) routeHandler {
 	case http.MethodPatch:
 		return h.patch
 	default:
-		return routeHandler{}
+		return nil
 	}
 }
 
-func (h *handlerMap) Set(meth string, handler routeHandler) {
+func (h *handlerMap) Set(meth string, handler *routeHandler) {
 	switch meth {
 	case http.MethodGet:
 		h.get = handler

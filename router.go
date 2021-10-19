@@ -73,12 +73,12 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 		return redirectHandler(cleanPath), Params{}
 	}
 
-	if handler.fn == nil {
+	if handler == nil {
 		return r.methodNotAllowedHandler, Params{}
 	}
 
-	if wildcardLen == 0 && trailingSlash != handler.slash {
-		if handler.slash {
+	if wildcardLen == 0 && trailingSlash != handler.addSlash {
+		if handler.addSlash {
 			// Need to add a slash.
 			return redirectHandler(unescapedPath + "/"), Params{}
 		}
