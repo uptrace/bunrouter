@@ -1,3 +1,12 @@
+## [1.0.3](https://github.com/uptrace/bunrouter/compare/v1.0.2...v1.0.3) (2021-10-19)
+
+
+### Bug Fixes
+
+* revert wildcard redirects ([5549cfb](https://github.com/uptrace/bunrouter/commit/5549cfbcfda48b8079f9cf1ce6feb691c8dccfa9))
+
+
+
 ## [1.0.2](https://github.com/uptrace/bunrouter/compare/v1.0.1...v1.0.2) (2021-10-19)
 
 
