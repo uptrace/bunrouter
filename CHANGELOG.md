@@ -1,3 +1,12 @@
+## [1.0.2](https://github.com/uptrace/bunrouter/compare/v1.0.1...v1.0.2) (2021-10-19)
+
+
+### Features
+
+* make redirects work for wildcard routes ([04cb9f3](https://github.com/uptrace/bunrouter/commit/04cb9f3fd564d76477dcba7218e29f980503b15d))
+
+
+
 ## [1.0.1](https://github.com/uptrace/bunrouter/compare/v1.0.0...v1.0.1) (2021-10-15)
 
 
