@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func simpleHandler(w http.ResponseWriter, r Request) error {
+func simpleHandler(w http.ResponseWriter, req Request) error {
 	return nil
 }
 
@@ -22,41 +22,6 @@ type TestScenario struct {
 
 var scenarios = []TestScenario{
 	{"Test with URL.Path and normal ServeHTTP"},
-}
-
-// This type and the benchRequest function are modified from go-http-routing-benchmark.
-type mockResponseWriter struct {
-	code        int
-	calledWrite bool
-}
-
-func (m *mockResponseWriter) Header() (h http.Header) {
-	return http.Header{}
-}
-
-func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
-	m.calledWrite = true
-	return len(p), nil
-}
-
-func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
-	m.calledWrite = true
-	return len(s), nil
-}
-
-func (m *mockResponseWriter) WriteHeader(code int) {
-	m.code = code
-}
-
-func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
-	w := new(mockResponseWriter)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		router.ServeHTTP(w, r)
-	}
 }
 
 func TestRequestWithContext(t *testing.T) {
@@ -669,6 +634,18 @@ func TestWildcardNode(t *testing.T) {
 	require.Equal(t, "/static/", w.Header().Get("Location"))
 }
 
+func TestFiveColonRoute(t *testing.T) {
+	router := New()
+
+	router.GET("/", simpleHandler)
+	router.GET("/:a/:b/:c/:d/:e", simpleHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test/test/test/test/test", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+}
+
 func TestSplitRoute(t *testing.T) {
 	type Test struct {
 		route  string
@@ -688,6 +665,12 @@ func TestSplitRoute(t *testing.T) {
 		{"/*path", []string{"*"}, map[string]int{"path": 0}, false},
 		{"/:foo/*path", []string{":", "*"}, map[string]int{"foo": 0, "path": 1}, true},
 		{"/:foo/static/*path", []string{":", "/static", "*"}, map[string]int{"foo": 0, "path": 1}, true},
+		{
+			"/:a/:b/:c/:d/:e",
+			[]string{":", "/", ":", "/", ":", "/", ":", "/", ":"},
+			map[string]int{"a": 0, "b": 1, "c": 2, "d": 3, "e": 4},
+			false,
+		},
 	}
 
 	for _, test := range tests {

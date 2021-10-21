@@ -251,18 +251,19 @@ func (p *routeParser) accumulate(s string) {
 func (p *routeParser) finalizePart(withSlash bool) {
 	if part := join(p.acc, withSlash); part != "" {
 		p.parts = append(p.parts, part)
-		p.acc = p.acc[:0]
 	}
+	p.acc = p.acc[:0]
+
 	if p.valid() {
 		p.acc = append(p.acc, "")
 	}
 }
 
 func join(ss []string, withSlash bool) string {
-	s := strings.Join(ss, "/")
-	if s == "" {
-		return s
+	if len(ss) == 0 {
+		return ""
 	}
+	s := strings.Join(ss, "/")
 	if withSlash {
 		return s + "/"
 	}
