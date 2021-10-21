@@ -1,3 +1,12 @@
+## [1.0.3](https://github.com/uptrace/bunrouter/compare/v1.0.2...v1.0.3) (2021-10-21)
+
+
+### Bug Fixes
+
+* make routes with only colon nodes work ([fffd754](https://github.com/uptrace/bunrouter/commit/fffd75448f70a508254b0327c933cfda19eac70f))
+
+
+
 ## [1.0.2](https://github.com/uptrace/bunrouter/compare/v1.0.1...v1.0.2) (2021-10-19)
 
 
