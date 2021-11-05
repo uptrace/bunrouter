@@ -8,21 +8,20 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/bunrouterotel"
 	"github.com/uptrace/bunrouter/extra/reqlog"
+	"github.com/uptrace/opentelemetry-go-extra/otelplay"
 )
 
 func main() {
 	ctx := context.Background()
 
-	stop := configureOpentelemetry(ctx)
-	defer stop()
+	shutdown := otelplay.ConfigureOpentelemetry(ctx)
+	defer shutdown()
 
 	router := bunrouter.New(
 		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
@@ -56,13 +55,17 @@ func main() {
 }
 
 func indexHandler(w http.ResponseWriter, req bunrouter.Request) error {
-	return indexTemplate().Execute(w, nil)
+	m := map[string]interface{}{
+		"traceURL": otelplay.TraceURL(trace.SpanFromContext(req.Context())),
+	}
+	return indexTemplate().Execute(w, m)
 }
 
 func debugHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	return bunrouter.JSON(w, bunrouter.H{
-		"route":  req.Route(),
-		"params": req.Params().Map(),
+		"route":    req.Route(),
+		"params":   req.Params().Map(),
+		"traceURL": otelplay.TraceURL(trace.SpanFromContext(req.Context())),
 	})
 }
 
@@ -74,28 +77,10 @@ var indexTmpl = `
     <li><a href="/api/users/current">/api/users/current</a></li>
     <li><a href="/api/users/foo/bar">/api/users/foo/bar</a></li>
   </ul>
+  <p><a href="{{ .traceURL }}">{{ .traceURL }}</a></p>
 </html>
 `
 
 func indexTemplate() *template.Template {
 	return template.Must(template.New("index").Parse(indexTmpl))
-}
-
-func configureOpentelemetry(ctx context.Context) func() {
-	provider := sdktrace.NewTracerProvider()
-	otel.SetTracerProvider(provider)
-
-	exp, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
-	if err != nil {
-		panic(err)
-	}
-
-	bsp := sdktrace.NewBatchSpanProcessor(exp)
-	provider.RegisterSpanProcessor(bsp)
-
-	return func() {
-		if err := provider.Shutdown(ctx); err != nil {
-			panic(err)
-		}
-	}
 }
