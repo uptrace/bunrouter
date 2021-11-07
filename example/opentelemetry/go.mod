@@ -14,6 +14,8 @@ require (
 	github.com/uptrace/bunrouter/extra/bunrouterotel v1.0.3
 	github.com/uptrace/bunrouter/extra/reqlog v1.0.3
 	github.com/uptrace/opentelemetry-go-extra/otelplay v0.1.4
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.24.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1
 	go.opentelemetry.io/otel/trace v1.1.0
+	golang.org/x/net v0.0.0-20211105192438-b53810dc28af // indirect
+	golang.org/x/sys v0.0.0-20211106132015-ebca88c72f68 // indirect
 )
