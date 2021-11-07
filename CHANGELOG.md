@@ -1,3 +1,12 @@
+## [1.0.4](https://github.com/uptrace/bunrouter/compare/v1.0.3...v1.0.4) (2021-11-07)
+
+
+### Features
+
+* **reqlog:** support http.Flusher ([938d70a](https://github.com/uptrace/bunrouter/commit/938d70aa4743d3c1492af8421a3fff14df986fa0))
+
+
+
 ## [1.0.3](https://github.com/uptrace/bunrouter/compare/v1.0.2...v1.0.3) (2021-10-21)
 
 
