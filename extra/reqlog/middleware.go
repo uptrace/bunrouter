@@ -72,8 +72,14 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 			Code:           http.StatusOK,
 		}
 
+		if _, ok := w.(http.Flusher); ok {
+			w = flusher{rec}
+		} else {
+			w = rec
+		}
+
 		now := time.Now()
-		err := next(rec, req)
+		err := next(w, req)
 		dur := time.Since(now)
 
 		if !m.verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
@@ -113,6 +119,16 @@ type statusCodeRecorder struct {
 func (rec *statusCodeRecorder) WriteHeader(statusCode int) {
 	rec.Code = statusCode
 	rec.ResponseWriter.WriteHeader(statusCode)
+}
+
+type flusher struct {
+	*statusCodeRecorder
+}
+
+var _ http.Flusher = (*flusher)(nil)
+
+func (f flusher) Flush() {
+	f.ResponseWriter.(http.Flusher).Flush()
 }
 
 //------------------------------------------------------------------------------
