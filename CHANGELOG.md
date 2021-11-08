@@ -1,3 +1,17 @@
+## [1.0.5](https://github.com/uptrace/bunrouter/compare/v1.0.4...v1.0.5) (2021-11-08)
+
+
+### Bug Fixes
+
+* fallback to context when params can't be found ([ee2eb33](https://github.com/uptrace/bunrouter/commit/ee2eb3339ff421dd80566802304a32265f6e28b1))
+
+
+### Features
+
+* apply middleware to method not allowed handler ([8e295d0](https://github.com/uptrace/bunrouter/commit/8e295d0f01fbdf16061b7a4c53b931e9d709b25b))
+
+
+
 ## [1.0.4](https://github.com/uptrace/bunrouter/compare/v1.0.3...v1.0.4) (2021-11-07)
 
 
