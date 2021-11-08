@@ -37,6 +37,8 @@ func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
 
 type HandlerFunc func(w http.ResponseWriter, req Request) error
 
+var _ http.Handler = (*HandlerFunc)(nil)
+
 func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err := h(w, NewRequest(req)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
