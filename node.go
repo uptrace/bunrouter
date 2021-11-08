@@ -340,13 +340,14 @@ func paramMap(route string, params []string) map[string]int {
 //------------------------------------------------------------------------------
 
 type handlerMap struct {
-	get     routeHandler
-	post    routeHandler
-	put     routeHandler
-	delete  routeHandler
-	head    routeHandler
-	options routeHandler
-	patch   routeHandler
+	get        routeHandler
+	post       routeHandler
+	put        routeHandler
+	delete     routeHandler
+	head       routeHandler
+	options    routeHandler
+	patch      routeHandler
+	notAllowed routeHandler
 }
 
 type routeHandler struct {

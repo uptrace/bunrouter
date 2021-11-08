@@ -58,6 +58,10 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 
 	node, slash := g.router.tree.addRoute(path)
 	node.setHandler(meth, routeHandler{fn: handler, slash: slash})
+	node.handlerMap.notAllowed = routeHandler{
+		fn:    g.handlerWithMiddlewares(g.router.methodNotAllowedHandler),
+		slash: slash,
+	}
 }
 
 // Syntactic sugar for Handle("GET", path, handler)
@@ -223,7 +227,7 @@ func joinPath(base, path string) string {
 	checkPath(path)
 	path = base + path
 	// Don't want trailing slash as all sub-paths start with slash
-	if len(path) > 0 && path[len(path)-1] == '/' {
+	if len(path) > 1 && path[len(path)-1] == '/' {
 		path = path[:len(path)-1]
 	}
 	return path

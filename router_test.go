@@ -491,6 +491,54 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
+func TestCORSMiddleware(t *testing.T) {
+	corsMiddleware := func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, req Request) error {
+			if req.Method == http.MethodOptions {
+				return nil
+			}
+			return next(w, req)
+		}
+	}
+
+	router := New()
+
+	router.NewGroup("/api",
+		// Install CORS only for this group.
+		WithMiddleware(corsMiddleware),
+		WithGroup(func(g *Group) {
+			g.GET("/users", simpleHandler)
+		}))
+
+	t.Run("normal request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/api/users", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("CORS request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodOptions, "/api/users", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("CORS to non-existant route", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodOptions, "/api", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("not allowed method", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/users", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	})
+}
+
 // When we find a node with a matching path but no handler for a method,
 // we should fall through and continue searching the tree for a less specific
 // match, i.e. a wildcard or catchall, that does have a handler for that method.

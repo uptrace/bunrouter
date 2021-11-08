@@ -72,7 +72,7 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	}
 
 	if handler.fn == nil {
-		return r.methodNotAllowedHandler, Params{}
+		handler = node.handlerMap.notAllowed
 	}
 
 	if wildcardLen == 0 && trailingSlash != handler.slash {
