@@ -32,6 +32,11 @@ Examples:
 - [httprouter.Handle example](/example/basic-verbose/)
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 
+Benchmarks:
+
+- [web-frameworks-benchmark](https://web-frameworks-benchmark.netlify.app/result?l=go)
+- [go-http-routing-benchmark](https://github.com/go-bun/go-http-routing-benchmark)
+
 <details>
   <summary>Benchmark results</summary>
 
