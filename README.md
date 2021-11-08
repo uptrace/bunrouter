@@ -30,6 +30,10 @@ Examples:
 - [Basic example](/example/basic/)
 - [http.HandlerFunc example](/example/basic-compat/)
 - [httprouter.Handle example](/example/basic-verbose/)
+
+Projects using BunRouter:
+
+- [input-output-hk/cicero](https://github.com/input-output-hk/cicero)
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 
 Benchmarks:
