@@ -38,7 +38,9 @@ func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
 type HandlerFunc func(w http.ResponseWriter, req Request) error
 
 func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	_ = h(w, NewRequest(req))
+	if err := h(w, NewRequest(req)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
@@ -63,16 +65,19 @@ func (req Request) WithContext(ctx context.Context) Request {
 	}
 }
 
-func (req Request) Route() string {
-	return req.params.Route()
-}
-
 func (req Request) Params() Params {
-	return req.params
+	if !req.params.IsZero() {
+		return req.params
+	}
+	return ParamsFromContext(req.Context())
 }
 
 func (req Request) Param(key string) string {
-	return req.params.ByName(key)
+	return req.Params().ByName(key)
+}
+
+func (req Request) Route() string {
+	return req.Params().Route()
 }
 
 //------------------------------------------------------------------------------
@@ -81,6 +86,10 @@ type Params struct {
 	path        string
 	node        *node
 	wildcardLen uint16
+}
+
+func (ps Params) IsZero() bool {
+	return ps.node == nil
 }
 
 func (ps Params) Route() string {
