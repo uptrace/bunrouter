@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rs/cors"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/reqlog"
 )
@@ -24,10 +25,18 @@ func main() {
 			g.GET("/users/:id", userHandler)
 		}))
 
+	router.NewGroup("/api/v2",
+		// Install CORS only for this group.
+		bunrouter.WithMiddleware(newCorsMiddleware([]string{"http://localhost:9999"})),
+		bunrouter.WithGroup(func(g *bunrouter.Group) {
+			g.GET("/users/:id", userHandler)
+		}))
+
 	log.Println("listening on http://localhost:9999")
 	log.Println(http.ListenAndServe(":9999", router))
 }
 
+// corsMiddleware handles CORS requests with custom middleware.
 func corsMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 	return func(w http.ResponseWriter, req bunrouter.Request) error {
 		origin := req.Header.Get("Origin")
@@ -49,6 +58,17 @@ func corsMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 		}
 
 		return next(w, req)
+	}
+}
+
+// newCorsMiddleware creates CORS middleware using github.com/rs/cors package.
+func newCorsMiddleware(allowedOrigins []string) bunrouter.MiddlewareFunc {
+	return func(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
+		corsHandler := cors.New(cors.Options{
+			AllowedOrigins:   allowedOrigins,
+			AllowCredentials: true,
+		}).Handler(next)
+		return bunrouter.HTTPHandler(corsHandler)
 	}
 }
 
