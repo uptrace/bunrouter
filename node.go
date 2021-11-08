@@ -166,7 +166,7 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 			return n, handler, pathLen
 		}
 		if found == nil {
-			return n, routeHandler{}, 0
+			found = n
 		}
 	}
 

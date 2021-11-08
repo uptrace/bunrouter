@@ -21,8 +21,13 @@ func contextWithParams(ctx context.Context, params Params) context.Context {
 
 //------------------------------------------------------------------------------
 
-// HTTPHandler converts http.Handler from the stdlib to bunrouter.HandlerFunc.
+// HTTPHandler converts http.Handler to bunrouter.HandlerFunc.
 func HTTPHandler(handler http.Handler) HandlerFunc {
+	return HTTPHandlerFunc(handler.ServeHTTP)
+}
+
+// HTTPHandlerFunc converts http.HandlerFunc to bunrouter.HandlerFunc.
+func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
 	return func(w http.ResponseWriter, req Request) error {
 		ctx := contextWithParams(req.Context(), req.params)
 		handler.ServeHTTP(w, req.Request.WithContext(ctx))
@@ -30,12 +35,11 @@ func HTTPHandler(handler http.Handler) HandlerFunc {
 	}
 }
 
-// HTTPHandlerFunc converts http.HandlerFunc from the stdlib to bunrouter.HandlerFunc.
-func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
-	return HTTPHandler(http.HandlerFunc(handler))
-}
-
 type HandlerFunc func(w http.ResponseWriter, req Request) error
+
+func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	_ = h(w, NewRequest(req))
+}
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 

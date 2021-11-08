@@ -37,8 +37,8 @@ func New(opts ...Option) *Router {
 	return r
 }
 
-func (t *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	handler, params := t.lookup(w, req)
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	handler, params := r.lookup(w, req)
 	reqWrapper := Request{
 		Request: req,
 		params:  params,
@@ -64,13 +64,11 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	if node == nil {
 		// Path was not found. Try cleaning it up and search again.
 		cleanPath := CleanPath(unescapedPath)
-
-		node, _, _ = r.tree.findRoute(req.Method, cleanPath[1:])
-		if node == nil {
-			return r.notFoundHandler, Params{}
+		if found, _, _ := r.tree.findRoute(req.Method, cleanPath[1:]); found != nil {
+			return redirectHandler(cleanPath), Params{}
 		}
 
-		return redirectHandler(cleanPath), Params{}
+		return r.notFoundHandler, Params{}
 	}
 
 	if handler.fn == nil {
