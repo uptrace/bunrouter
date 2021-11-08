@@ -55,6 +55,7 @@ type Request struct {
 func NewRequest(req *http.Request) Request {
 	return Request{
 		Request: req,
+		params:  ParamsFromContext(req.Context()),
 	}
 }
 
@@ -66,10 +67,7 @@ func (req Request) WithContext(ctx context.Context) Request {
 }
 
 func (req Request) Params() Params {
-	if !req.params.IsZero() {
-		return req.params
-	}
-	return ParamsFromContext(req.Context())
+	return req.params
 }
 
 func (req Request) Param(key string) string {
