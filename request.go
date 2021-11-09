@@ -28,10 +28,22 @@ func HTTPHandler(handler http.Handler) HandlerFunc {
 
 // HTTPHandlerFunc converts http.HandlerFunc to bunrouter.HandlerFunc.
 func HTTPHandlerFunc(handler http.HandlerFunc) HandlerFunc {
-	return func(w http.ResponseWriter, req Request) error {
+	return func(w http.ResponseWriter, req Request) (err error) {
 		ctx := contextWithParams(req.Context(), req.params)
+
+		defer func() {
+			if v := recover(); v != nil {
+				var ok bool
+				err, ok = v.(error)
+				if !ok {
+					panic(v)
+				}
+			}
+		}()
+
 		handler.ServeHTTP(w, req.Request.WithContext(ctx))
-		return nil
+
+		return err
 	}
 }
 
@@ -41,7 +53,7 @@ var _ http.Handler = (*HandlerFunc)(nil)
 
 func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err := h(w, NewRequest(req)); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		panic(err)
 	}
 }
 
