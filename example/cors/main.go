@@ -63,12 +63,13 @@ func corsMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 
 // newCorsMiddleware creates CORS middleware using github.com/rs/cors package.
 func newCorsMiddleware(allowedOrigins []string) bunrouter.MiddlewareFunc {
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   allowedOrigins,
+		AllowCredentials: true,
+	})
+
 	return func(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
-		corsHandler := cors.New(cors.Options{
-			AllowedOrigins:   allowedOrigins,
-			AllowCredentials: true,
-		}).Handler(next)
-		return bunrouter.HTTPHandler(corsHandler)
+		return bunrouter.HTTPHandler(corsHandler.Handler(next))
 	}
 }
 
