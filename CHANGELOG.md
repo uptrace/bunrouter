@@ -1,3 +1,12 @@
+## [1.0.6](https://github.com/uptrace/bunrouter/compare/v1.0.5...v1.0.6) (2021-11-09)
+
+
+### Bug Fixes
+
+* propagate error in HTTP compat handlers ([5ed4d41](https://github.com/uptrace/bunrouter/commit/5ed4d41e99e8f6614753393f13e3674df29e7fb9))
+
+
+
 ## [1.0.5](https://github.com/uptrace/bunrouter/compare/v1.0.4...v1.0.5) (2021-11-08)
 
 
