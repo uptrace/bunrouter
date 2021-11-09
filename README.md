@@ -5,20 +5,31 @@
 [![Documentation](https://img.shields.io/badge/bunrouter-documentation-informational)](https://bunrouter.uptrace.dev/)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
-Features:
+BunRouter is an extremely fast HTTP router for Go with unique combination of features:
 
-- **Flexible routing**. Routing rules are compatible with httprouter and have proper matching
-  priority.
-- **Performant matching**. BunRouter is very fast and does zero allocations when matching routes or
-  retrieving parameters.
-- **Compatible API**. Out-of-the box works with standard http.HandlerFunc and httprouter-like
-  handlers.
-- [**Middlewares**](https://bunrouter.uptrace.dev/guide/middlewares.html). Extract common operations
-  from your handlers into reusable wrapper functions (middlewares).
-- [**Error handling**](https://bunrouter.uptrace.dev/guide/error-handling.html). Just return errors
-  from route handlers and handle all of them from a single middleware.
-- **Auto-correction**. Bunrouter redirects users to the right route in case of extra/missing/double
-  slashes.
+- [Middlewares](https://bunrouter.uptrace.dev/guide/middlewares.html) allow to extract common
+  operations from HTTP handlers into reusable functions.
+- [Error handling](https://bunrouter.uptrace.dev/guide/error-handling.html) allows to further reduce
+  the size of HTTP handlers by handling errors in middlewares.
+- [Routes priority](https://bunrouter.uptrace.dev/guide/getting-started.html#routes-priority)
+  enables meaningful matching priority for routing rules: first static nodes, then named nodes,
+  lastly wildcard nodes.
+- net/http compatible API which means using minimal API without constructing huge wrappers that try
+  to do everything: from serving static files to XML generation (for example, `gin.Context` or
+  `echo.Context`).
+
+| Router          | Middlewares        | Error handling     | Routes priority    | net/http API       |
+| --------------- | ------------------ | ------------------ | ------------------ | ------------------ |
+| BunRouter       | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| [httprouter][1] | :x:                | :x:                | :x:                | :heavy_check_mark: |
+| [Chi][2]        | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: |
+| [Echo][3]       | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                |
+| [Gin](4)        | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                |
+
+[1]: https://github.com/julienschmidt/httprouter
+[2]: https://github.com/go-chi/chi
+[3]: https://github.com/labstack/echo
+[4]: https://github.com/go-gin/gin
 
 Learn:
 
