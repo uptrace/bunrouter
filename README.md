@@ -5,6 +5,9 @@
 [![Documentation](https://img.shields.io/badge/bunrouter-documentation-informational)](https://bunrouter.uptrace.dev/)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
+**TLDR** BunRouter is as fast as httprouter, but supports middlewares, routing rules priority, and
+error handling.
+
 BunRouter is an extremely fast HTTP router for Go with unique combination of features:
 
 - [Middlewares](https://bunrouter.uptrace.dev/guide/middlewares.html) allow to extract common
