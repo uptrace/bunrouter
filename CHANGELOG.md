@@ -1,3 +1,12 @@
+## [1.0.7](https://github.com/uptrace/bunrouter/compare/v1.0.6...v1.0.7) (2021-11-12)
+
+
+### Bug Fixes
+
+* don't panic on path that matches routes common prefix ([d89dc38](https://github.com/uptrace/bunrouter/commit/d89dc38defc44bdf4bab13ecb518c2aa42ad9e80))
+
+
+
 ## [1.0.6](https://github.com/uptrace/bunrouter/compare/v1.0.5...v1.0.6) (2021-11-09)
 
 
