@@ -694,6 +694,70 @@ func TestFiveColonRoute(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 }
 
+func TestRoutesWithCommonPrefix(t *testing.T) {
+	router := New()
+
+	router.GET("/campaigns", simpleHandler)
+	router.GET("/causes", simpleHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ca", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestNotAllowedMiddleware(t *testing.T) {
+	var stack []string
+
+	middleware := func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, req Request) error {
+			stack = append(stack, "middleware")
+			return next(w, req)
+		}
+	}
+
+	handler := func(w http.ResponseWriter, req Request) error {
+		stack = append(stack, "handler")
+		return nil
+	}
+
+	router := New()
+
+	router.NewGroup("/hello",
+		WithMiddleware(middleware),
+		WithGroup(func(group *Group) {
+			group.GET("", handler)
+		}),
+	)
+
+	t.Run("existing route", func(t *testing.T) {
+		stack = nil
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/hello", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, []string{"middleware", "handler"}, stack)
+	})
+
+	t.Run("not allowed method", func(t *testing.T) {
+		stack = nil
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/hello", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+		require.Equal(t, []string{"middleware"}, stack)
+	})
+
+	t.Run("not found route", func(t *testing.T) {
+		stack = nil
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/hello/world", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusNotFound, w.Code)
+		require.Nil(t, stack)
+	})
+}
+
 func TestSplitRoute(t *testing.T) {
 	type Test struct {
 		route  string
