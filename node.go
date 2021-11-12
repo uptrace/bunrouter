@@ -115,7 +115,6 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 		return n, n.handler(meth), 0
 	}
 
-	pathLen := len(path)
 	var found *node
 
 	if firstChar := path[0]; firstChar >= n.index.minChar && firstChar <= n.index.maxChar {
@@ -126,7 +125,9 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 				if handler := childNode.handler(meth); handler.fn != nil {
 					return childNode, handler, 0
 				}
-				found = childNode
+				if childNode.handlerMap != nil {
+					found = childNode
+				}
 			} else {
 				partLen := len(childNode.part)
 				if strings.HasPrefix(path, childNode.part) {
@@ -152,18 +153,18 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 			if handler := n.colon.handler(meth); handler.fn != nil {
 				return n.colon, handler, 0
 			}
-			if found == nil {
+			if found == nil && n.colon.handlerMap != nil {
 				found = n.colon
 			}
 		}
 	}
 
-	if n.isWildcard {
+	if n.isWildcard && n.handlerMap != nil {
 		if handler := n.handler(meth); handler.fn != nil {
 			if handler.slash {
-				pathLen--
+				return n, handler, len(path) - 1
 			}
-			return n, handler, pathLen
+			return n, handler, len(path)
 		}
 		if found == nil {
 			found = n
