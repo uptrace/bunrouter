@@ -16,7 +16,10 @@ type Router struct {
 
 func New(opts ...Option) *Router {
 	r := &Router{
-		tree: node{route: "/", part: "/"},
+		tree: node{
+			route: "/",
+			part:  "/",
+		},
 	}
 
 	r.Group.router = r
@@ -63,9 +66,10 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	node, handler, wildcardLen := r.tree.findRoute(req.Method, path[1:])
 	if node == nil {
 		// Path was not found. Try cleaning it up and search again.
-		cleanPath := CleanPath(unescapedPath)
-		if found, _, _ := r.tree.findRoute(req.Method, cleanPath[1:]); found != nil {
-			return redirectHandler(cleanPath), Params{}
+		if cleanPath := CleanPath(unescapedPath); cleanPath != path {
+			if found, _, _ := r.tree.findRoute(req.Method, cleanPath[1:]); found != nil {
+				return redirectHandler(cleanPath), Params{}
+			}
 		}
 
 		return r.notFoundHandler, Params{}
