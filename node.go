@@ -112,9 +112,15 @@ func (n *node) addPart(part string) *node {
 
 func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 	if path == "" {
-		return n, n.handler(meth), 0
+		if n.handlerMap != nil {
+			return n, n.handlerMap.Get(meth), 0
+		}
+		return nil, routeHandler{}, 0
 	}
+	return n._findRoute(meth, path)
+}
 
+func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 	var found *node
 
 	if firstChar := path[0]; firstChar >= n.index.minChar && firstChar <= n.index.maxChar {
@@ -122,16 +128,16 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 			childNode := n.nodes[i-1]
 
 			if childNode.part == path {
-				if handler := childNode.handler(meth); handler.fn != nil {
-					return childNode, handler, 0
-				}
 				if childNode.handlerMap != nil {
+					if handler := childNode.handlerMap.Get(meth); handler.fn != nil {
+						return childNode, handler, 0
+					}
 					found = childNode
 				}
 			} else {
 				partLen := len(childNode.part)
 				if strings.HasPrefix(path, childNode.part) {
-					node, handler, wildcardLen := childNode.findRoute(meth, path[partLen:])
+					node, handler, wildcardLen := childNode._findRoute(meth, path[partLen:])
 					if handler.fn != nil {
 						return node, handler, wildcardLen
 					}
@@ -145,22 +151,22 @@ func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
 
 	if n.colon != nil {
 		if i := strings.IndexByte(path, '/'); i > 0 {
-			node, handler, wildcardLen := n.colon.findRoute(meth, path[i:])
+			node, handler, wildcardLen := n.colon._findRoute(meth, path[i:])
 			if handler.fn != nil {
 				return node, handler, wildcardLen
 			}
-		} else {
-			if handler := n.colon.handler(meth); handler.fn != nil {
+		} else if n.colon.handlerMap != nil {
+			if handler := n.colon.handlerMap.Get(meth); handler.fn != nil {
 				return n.colon, handler, 0
 			}
-			if found == nil && n.colon.handlerMap != nil {
+			if found == nil {
 				found = n.colon
 			}
 		}
 	}
 
 	if n.isWildcard && n.handlerMap != nil {
-		if handler := n.handler(meth); handler.fn != nil {
+		if handler := n.handlerMap.Get(meth); handler.fn != nil {
 			if handler.slash {
 				return n, handler, len(path) - 1
 			}
@@ -216,13 +222,6 @@ func (n *node) setHandler(verb string, handler routeHandler) {
 		panic(fmt.Sprintf("%s already handles %s", n.route, verb))
 	}
 	n.handlerMap.Set(verb, handler)
-}
-
-func (n *node) handler(verb string) routeHandler {
-	if n.handlerMap == nil {
-		return routeHandler{}
-	}
-	return n.handlerMap.Get(verb)
 }
 
 //------------------------------------------------------------------------------

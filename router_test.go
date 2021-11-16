@@ -700,10 +700,19 @@ func TestRoutesWithCommonPrefix(t *testing.T) {
 	router.GET("/campaigns", simpleHandler)
 	router.GET("/causes", simpleHandler)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ca", nil)
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusNotFound, w.Code)
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/ca", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusNotFound, w.Code)
+	}
+
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusNotFound, w.Code)
+	}
 }
 
 func TestNotAllowedMiddleware(t *testing.T) {
