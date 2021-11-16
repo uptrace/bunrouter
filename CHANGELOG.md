@@ -1,3 +1,12 @@
+## [1.0.8](https://github.com/uptrace/bunrouter/compare/v1.0.7...v1.0.8) (2021-11-16)
+
+
+### Bug Fixes
+
+* properly handle empty root node ([b37ad45](https://github.com/uptrace/bunrouter/commit/b37ad4595c66454f4a768356298c95976e01d7f2))
+
+
+
 ## [1.0.7](https://github.com/uptrace/bunrouter/compare/v1.0.6...v1.0.7) (2021-11-12)
 
 
