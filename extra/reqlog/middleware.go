@@ -67,29 +67,21 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 	}
 
 	return func(w http.ResponseWriter, req bunrouter.Request) error {
-		rec := &statusCodeRecorder{
-			ResponseWriter: w,
-			Code:           http.StatusOK,
-		}
-
-		if _, ok := w.(http.Flusher); ok {
-			w = flusher{rec}
-		} else {
-			w = rec
-		}
+		rec := NewLoggingResponseWriter(w)
 
 		now := time.Now()
-		err := next(w, req)
+		err := next(rec, req)
 		dur := time.Since(now)
+		statusCode := rec.StatusCode()
 
-		if !m.verbose && rec.Code >= 200 && rec.Code < 300 && err == nil {
+		if !m.verbose && statusCode >= 200 && statusCode < 300 && err == nil {
 			return nil
 		}
 
 		args := []interface{}{
 			"[bunrouter]",
 			now.Format(" 15:04:05.000 "),
-			formatStatus(rec.Code),
+			formatStatus(statusCode),
 			fmt.Sprintf(" %10s ", dur.Round(time.Microsecond)),
 			formatMethod(req.Method),
 			req.URL.String(),
@@ -111,13 +103,34 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 
 //------------------------------------------------------------------------------
 
+type LoggingResponseWriter interface {
+	http.ResponseWriter
+	StatusCode() int
+}
+
+func NewLoggingResponseWriter(w http.ResponseWriter) LoggingResponseWriter {
+	rec := &statusCodeRecorder{
+		ResponseWriter: w,
+		statusCode:     http.StatusOK,
+	}
+
+	if _, ok := w.(http.Flusher); ok {
+		return flusher{rec}
+	}
+	return rec
+}
+
 type statusCodeRecorder struct {
 	http.ResponseWriter
-	Code int
+	statusCode int
+}
+
+func (rec *statusCodeRecorder) StatusCode() int {
+	return rec.statusCode
 }
 
 func (rec *statusCodeRecorder) WriteHeader(statusCode int) {
-	rec.Code = statusCode
+	rec.statusCode = statusCode
 	rec.ResponseWriter.WriteHeader(statusCode)
 }
 
