@@ -56,11 +56,10 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 		handler = g.handlerWithMiddlewares(handler)
 	}
 
-	node, slash := g.router.tree.addRoute(path)
-	node.setHandler(meth, routeHandler{fn: handler, slash: slash})
-	node.handlerMap.notAllowed = routeHandler{
-		fn:    g.handlerWithMiddlewares(g.router.methodNotAllowedHandler),
-		slash: slash,
+	node := g.router.tree.addRoute(path)
+	node.setHandler(meth, handler)
+	if node.handlerMap.notAllowed == nil {
+		node.handlerMap.notAllowed = g.handlerWithMiddlewares(g.router.methodNotAllowedHandler)
 	}
 }
 

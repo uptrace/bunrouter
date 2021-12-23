@@ -3,6 +3,7 @@ package bunrouter
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 )
 
@@ -51,51 +52,58 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, Params) {
 	path := req.URL.Path
-	unescapedPath := req.URL.Path
-
 	if path == "" {
 		return r.notFoundHandler, Params{}
 	}
 
-	trailingSlash := len(path) > 1 && path[len(path)-1] == '/'
-	if trailingSlash {
-		path = path[:len(path)-1]
-		unescapedPath = unescapedPath[:len(unescapedPath)-1]
-	}
-
 	node, handler, wildcardLen := r.tree.findRoute(req.Method, path[1:])
 	if node == nil {
-		// Path was not found. Try cleaning it up and search again.
-		if cleanPath := CleanPath(unescapedPath); cleanPath != path {
-			if found, _, _ := r.tree.findRoute(req.Method, cleanPath[1:]); found != nil {
-				return redirectHandler(cleanPath), Params{}
-			}
+		if path == "/" {
+			return r.notFoundHandler, Params{}
 		}
-
+		if redir := r.redir(req.Method, path); redir != nil {
+			return redir, Params{}
+		}
 		return r.notFoundHandler, Params{}
 	}
 
-	if handler.fn == nil {
+	if handler == nil {
+		if redir := r.redir(req.Method, path); redir != nil {
+			return redir, Params{}
+		}
 		handler = node.handlerMap.notAllowed
 	}
 
-	if wildcardLen == 0 && trailingSlash != handler.slash {
-		if handler.slash {
-			// Need to add a slash.
-			return redirectHandler(unescapedPath + "/"), Params{}
-		}
-		if path != "/" {
-			// We need to remove the slash. This was already done at the
-			// beginning of the function.
-			return redirectHandler(unescapedPath), Params{}
-		}
-	}
-
-	return handler.fn, Params{
+	return handler, Params{
 		node:        node,
 		path:        path,
 		wildcardLen: uint16(wildcardLen),
 	}
+}
+
+func (r *Router) redir(method, path string) HandlerFunc {
+	// Path was not found. Try cleaning it up and search again.
+	if cleanPath := CleanPath(path); cleanPath != path {
+		if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+			return redirectHandler(cleanPath)
+		}
+	}
+
+	if strings.HasSuffix(path, "/") {
+		// Try path without a slash.
+		cleanPath := path[:len(path)-1]
+		if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+			return redirectHandler(cleanPath)
+		}
+		return nil
+	}
+
+	// Try path with a slash.
+	cleanPath := path + "/"
+	if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+		return redirectHandler(cleanPath)
+	}
+	return nil
 }
 
 //------------------------------------------------------------------------------

@@ -14,9 +14,9 @@ type node struct {
 	params     map[string]int // param name => param position
 	handlerMap *handlerMap
 
-	parent     *node
-	colon      *node
-	isWildcard bool
+	parent *node
+	colon  *node
+	isWC   bool
 
 	nodes []*node
 	index struct {
@@ -26,12 +26,12 @@ type node struct {
 	}
 }
 
-func (n *node) addRoute(route string) (*node, bool) {
+func (n *node) addRoute(route string) *node {
 	if route == "/" {
-		return n, false
+		return n
 	}
 
-	parts, params, slash := splitRoute(route)
+	parts, params := splitRoute(route)
 	currNode := n
 
 	for _, part := range parts {
@@ -42,12 +42,12 @@ func (n *node) addRoute(route string) (*node, bool) {
 	currNode.params = params
 	n.indexNodes()
 
-	return currNode, slash
+	return currNode
 }
 
 func (n *node) addPart(part string) *node {
 	if part == "*" {
-		n.isWildcard = true
+		n.isWC = true
 		return n
 	}
 
@@ -110,17 +110,17 @@ func (n *node) addPart(part string) *node {
 	return node
 }
 
-func (n *node) findRoute(meth, path string) (*node, routeHandler, int) {
+func (n *node) findRoute(meth, path string) (*node, HandlerFunc, int) {
 	if path == "" {
 		if n.handlerMap != nil {
 			return n, n.handlerMap.Get(meth), 0
 		}
-		return nil, routeHandler{}, 0
+		return nil, nil, 0
 	}
 	return n._findRoute(meth, path)
 }
 
-func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
+func (n *node) _findRoute(meth, path string) (*node, HandlerFunc, int) {
 	var found *node
 
 	if firstChar := path[0]; firstChar >= n.index.minChar && firstChar <= n.index.maxChar {
@@ -129,7 +129,7 @@ func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 
 			if childNode.part == path {
 				if childNode.handlerMap != nil {
-					if handler := childNode.handlerMap.Get(meth); handler.fn != nil {
+					if handler := childNode.handlerMap.Get(meth); handler != nil {
 						return childNode, handler, 0
 					}
 					found = childNode
@@ -138,7 +138,7 @@ func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 				partLen := len(childNode.part)
 				if strings.HasPrefix(path, childNode.part) {
 					node, handler, wildcardLen := childNode._findRoute(meth, path[partLen:])
-					if handler.fn != nil {
+					if handler != nil {
 						return node, handler, wildcardLen
 					}
 					if node != nil {
@@ -152,11 +152,11 @@ func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 	if n.colon != nil {
 		if i := strings.IndexByte(path, '/'); i > 0 {
 			node, handler, wildcardLen := n.colon._findRoute(meth, path[i:])
-			if handler.fn != nil {
+			if handler != nil {
 				return node, handler, wildcardLen
 			}
 		} else if n.colon.handlerMap != nil {
-			if handler := n.colon.handlerMap.Get(meth); handler.fn != nil {
+			if handler := n.colon.handlerMap.Get(meth); handler != nil {
 				return n.colon, handler, 0
 			}
 			if found == nil {
@@ -165,11 +165,8 @@ func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 		}
 	}
 
-	if n.isWildcard && n.handlerMap != nil {
-		if handler := n.handlerMap.Get(meth); handler.fn != nil {
-			if handler.slash {
-				return n, handler, len(path) - 1
-			}
+	if n.isWC && n.handlerMap != nil {
+		if handler := n.handlerMap.Get(meth); handler != nil {
 			return n, handler, len(path)
 		}
 		if found == nil {
@@ -177,7 +174,7 @@ func (n *node) _findRoute(meth, path string) (*node, routeHandler, int) {
 		}
 	}
 
-	return found, routeHandler{}, 0
+	return found, nil, 0
 }
 
 func (n *node) indexNodes() {
@@ -214,11 +211,11 @@ func (n *node) indexNodes() {
 	}
 }
 
-func (n *node) setHandler(verb string, handler routeHandler) {
+func (n *node) setHandler(verb string, handler HandlerFunc) {
 	if n.handlerMap == nil {
 		n.handlerMap = newHandlerMap()
 	}
-	if h := n.handlerMap.Get(verb); h.fn != nil {
+	if h := n.handlerMap.Get(verb); h != nil {
 		panic(fmt.Sprintf("%s already handles %s", n.route, verb))
 	}
 	n.handlerMap.Set(verb, handler)
@@ -270,20 +267,15 @@ func join(ss []string, withSlash bool) string {
 	return s
 }
 
-func splitRoute(route string) (_ []string, _ map[string]int, slash bool) {
+func splitRoute(route string) (_ []string, _ map[string]int) {
 	if route == "" || route[0] != '/' {
 		panic(fmt.Errorf("invalid route: %q", route))
 	}
 
 	if route == "/" {
-		return []string{}, nil, false
+		return []string{}, nil
 	}
-	route = route[1:] // trim "/"
-
-	if strings.HasSuffix(route, "/") {
-		slash = true
-		route = route[:len(route)-1]
-	}
+	route = route[1:] // trim first "/"
 
 	ss := strings.Split(route, "/")
 	if len(ss) == 0 {
@@ -306,12 +298,11 @@ func splitRoute(route string) (_ []string, _ map[string]int, slash bool) {
 		switch firstChar := segment[0]; firstChar {
 		case ':':
 			p.finalizePart(true)
-			p.parts = append(p.parts, string(firstChar))
+			p.parts = append(p.parts, ":")
 			params = append(params, segment[1:])
 		case '*':
-			p.finalizePart(false)
-			slash = len(p.parts) > 0
-			p.parts = append(p.parts, string(firstChar))
+			p.finalizePart(true)
+			p.parts = append(p.parts, "*")
 			params = append(params, segment[1:])
 		default:
 			p.accumulate(segment)
@@ -321,9 +312,9 @@ func splitRoute(route string) (_ []string, _ map[string]int, slash bool) {
 	p.finalizePart(false)
 
 	if len(params) > 0 {
-		return p.parts, paramMap(route, params), slash
+		return p.parts, paramMap(route, params)
 	}
-	return p.parts, nil, slash
+	return p.parts, nil
 }
 
 func paramMap(route string, params []string) map[string]int {
@@ -340,26 +331,21 @@ func paramMap(route string, params []string) map[string]int {
 //------------------------------------------------------------------------------
 
 type handlerMap struct {
-	get        routeHandler
-	post       routeHandler
-	put        routeHandler
-	delete     routeHandler
-	head       routeHandler
-	options    routeHandler
-	patch      routeHandler
-	notAllowed routeHandler
-}
-
-type routeHandler struct {
-	fn    HandlerFunc
-	slash bool // redirect with/without a slash
+	get        HandlerFunc
+	post       HandlerFunc
+	put        HandlerFunc
+	delete     HandlerFunc
+	head       HandlerFunc
+	options    HandlerFunc
+	patch      HandlerFunc
+	notAllowed HandlerFunc
 }
 
 func newHandlerMap() *handlerMap {
 	return new(handlerMap)
 }
 
-func (h *handlerMap) Get(meth string) routeHandler {
+func (h *handlerMap) Get(meth string) HandlerFunc {
 	switch meth {
 	case http.MethodGet:
 		return h.get
@@ -376,11 +362,11 @@ func (h *handlerMap) Get(meth string) routeHandler {
 	case http.MethodPatch:
 		return h.patch
 	default:
-		return routeHandler{}
+		return nil
 	}
 }
 
-func (h *handlerMap) Set(meth string, handler routeHandler) {
+func (h *handlerMap) Set(meth string, handler HandlerFunc) {
 	switch meth {
 	case http.MethodGet:
 		h.get = handler
