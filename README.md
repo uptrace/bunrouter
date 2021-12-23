@@ -3,7 +3,6 @@
 [![build workflow](https://github.com/uptrace/bunrouter/actions/workflows/build.yml/badge.svg)](https://github.com/uptrace/bunrouter/actions)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/uptrace/bunrouter)](https://pkg.go.dev/github.com/uptrace/bunrouter)
 [![Documentation](https://img.shields.io/badge/bunrouter-documentation-informational)](https://bunrouter.uptrace.dev/)
-[![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
 **TLDR** BunRouter is as fast as httprouter, but supports middlewares, routing rules priority, and
 error handling.
