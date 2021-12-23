@@ -42,12 +42,12 @@ func New(opts ...Option) *Router {
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	_ = r.ServeHTTPError(w, req)
+}
+
+func (r *Router) ServeHTTPError(w http.ResponseWriter, req *http.Request) error {
 	handler, params := r.lookup(w, req)
-	reqWrapper := Request{
-		Request: req,
-		params:  params,
-	}
-	_ = handler(w, reqWrapper)
+	return handler(w, newRequestParams(req, params))
 }
 
 func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, Params) {

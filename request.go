@@ -73,6 +73,13 @@ func NewRequest(req *http.Request) Request {
 	}
 }
 
+func newRequestParams(req *http.Request, params Params) Request {
+	return Request{
+		Request: req,
+		params:  params,
+	}
+}
+
 func (req Request) WithContext(ctx context.Context) Request {
 	return Request{
 		Request: req.Request.WithContext(ctx),
