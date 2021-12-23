@@ -41,10 +41,15 @@ func New(opts ...Option) *Router {
 	return r
 }
 
+var _ http.Handler = (*Router)(nil)
+
+// ServeHTTP implements http.Handler interface.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	_ = r.ServeHTTPError(w, req)
 }
 
+// ServeHTTPError is like ServeHTTP, but it also returns the error returned
+// by the matched route handler.
 func (r *Router) ServeHTTPError(w http.ResponseWriter, req *http.Request) error {
 	handler, params := r.lookup(w, req)
 	return handler(w, newRequestParams(req, params))
