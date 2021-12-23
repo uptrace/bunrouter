@@ -1,3 +1,17 @@
+## [1.0.9](https://github.com/uptrace/bunrouter/compare/v1.0.8...v1.0.9) (2021-12-23)
+
+
+### Bug Fixes
+
+* properly handle wildcard node without a slash ([88b4d3e](https://github.com/uptrace/bunrouter/commit/88b4d3ea352c92fc7a87972fc95add8e7f99c328))
+
+
+### Features
+
+* add Router.ServeHTTPError that returns the error from the handler ([9add167](https://github.com/uptrace/bunrouter/commit/9add167b91c37b42846a486a9965f5212d49bafa))
+
+
+
 ## [1.0.8](https://github.com/uptrace/bunrouter/compare/v1.0.7...v1.0.8) (2021-11-16)
 
 
