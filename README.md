@@ -46,6 +46,7 @@ Examples:
 
 Projects using BunRouter:
 
+- [Distributed tracing backend](https://github.com/uptrace/uptrace)
 - [input-output-hk/cicero](https://github.com/input-output-hk/cicero)
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 
