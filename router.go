@@ -57,15 +57,9 @@ func (r *Router) ServeHTTPError(w http.ResponseWriter, req *http.Request) error 
 
 func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, Params) {
 	path := req.URL.Path
-	if path == "" {
-		return r.notFoundHandler, Params{}
-	}
 
-	node, handler, wildcardLen := r.tree.findRoute(req.Method, path[1:])
+	node, handler, wildcardLen := r.tree.findRoute(req.Method, path)
 	if node == nil {
-		if path == "/" {
-			return r.notFoundHandler, Params{}
-		}
 		if redir := r.redir(req.Method, path); redir != nil {
 			return redir, Params{}
 		}
@@ -87,9 +81,13 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 }
 
 func (r *Router) redir(method, path string) HandlerFunc {
+	if path == "/" {
+		return nil
+	}
+
 	// Path was not found. Try cleaning it up and search again.
 	if cleanPath := CleanPath(path); cleanPath != path {
-		if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+		if _, handler, _ := r.tree.findRoute(method, cleanPath); handler != nil {
 			return redirectHandler(cleanPath)
 		}
 	}
@@ -97,7 +95,7 @@ func (r *Router) redir(method, path string) HandlerFunc {
 	if strings.HasSuffix(path, "/") {
 		// Try path without a slash.
 		cleanPath := path[:len(path)-1]
-		if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+		if _, handler, _ := r.tree.findRoute(method, cleanPath); handler != nil {
 			return redirectHandler(cleanPath)
 		}
 		return nil
@@ -105,7 +103,7 @@ func (r *Router) redir(method, path string) HandlerFunc {
 
 	// Try path with a slash.
 	cleanPath := path + "/"
-	if _, handler, _ := r.tree.findRoute(method, cleanPath[1:]); handler != nil {
+	if _, handler, _ := r.tree.findRoute(method, cleanPath); handler != nil {
 		return redirectHandler(cleanPath)
 	}
 	return nil

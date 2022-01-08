@@ -112,11 +112,17 @@ func (n *node) addPart(part string) *node {
 
 func (n *node) findRoute(meth, path string) (*node, HandlerFunc, int) {
 	if path == "" {
+		return nil, nil, 0
+	}
+	path = path[1:] // strip leading "/"
+
+	if path == "" {
 		if n.handlerMap != nil {
 			return n, n.handlerMap.Get(meth), 0
 		}
 		return nil, nil, 0
 	}
+
 	return n._findRoute(meth, path)
 }
 

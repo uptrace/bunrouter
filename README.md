@@ -26,7 +26,7 @@ BunRouter is an extremely fast HTTP router for Go with unique combination of fea
 | [httprouter][1] | :x:                | :x:                | :x:                | :heavy_check_mark: |
 | [Chi][2]        | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: |
 | [Echo][3]       | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                |
-| [Gin](4)        | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                |
+| [Gin][4]        | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                |
 
 [1]: https://github.com/julienschmidt/httprouter
 [2]: https://github.com/go-chi/chi
