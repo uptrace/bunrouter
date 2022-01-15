@@ -1,4 +1,4 @@
-# bunrouter basic example
+# bunrouter Basic Auth example
 
 To run this example:
 

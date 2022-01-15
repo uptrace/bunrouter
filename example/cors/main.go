@@ -14,56 +14,21 @@ import (
 
 func main() {
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
+		bunrouter.Use(reqlog.NewMiddleware()),
 	)
 
 	router.GET("/", indexHandler)
 
-	router.NewGroup("/api/v1",
-		bunrouter.WithMiddleware(errorMiddleware),
+	router.Use(errorMiddleware).
 		// Install CORS only for this group.
-		bunrouter.WithMiddleware(corsMiddleware),
-		bunrouter.WithGroup(func(g *bunrouter.Group) {
+		Use(newCorsMiddleware([]string{"http://localhost:9999"})).
+		WithGroup("/api/v1", func(g *bunrouter.Group) {
 			g.GET("/users/:id", userHandler)
 			g.GET("/error", failingHandler)
-		}))
-
-	router.NewGroup("/api/v2",
-		bunrouter.WithMiddleware(errorMiddleware),
-		// Install CORS only for this group.
-		bunrouter.WithMiddleware(newCorsMiddleware([]string{"http://localhost:9999"})),
-		bunrouter.WithGroup(func(g *bunrouter.Group) {
-			g.GET("/users/:id", userHandler)
-			g.GET("/error", failingHandler)
-		}))
+		})
 
 	log.Println("listening on http://localhost:9999")
 	log.Println(http.ListenAndServe(":9999", router))
-}
-
-// corsMiddleware handles CORS requests with custom middleware.
-func corsMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
-	return func(w http.ResponseWriter, req bunrouter.Request) error {
-		origin := req.Header.Get("Origin")
-		if origin == "" {
-			return next(w, req)
-		}
-
-		h := w.Header()
-
-		h.Set("Access-Control-Allow-Origin", origin)
-		h.Set("Access-Control-Allow-Credentials", "true")
-
-		// CORS preflight.
-		if req.Method == http.MethodOptions {
-			h.Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,HEAD")
-			h.Set("Access-Control-Allow-Headers", "authorization,content-type")
-			h.Set("Access-Control-Max-Age", "86400")
-			return nil
-		}
-
-		return next(w, req)
-	}
 }
 
 // newCorsMiddleware creates CORS middleware using github.com/rs/cors package.

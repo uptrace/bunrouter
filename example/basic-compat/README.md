@@ -6,4 +6,6 @@ This example demonstrates how to use bunrouter with http.HandlerFunc in compatib
 go run .
 ```
 
+Then open http://localhost:9999
+
 See [documentation](https://bunrouter.uptrace.dev/) for details.

@@ -43,6 +43,8 @@ Examples:
 - [Basic example](/example/basic/)
 - [http.HandlerFunc example](/example/basic-compat/)
 - [httprouter.Handle example](/example/basic-verbose/)
+- [CORS example](/example/cors/)
+- [Basic auth example](/example/basicauth/)
 
 Projects using BunRouter:
 
@@ -135,7 +137,7 @@ import (
 
 func main() {
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
+		bunrouter.Use(reqlog.NewMiddleware()),
 	)
 
 	router.GET("/", indexHandler)

@@ -13,7 +13,7 @@ import (
 
 func main() {
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware(
+		bunrouter.Use(reqlog.NewMiddleware(
 			reqlog.FromEnv("BUNDEBUG"),
 		)),
 	)

@@ -6,4 +6,6 @@ To run this example:
 go run .
 ```
 
+Then open http://localhost:9999
+
 See [documentation](https://bunrouter.uptrace.dev/) for details.
