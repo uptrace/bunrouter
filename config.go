@@ -69,6 +69,11 @@ func WithMiddleware(fn MiddlewareFunc) GroupOption {
 	})
 }
 
+// Use is an alias for WithMiddleware.
+func Use(fn MiddlewareFunc) GroupOption {
+	return WithMiddleware(fn)
+}
+
 // WithHandler is like WithMiddleware, but the handler can't modify the request.
 func WithHandler(fn HandlerFunc) GroupOption {
 	return groupOption(func(c *config) {

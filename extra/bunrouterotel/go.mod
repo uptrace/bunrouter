@@ -1,6 +1,6 @@
 module github.com/uptrace/bunrouter/extra/bunrouterotel
 
-go 1.15
+go 1.17
 
 replace github.com/uptrace/bunrouter => ../..
 

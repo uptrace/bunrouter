@@ -24,8 +24,8 @@ func main() {
 	defer shutdown()
 
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
-		bunrouter.WithMiddleware(bunrouterotel.NewMiddleware(
+		bunrouter.Use(reqlog.NewMiddleware()),
+		bunrouter.Use(bunrouterotel.NewMiddleware(
 			bunrouterotel.WithClientIP(),
 		)),
 	)

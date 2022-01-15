@@ -14,10 +14,10 @@ import (
 
 func main() {
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
+		bunrouter.Use(reqlog.NewMiddleware()),
 	)
 
-	group := router.WithMiddleware(errorHandler)
+	group := router.Use(errorHandler)
 	group.GET("/", indexHandler)
 
 	log.Println("listening on http://localhost:9999")

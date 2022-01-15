@@ -25,9 +25,9 @@ func main() {
 	limiter = redis_rate.NewLimiter(rdb)
 
 	router := bunrouter.New(
-		bunrouter.WithMiddleware(reqlog.NewMiddleware()),
-		bunrouter.WithMiddleware(errorHandler),
-		bunrouter.WithMiddleware(rateLimit),
+		bunrouter.Use(reqlog.NewMiddleware()),
+		bunrouter.Use(errorHandler),
+		bunrouter.Use(rateLimit),
 	)
 
 	router.GET("/", indexHandler)

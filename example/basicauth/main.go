@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/subtle"
 	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/uptrace/bunrouter"
+	"github.com/uptrace/bunrouter/extra/basicauth"
 	"github.com/uptrace/bunrouter/extra/reqlog"
 )
 
@@ -16,12 +18,16 @@ func main() {
 		)),
 	)
 
+	authMiddleware := basicauth.NewMiddleware(authUser, basicauth.WithRealm("test:test"))
 	router.GET("/", indexHandler)
 
-	router.WithGroup("/api", func(g *bunrouter.Group) {
-		g.GET("/users/:id", debugHandler)
-		g.GET("/users/current", debugHandler)
-		g.GET("/users/*path", debugHandler)
+	router.Use(authMiddleware).
+		WithGroup("/restricted", func(g *bunrouter.Group) {
+			g.GET("", debugHandler)
+		})
+
+	router.WithGroup("/public", func(g *bunrouter.Group) {
+		g.GET("", debugHandler)
 	})
 
 	log.Println("listening on http://localhost:9999")
@@ -39,13 +45,25 @@ func debugHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	})
 }
 
+func authUser(req bunrouter.Request) (bool, error) {
+	user, pass, ok := req.BasicAuth()
+	if !ok {
+		return false, nil
+	}
+
+	if subtle.ConstantTimeCompare([]byte(user), []byte("test")) == 1 &&
+		subtle.ConstantTimeCompare([]byte(pass), []byte("test")) == 1 {
+		return true, nil
+	}
+	return false, nil
+}
+
 var indexTmpl = `
 <html>
   <h1>Welcome</h1>
   <ul>
-    <li><a href="/api/users/123">/api/users/123</a></li>
-    <li><a href="/api/users/current">/api/users/current</a></li>
-    <li><a href="/api/users/foo/bar">/api/users/foo/bar</a></li>
+    <li><a href="/restricted">/restricted</a></li>
+    <li><a href="/public">/public</a></li>
   </ul>
 </html>
 `
