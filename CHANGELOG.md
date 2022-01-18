@@ -1,11 +1,29 @@
 ## [1.0.11](https://github.com/uptrace/bunrouter/compare/v1.0.10...v1.0.11) (2022-01-18)
 
-
 ### Features
 
-* add basicauth middleware ([363da1a](https://github.com/uptrace/bunrouter/commit/363da1a989d943c8bbcf7551ad1a06150f6d1f1f))
+- add basicauth middleware
+  ([363da1a](https://github.com/uptrace/bunrouter/commit/363da1a989d943c8bbcf7551ad1a06150f6d1f1f))
 
+* Added `Use` function which is an alias for `WithMiddleware`.
 
+* Updated docs to use cleaner version of the API. Instead of:
+
+```go
+router.NewGroup("/some/prefix",
+	 bunrouter.WithMiddleware(middleware1),
+	 bunrouter.WithMiddleware(middleware2),
+	 bunrouter.WithGroup(func(group *bunrouter.Group) {}),
+)
+```
+
+You can use:
+
+```go
+router.Use(middleware1).
+    Use(middleware2).
+    WithGroup("/some/prefix", func(group *bunrouter.Group) {})
+```
 
 ## [1.0.10](https://github.com/uptrace/bunrouter/compare/v1.0.9...v1.0.10) (2022-01-08)
 
