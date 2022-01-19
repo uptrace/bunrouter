@@ -1,3 +1,12 @@
+## [1.0.12](https://github.com/uptrace/bunrouter/compare/v1.0.11...v1.0.12) (2022-01-19)
+
+
+### Bug Fixes
+
+* use RawPath when available ([9859bc7](https://github.com/uptrace/bunrouter/commit/9859bc722310e0af24cd8372f585318379ccbbd9))
+
+
+
 ## [1.0.11](https://github.com/uptrace/bunrouter/compare/v1.0.10...v1.0.11) (2022-01-18)
 
 ### Features
