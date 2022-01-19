@@ -796,6 +796,33 @@ func TestNamedAndWildcard(t *testing.T) {
 	})
 }
 
+// https://github.com/golang/go/issues/3659
+func TestURIEncodedFilepath(t *testing.T) {
+	router := New()
+	var file string
+
+	router.GET("/files/:file", func(w http.ResponseWriter, req Request) error {
+		file = req.Param("file")
+		return nil
+	})
+
+	t.Run("one", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/files/foo%252fbar", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "foo%2fbar", file)
+	})
+
+	t.Run("two", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/files/foo%2fbar", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "foo%2fbar", file)
+	})
+}
+
 func TestSplitRoute(t *testing.T) {
 	type Test struct {
 		route  string
