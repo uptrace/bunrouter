@@ -56,7 +56,10 @@ func (r *Router) ServeHTTPError(w http.ResponseWriter, req *http.Request) error 
 }
 
 func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, Params) {
-	path := req.URL.Path
+	path := req.URL.RawPath
+	if path == "" {
+		path = req.URL.Path
+	}
 
 	node, handler, wildcardLen := r.tree.findRoute(req.Method, path)
 	if node == nil {
