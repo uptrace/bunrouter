@@ -1,3 +1,17 @@
+## [1.0.13](https://github.com/uptrace/bunrouter/compare/v1.0.12...v1.0.13) (2022-03-22)
+
+
+### Bug Fixes
+
+* dedup middlewares applied on the method not allowed handler ([2659f03](https://github.com/uptrace/bunrouter/commit/2659f039be323b8bc4901e35f20a5760e6445640))
+
+
+### Features
+
+* accept multiple middlewares in Use(fn1, fn2, fn3) ([1486279](https://github.com/uptrace/bunrouter/commit/14862790b51c418384700a5e86aa49833937a772))
+
+
+
 ## [1.0.12](https://github.com/uptrace/bunrouter/compare/v1.0.11...v1.0.12) (2022-01-19)
 
 
