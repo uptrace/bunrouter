@@ -25,6 +25,7 @@ func New(opts ...Option) *Router {
 
 	r.Group.router = r
 	r.config.group = &r.Group
+	r.methodNotAllowedHandler = methodNotAllowedHandler
 
 	for _, opt := range opts {
 		opt.apply(&r.config)
@@ -32,10 +33,7 @@ func New(opts ...Option) *Router {
 
 	// Do it after processing middlewares from the options.
 	if r.notFoundHandler == nil {
-		r.notFoundHandler = r.config.wrapHandler(notFoundHandler)
-	}
-	if r.methodNotAllowedHandler == nil {
-		r.methodNotAllowedHandler = r.config.wrapHandler(methodNotAllowedHandler)
+		r.notFoundHandler = r.group.wrap(notFoundHandler)
 	}
 
 	return r

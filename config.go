@@ -9,10 +9,6 @@ type config struct {
 	group *Group
 }
 
-func (c *config) wrapHandler(handler HandlerFunc) HandlerFunc {
-	return c.group.handlerWithMiddlewares(handler)
-}
-
 type Option interface {
 	apply(cfg *config)
 }
@@ -27,7 +23,7 @@ func (fn option) apply(cfg *config) {
 // The default NotFoundHandler is http.NotFound.
 func WithNotFoundHandler(handler HandlerFunc) Option {
 	return option(func(c *config) {
-		c.notFoundHandler = c.wrapHandler(handler)
+		c.notFoundHandler = c.group.wrap(handler)
 	})
 }
 
@@ -36,7 +32,7 @@ func WithNotFoundHandler(handler HandlerFunc) Option {
 // handler just writes the status code http.StatusMethodNotAllowed.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 	return option(func(c *config) {
-		c.methodNotAllowedHandler = c.wrapHandler(handler)
+		c.methodNotAllowedHandler = c.group.wrap(handler)
 	})
 }
 

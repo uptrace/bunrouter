@@ -56,14 +56,10 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 		panic("path can't be empty")
 	}
 
-	if len(g.stack) > 0 {
-		handler = g.handlerWithMiddlewares(handler)
-	}
-
 	node := g.router.tree.addRoute(path)
-	node.setHandler(meth, handler)
+	node.setHandler(meth, g.wrap(handler))
 	if node.handlerMap.notAllowed == nil {
-		node.handlerMap.notAllowed = g.handlerWithMiddlewares(g.router.methodNotAllowedHandler)
+		node.handlerMap.notAllowed = g.wrap(g.router.methodNotAllowedHandler)
 	}
 }
 
@@ -102,7 +98,7 @@ func (g *Group) OPTIONS(path string, handler HandlerFunc) {
 	g.Handle("OPTIONS", path, handler)
 }
 
-func (g *Group) handlerWithMiddlewares(handler HandlerFunc) HandlerFunc {
+func (g *Group) wrap(handler HandlerFunc) HandlerFunc {
 	for i := len(g.stack) - 1; i >= 0; i-- {
 		handler = g.stack[i](handler)
 	}

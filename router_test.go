@@ -856,3 +856,59 @@ func TestSplitRoute(t *testing.T) {
 		})
 	}
 }
+
+func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
+	firstMiddleware := func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, req Request) error {
+			w.Header().Add("First", "xxxx")
+			return next(w, req)
+		}
+	}
+
+	secondMiddleware := func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, req Request) error {
+			w.Header().Add("Second", "xxxx")
+			return next(w, req)
+		}
+	}
+
+	indexHandler := func(w http.ResponseWriter, req Request) error {
+		return JSON(w, H{
+			"message": "Hello, World!",
+		})
+	}
+
+	t.Run("router", func(t *testing.T) {
+		router := New(
+			Use(firstMiddleware),
+			Use(secondMiddleware),
+		)
+		router.GET("/", indexHandler)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+
+		h := w.Header()
+		require.Equal(t, []string{"xxxx"}, h["First"])
+	})
+
+	t.Run("group", func(t *testing.T) {
+		router := New()
+		router.
+			Use(firstMiddleware).
+			Use(secondMiddleware).
+			WithGroup("/", func(group *Group) {
+				group.GET("", indexHandler)
+			})
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+
+		h := w.Header()
+		require.Equal(t, []string{"xxxx"}, h["First"])
+	})
+}
