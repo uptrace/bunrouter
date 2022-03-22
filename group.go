@@ -34,8 +34,8 @@ func (g *Group) cloneStack() []MiddlewareFunc {
 	return g.stack[:len(g.stack):len(g.stack)]
 }
 
-func (g *Group) Use(middleware MiddlewareFunc) *Group {
-	return g.NewGroup("", Use(middleware))
+func (g *Group) Use(middlewares ...MiddlewareFunc) *Group {
+	return g.NewGroup("", Use(middlewares...))
 }
 
 func (g *Group) WithMiddleware(middleware MiddlewareFunc) *Group {

@@ -880,8 +880,7 @@ func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
 
 	t.Run("router", func(t *testing.T) {
 		router := New(
-			Use(firstMiddleware),
-			Use(secondMiddleware),
+			Use(firstMiddleware, secondMiddleware),
 		)
 		router.GET("/", indexHandler)
 
@@ -897,8 +896,7 @@ func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
 	t.Run("group", func(t *testing.T) {
 		router := New()
 		router.
-			Use(firstMiddleware).
-			Use(secondMiddleware).
+			Use(firstMiddleware, secondMiddleware).
 			WithGroup("/", func(group *Group) {
 				group.GET("", indexHandler)
 			})

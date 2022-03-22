@@ -59,15 +59,15 @@ func WithGroup(fn func(g *Group)) GroupOption {
 }
 
 // WithMiddleware adds a middleware handler to the Group's middleware stack.
-func WithMiddleware(fn MiddlewareFunc) GroupOption {
+func WithMiddleware(fns ...MiddlewareFunc) GroupOption {
 	return groupOption(func(c *config) {
-		c.group.stack = append(c.group.stack, fn)
+		c.group.stack = append(c.group.stack, fns...)
 	})
 }
 
 // Use is an alias for WithMiddleware.
-func Use(fn MiddlewareFunc) GroupOption {
-	return WithMiddleware(fn)
+func Use(fns ...MiddlewareFunc) GroupOption {
+	return WithMiddleware(fns...)
 }
 
 // WithHandler is like WithMiddleware, but the handler can't modify the request.
