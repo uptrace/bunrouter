@@ -7,10 +7,10 @@ replace github.com/uptrace/bunrouter => ../..
 replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 
 require (
-	github.com/klauspost/compress v1.14.1
+	github.com/klauspost/compress v1.15.1
 	github.com/rs/cors v1.8.2
-	github.com/uptrace/bunrouter v1.0.12
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.12
+	github.com/uptrace/bunrouter v1.0.13
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.13
 )
 
 require (
@@ -18,5 +18,5 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 )
