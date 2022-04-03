@@ -5,9 +5,9 @@
 [![Documentation](https://img.shields.io/badge/bunrouter-documentation-informational)](https://bunrouter.uptrace.dev/)
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
-> bunrouter is brought to you by :star: [**uptrace/uptrace**](https://github.com/uptrace/uptrace).
-> Uptrace is an open source and blazingly fast **distributed tracing** tool powered by OpenTelemetry
-> and ClickHouse. Give it a star as well!
+> BunRouter is brought to you by :star: [**uptrace/uptrace**](https://github.com/uptrace/uptrace).
+> Uptrace is an open source and blazingly fast [distributed tracing tool](https://get.uptrace.dev/)
+> powered by OpenTelemetry and ClickHouse. Give it a star as well!
 
 **TLDR** BunRouter is as fast as httprouter, but supports middlewares, routing rules priority, and
 error handling.
