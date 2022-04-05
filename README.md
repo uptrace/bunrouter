@@ -6,8 +6,9 @@
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
 > BunRouter is brought to you by :star: [**uptrace/uptrace**](https://github.com/uptrace/uptrace).
-> Uptrace is an open source and blazingly fast [distributed tracing tool](https://get.uptrace.dev/)
-> powered by OpenTelemetry and ClickHouse. Give it a star as well!
+> Uptrace is an open source and blazingly fast
+> [distributed tracing tool](https://get.uptrace.dev/compare/distributed-tracing-tools.html) powered
+> by OpenTelemetry and ClickHouse. Give it a star as well!
 
 **TLDR** BunRouter is as fast as httprouter, but supports middlewares, routing rules priority, and
 error handling.
@@ -53,7 +54,7 @@ Examples:
 
 Projects using BunRouter:
 
-- [Distributed tracing backend](https://github.com/uptrace/uptrace)
+- [Distributed tracing tool](https://github.com/uptrace/uptrace)
 - [input-output-hk/cicero](https://github.com/input-output-hk/cicero)
 - [RealWorld example application](https://github.com/go-bun/bun-realworld-app)
 
@@ -185,3 +186,10 @@ func indexTemplate() *template.Template {
 ```
 
 See the [documentation](https://bunrouter.uptrace.dev/) for details.
+
+## See also
+
+- [Golang ORM](https://github.com/uptrace/bun)
+- [Golang msgpack](https://github.com/vmihailenco/msgpack)
+- [Golang message task queue](https://github.com/vmihailenco/taskq)
+- [Distributed tracing tools ](https://get.uptrace.dev/compare/distributed-tracing-tools.html)
