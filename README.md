@@ -15,13 +15,13 @@ error handling.
 
 BunRouter is an extremely fast HTTP router for Go with unique combination of features:
 
-- [Middlewares](https://bunrouter.uptrace.dev/guide/middlewares.html) allow to extract common
-  operations from HTTP handlers into reusable functions.
-- [Error handling](https://bunrouter.uptrace.dev/guide/error-handling.html) allows to further reduce
-  the size of HTTP handlers by handling errors in middlewares.
-- [Routes priority](https://bunrouter.uptrace.dev/guide/getting-started.html#routes-priority)
-  enables meaningful matching priority for routing rules: first static nodes, then named nodes,
-  lastly wildcard nodes.
+- [Middlewares](https://bunrouter.uptrace.dev/guide/golang-http-middlewares.html) allow to extract
+  common operations from HTTP handlers into reusable functions.
+- [Error handling](https://bunrouter.uptrace.dev/guide/golang-http-error-handling.html) allows to
+  further reduce the size of HTTP handlers by handling errors in middlewares.
+- [Routes priority](https://bunrouter.uptrace.dev/guide/golang-router.html#routes-priority) enables
+  meaningful matching priority for routing rules: first static nodes, then named nodes, lastly
+  wildcard nodes.
 - net/http compatible API which means using minimal API without constructing huge wrappers that try
   to do everything: from serving static files to XML generation (for example, `gin.Context` or
   `echo.Context`).
@@ -185,11 +185,11 @@ func indexTemplate() *template.Template {
 }
 ```
 
-See the [documentation](https://bunrouter.uptrace.dev/) for details.
+See the [Golang Router documentation](https://bunrouter.uptrace.dev/) for details.
 
 ## See also
 
-- [Golang ORM](https://github.com/uptrace/bun)
-- [Golang msgpack](https://github.com/vmihailenco/msgpack)
+- [Golang ORM](https://bun.uptrace.dev/)
+- [Golang msgpack](https://msgpack.uptrace.dev/)
 - [Golang message task queue](https://github.com/vmihailenco/taskq)
 - [Distributed tracing tools ](https://get.uptrace.dev/compare/distributed-tracing-tools.html)
