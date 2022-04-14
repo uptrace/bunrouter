@@ -10,9 +10,9 @@ replace github.com/uptrace/bunrouter/extra/bunrouterotel => ../../extra/bunroute
 
 require (
 	github.com/klauspost/compress v1.15.1
-	github.com/uptrace/bunrouter v1.0.13
-	github.com/uptrace/bunrouter/extra/bunrouterotel v1.0.13
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.13
+	github.com/uptrace/bunrouter v1.0.14
+	github.com/uptrace/bunrouter/extra/bunrouterotel v1.0.14
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.14
 	github.com/uptrace/opentelemetry-go-extra/otelplay v0.1.12
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/otel/trace v1.6.3
