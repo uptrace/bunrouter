@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/felixge/httpsnoop"
 
 	"github.com/uptrace/bunrouter"
 )
@@ -67,10 +68,10 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 	}
 
 	return func(w http.ResponseWriter, req bunrouter.Request) error {
-		rec := NewLoggingResponseWriter(w)
+		rec := NewResponseWriter(w)
 
 		now := time.Now()
-		err := next(rec, req)
+		err := next(rec.Wrapped, req)
 		dur := time.Since(now)
 		statusCode := rec.StatusCode()
 
@@ -103,45 +104,31 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 
 //------------------------------------------------------------------------------
 
-type LoggingResponseWriter interface {
-	http.ResponseWriter
-	StatusCode() int
-}
-
-func NewLoggingResponseWriter(w http.ResponseWriter) LoggingResponseWriter {
-	rec := &statusCodeRecorder{
-		ResponseWriter: w,
-		statusCode:     http.StatusOK,
-	}
-
-	if _, ok := w.(http.Flusher); ok {
-		return flusher{rec}
-	}
-	return rec
-}
-
-type statusCodeRecorder struct {
-	http.ResponseWriter
+type ResponseWriter struct {
+	Wrapped    http.ResponseWriter
 	statusCode int
 }
 
-func (rec *statusCodeRecorder) StatusCode() int {
-	return rec.statusCode
+func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
+	var rw ResponseWriter
+	rw.Wrapped = httpsnoop.Wrap(w, httpsnoop.Hooks{
+		WriteHeader: func(next httpsnoop.WriteHeaderFunc) httpsnoop.WriteHeaderFunc {
+			return func(statusCode int) {
+				if rw.statusCode == 0 {
+					rw.statusCode = statusCode
+				}
+				next(statusCode)
+			}
+		},
+	})
+	return &rw
 }
 
-func (rec *statusCodeRecorder) WriteHeader(statusCode int) {
-	rec.statusCode = statusCode
-	rec.ResponseWriter.WriteHeader(statusCode)
-}
-
-type flusher struct {
-	*statusCodeRecorder
-}
-
-var _ http.Flusher = (*flusher)(nil)
-
-func (f flusher) Flush() {
-	f.ResponseWriter.(http.Flusher).Flush()
+func (w *ResponseWriter) StatusCode() int {
+	if w.statusCode != 0 {
+		return w.statusCode
+	}
+	return http.StatusOK
 }
 
 //------------------------------------------------------------------------------
