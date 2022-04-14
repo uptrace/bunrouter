@@ -7,7 +7,7 @@ replace github.com/uptrace/bunrouter => ../..
 require (
 	github.com/fatih/color v1.13.0
 	github.com/felixge/httpsnoop v1.0.2
-	github.com/uptrace/bunrouter v1.0.13
+	github.com/uptrace/bunrouter v1.0.14
 )
 
 require (

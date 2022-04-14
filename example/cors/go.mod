@@ -8,8 +8,8 @@ replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 
 require (
 	github.com/rs/cors v1.8.2
-	github.com/uptrace/bunrouter v1.0.13
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.13
+	github.com/uptrace/bunrouter v1.0.14
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.14
 )
 
 require (

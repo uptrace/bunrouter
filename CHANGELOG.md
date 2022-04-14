@@ -1,3 +1,12 @@
+## [1.0.14](https://github.com/uptrace/bunrouter/compare/v1.0.13...v1.0.14) (2022-04-14)
+
+
+### Bug Fixes
+
+* use httpsnoop to wrap response writer ([3d86932](https://github.com/uptrace/bunrouter/commit/3d869325af1302c55fdeb8a8ff7e4b7cfd10ece0))
+
+
+
 ## [1.0.13](https://github.com/uptrace/bunrouter/compare/v1.0.12...v1.0.13) (2022-03-22)
 
 

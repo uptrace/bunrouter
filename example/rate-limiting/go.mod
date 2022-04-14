@@ -9,8 +9,8 @@ replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redis_rate/v9 v9.1.2
-	github.com/uptrace/bunrouter v1.0.13
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.13
+	github.com/uptrace/bunrouter v1.0.14
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.14
 )
 
 require (
