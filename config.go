@@ -32,7 +32,7 @@ func WithNotFoundHandler(handler HandlerFunc) Option {
 // handler just writes the status code http.StatusMethodNotAllowed.
 func WithMethodNotAllowedHandler(handler HandlerFunc) Option {
 	return option(func(c *config) {
-		c.methodNotAllowedHandler = c.group.wrap(handler)
+		c.methodNotAllowedHandler = handler
 	})
 }
 

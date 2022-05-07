@@ -91,10 +91,10 @@ func testMethods(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	calledNotFound := false
+	var calledNotFound int
 
-	notFoundHandler := func(w http.ResponseWriter, r Request) error {
-		calledNotFound = true
+	notFoundHandler := func(w http.ResponseWriter, req Request) error {
+		calledNotFound++
 		return nil
 	}
 
@@ -102,21 +102,46 @@ func TestNotFound(t *testing.T) {
 	router.GET("/user/abc", simpleHandler)
 
 	w := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/abc/", nil)
-	router.ServeHTTP(w, r)
+	req, _ := http.NewRequest("GET", "/abc/", nil)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("Expected error 404 from built-in not found handler but saw %d", w.Code)
-	}
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, 0, calledNotFound)
 
 	// Now try with a custome handler.
 	router = New(WithNotFoundHandler(notFoundHandler))
 	router.GET("/user/abc", simpleHandler)
 
-	router.ServeHTTP(w, r)
-	if !calledNotFound {
-		t.Error("Custom not found handler was not called")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, 1, calledNotFound)
+}
+
+func TestMethodNotAllowed(t *testing.T) {
+	var calledMethodNotAllowed int
+
+	methodNotAllowedHandler := func(w http.ResponseWriter, req Request) error {
+		calledMethodNotAllowed++
+		return nil
 	}
+
+	router := New()
+	router.POST("/abc", simpleHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/abc", nil)
+
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	require.Equal(t, 0, calledMethodNotAllowed)
+
+	// Now try with a custome handler.
+	router = New(WithMethodNotAllowedHandler(methodNotAllowedHandler))
+	router.POST("/abc", simpleHandler)
+
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	require.Equal(t, 1, calledMethodNotAllowed)
 }
 
 func TestRedirect(t *testing.T) {
@@ -379,7 +404,7 @@ func TestRedirectEscapedPath(t *testing.T) {
 	require.Equal(t, "/Test%20P@th/", location)
 }
 
-func TestMiddleware(t *testing.T) {
+func TestMiddlewares(t *testing.T) {
 	var execLog []string
 
 	record := func(s string) {
@@ -524,7 +549,7 @@ func TestCORSMiddleware(t *testing.T) {
 		require.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("CORS to non-existant route", func(t *testing.T) {
+	t.Run("CORS to a non-existant route", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodOptions, "/api", nil)
 		router.ServeHTTP(w, req)
@@ -710,7 +735,7 @@ func TestRoutesWithCommonPrefix(t *testing.T) {
 	}
 }
 
-func TestNotAllowedMiddleware(t *testing.T) {
+func TestMethodNotAllowedWithMiddlewares(t *testing.T) {
 	var stack []string
 
 	middleware := func(next HandlerFunc) HandlerFunc {
