@@ -9,9 +9,9 @@ replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 replace github.com/uptrace/bunrouter/extra/basicauth => ../../extra/basicauth
 
 require (
-	github.com/uptrace/bunrouter v1.0.14
-	github.com/uptrace/bunrouter/extra/basicauth v1.0.14
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.14
+	github.com/uptrace/bunrouter v1.0.15
+	github.com/uptrace/bunrouter/extra/basicauth v1.0.15
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.15
 )
 
 require (
@@ -19,5 +19,5 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 )
