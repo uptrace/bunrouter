@@ -1,3 +1,12 @@
+## [1.0.15](https://github.com/uptrace/bunrouter/compare/v1.0.14...v1.0.15) (2022-05-08)
+
+
+### Bug Fixes
+
+* call method not allowed handler once ([37425b7](https://github.com/uptrace/bunrouter/commit/37425b7af9f103a7f26c7f8cc9a04ddac8b805b4))
+
+
+
 ## [1.0.14](https://github.com/uptrace/bunrouter/compare/v1.0.13...v1.0.14) (2022-04-14)
 
 
