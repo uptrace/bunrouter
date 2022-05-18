@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/felixge/httpsnoop"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/uptrace/bunrouter"
 )
@@ -79,14 +80,22 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 			return nil
 		}
 
-		args := []interface{}{
+		args := make([]interface{}, 0, 10)
+		args = append(args,
 			"[bunrouter]",
 			now.Format(" 15:04:05.000 "),
+		)
+
+		if spanCtx := trace.SpanContextFromContext(req.Context()); spanCtx.IsValid() {
+			args = append(args, spanCtx.TraceID().String()+" ")
+		}
+
+		args = append(args,
 			formatStatus(statusCode),
 			fmt.Sprintf(" %10s ", dur.Round(time.Microsecond)),
 			formatMethod(req.Method),
 			req.URL.String(),
-		}
+		)
 
 		if err != nil {
 			typ := reflect.TypeOf(err).String()
