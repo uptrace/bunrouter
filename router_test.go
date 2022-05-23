@@ -354,6 +354,38 @@ func TestWildcardAtSplitNode(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestRouteWithNamedAndWildcardParams(t *testing.T) {
+	router := New()
+
+	var params map[string]string
+	router.GET("/:id/*path", func(w http.ResponseWriter, req Request) error {
+		params = req.Params().Map()
+		return nil
+	})
+
+	t.Run("with path", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/123/hello/world", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, map[string]string{
+			"id":   "123",
+			"path": "hello/world",
+		}, params)
+	})
+
+	t.Run("without path", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/123/", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, map[string]string{
+			"id":   "123",
+			"path": "",
+		}, params)
+	})
+}
+
 func TestQueryString(t *testing.T) {
 	var param string
 

@@ -143,6 +143,7 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 
 		currParamIndex--
 		currNode = currNode.parent
+		path = path[:pathLen-1]
 	}
 
 	for currNode != nil {
