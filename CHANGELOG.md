@@ -1,3 +1,17 @@
+## [1.0.16](https://github.com/uptrace/bunrouter/compare/v1.0.15...v1.0.16) (2022-05-23)
+
+
+### Bug Fixes
+
+* fix extracting params from routes with wildcard and named params ([2741aad](https://github.com/uptrace/bunrouter/commit/2741aadef5f5fdf135ffa541cf8b3b8644898ae0))
+
+
+### Features
+
+* **reqlog:** add trace id ([b2d6582](https://github.com/uptrace/bunrouter/commit/b2d658268dc2d573f5e9e9010a415c6102faa1d1))
+
+
+
 ## [1.0.15](https://github.com/uptrace/bunrouter/compare/v1.0.14...v1.0.15) (2022-05-08)
 
 
