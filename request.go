@@ -136,21 +136,20 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 
 	// Wildcard can be only in the final node.
 	if ps.node.isWC {
-		pathLen -= int(ps.wildcardLen)
 		if currParamIndex == paramIndex {
+			pathLen -= int(ps.wildcardLen)
 			return path[pathLen:], true
 		}
 
 		currParamIndex--
-		currNode = currNode.parent
-		path = path[:pathLen-1]
+		pathLen -= int(ps.wildcardLen)
+		path = path[:pathLen]
 	}
 
 	for currNode != nil {
-		if currNode.part[0] != ':' {
+		if currNode.part[0] != ':' { // static node
 			pathLen -= len(currNode.part)
 			path = path[:pathLen]
-
 			currNode = currNode.parent
 			continue
 		}
@@ -165,9 +164,8 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 			return path[pathLen:], true
 		}
 
-		path = path[:pathLen]
-
 		currParamIndex--
+		path = path[:pathLen]
 		currNode = currNode.parent
 	}
 

@@ -355,34 +355,68 @@ func TestWildcardAtSplitNode(t *testing.T) {
 }
 
 func TestRouteWithNamedAndWildcardParams(t *testing.T) {
-	router := New()
+	t.Run("without static nodes", func(t *testing.T) {
+		router := New()
 
-	var params map[string]string
-	router.GET("/:id/*path", func(w http.ResponseWriter, req Request) error {
-		params = req.Params().Map()
-		return nil
+		var params map[string]string
+		router.GET("/:id/*path", func(w http.ResponseWriter, req Request) error {
+			params = req.Params().Map()
+			return nil
+		})
+
+		t.Run("with path", func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/123/hello/world", nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, map[string]string{
+				"id":   "123",
+				"path": "hello/world",
+			}, params)
+		})
+
+		t.Run("without path", func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/123/", nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, map[string]string{
+				"id":   "123",
+				"path": "",
+			}, params)
+		})
 	})
 
-	t.Run("with path", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/123/hello/world", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, map[string]string{
-			"id":   "123",
-			"path": "hello/world",
-		}, params)
-	})
+	t.Run("with static nodes", func(t *testing.T) {
+		router := New()
 
-	t.Run("without path", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/123/", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, map[string]string{
-			"id":   "123",
-			"path": "",
-		}, params)
+		var params map[string]string
+		router.GET("/:id/foo/*path", func(w http.ResponseWriter, req Request) error {
+			params = req.Params().Map()
+			return nil
+		})
+
+		t.Run("with path", func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/123/foo/hello/world", nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, map[string]string{
+				"id":   "123",
+				"path": "hello/world",
+			}, params)
+		})
+
+		t.Run("without path", func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/123/foo/", nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			require.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, map[string]string{
+				"id":   "123",
+				"path": "",
+			}, params)
+		})
 	})
 }
 
