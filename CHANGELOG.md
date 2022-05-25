@@ -1,3 +1,12 @@
+## [1.0.17](https://github.com/uptrace/bunrouter/compare/v1.0.16...v1.0.17) (2022-05-25)
+
+
+### Bug Fixes
+
+* fix another corner case with incorrect param resolving ([7e3d720](https://github.com/uptrace/bunrouter/commit/7e3d7205a85cb90de5b3ddee3e2737e699fe810a))
+
+
+
 ## [1.0.16](https://github.com/uptrace/bunrouter/compare/v1.0.15...v1.0.16) (2022-05-23)
 
 
