@@ -1001,3 +1001,31 @@ func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
 		require.Equal(t, []string{"xxxx"}, h["First"])
 	})
 }
+
+func TestSameRouteWithDifferentParams(t *testing.T) {
+	router := New()
+
+	router.GET("/:foo", func(w http.ResponseWriter, req Request) error {
+		require.Equal(t, map[string]string{"foo": "foo"}, req.Params().Map())
+		return nil
+	})
+
+	router.HEAD("/:bar", func(w http.ResponseWriter, req Request) error {
+		require.Equal(t, map[string]string{"bar": "foo"}, req.Params().Map())
+		return nil
+	})
+
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/foo", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	}
+
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("HEAD", "/foo", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	}
+}
