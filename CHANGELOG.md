@@ -1,3 +1,12 @@
+## [1.0.18](https://github.com/uptrace/bunrouter/compare/v1.0.17...v1.0.18) (2022-08-09)
+
+
+### Bug Fixes
+
+* panic when trying to register same routes with different param names ([ace1f17](https://github.com/uptrace/bunrouter/commit/ace1f177c3bae9819612209e6fbb9c0496c8f58a))
+
+
+
 ## [1.0.17](https://github.com/uptrace/bunrouter/compare/v1.0.16...v1.0.17) (2022-05-25)
 
 
