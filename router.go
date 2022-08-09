@@ -18,8 +18,7 @@ type Router struct {
 func New(opts ...Option) *Router {
 	r := &Router{
 		tree: node{
-			route: "/",
-			part:  "/",
+			part: "/",
 		},
 	}
 

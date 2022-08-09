@@ -56,8 +56,23 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 		panic("path can't be empty")
 	}
 
-	node := g.router.tree.addRoute(path)
+	node, params := g.router.tree.addRoute(path)
+
+	if node.handlerMap != nil {
+		if h := node.handlerMap.Get(meth); h != nil {
+			if node.route == path {
+				panic(fmt.Errorf("route %q already handles %s", node.route, meth))
+			}
+			panic(fmt.Errorf("routes %q and %q can't both handle %s", node.route, path, meth))
+		}
+	}
 	node.setHandler(meth, g.wrap(handler))
+
+	if !paramsEqual(node.params, params) {
+		panic(fmt.Errorf("routes %q and %q have different param names for the same route",
+			node.route, path))
+	}
+
 	if node.handlerMap.notAllowed == nil {
 		node.handlerMap.notAllowed = g.wrap(g.router.methodNotAllowedHandler)
 	}

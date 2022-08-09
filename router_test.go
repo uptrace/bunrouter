@@ -1005,27 +1005,29 @@ func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
 func TestSameRouteWithDifferentParams(t *testing.T) {
 	router := New()
 
-	router.GET("/:foo", func(w http.ResponseWriter, req Request) error {
-		require.Equal(t, map[string]string{"foo": "foo"}, req.Params().Map())
-		return nil
-	})
+	router.GET("/:foo", dummyHandler)
+	require.PanicsWithError(
+		t,
+		`routes "/:foo" and "/:bar" have different param names for the same route`,
+		func() {
+			router.HEAD("/:bar", dummyHandler)
+		},
+	)
+}
 
-	router.HEAD("/:bar", func(w http.ResponseWriter, req Request) error {
-		require.Equal(t, map[string]string{"bar": "foo"}, req.Params().Map())
-		return nil
-	})
+func TestConflictingPlainAndWilcardRoutes(t *testing.T) {
+	router := New()
 
-	{
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/foo", nil)
-		router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-	}
+	router.GET("/", dummyHandler)
+	require.PanicsWithError(
+		t,
+		`routes "/" and "/*path" can't both handle GET`,
+		func() {
+			router.GET("/*path", dummyHandler)
+		},
+	)
+}
 
-	{
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("HEAD", "/foo", nil)
-		router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-	}
+func dummyHandler(w http.ResponseWriter, req Request) error {
+	return nil
 }

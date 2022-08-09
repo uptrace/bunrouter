@@ -26,11 +26,7 @@ type node struct {
 	}
 }
 
-func (n *node) addRoute(route string) *node {
-	if route == "/" {
-		return n
-	}
-
+func (n *node) addRoute(route string) (*node, map[string]int) {
 	parts, params := splitRoute(route)
 	currNode := n
 
@@ -38,11 +34,13 @@ func (n *node) addRoute(route string) *node {
 		currNode = currNode.addPart(part)
 	}
 
-	currNode.route = route
-	currNode.params = params
+	if currNode.route == "" {
+		currNode.route = route
+		currNode.params = params
+	}
 	n.indexNodes()
 
-	return currNode
+	return currNode, params
 }
 
 func (n *node) addPart(part string) *node {
@@ -185,30 +183,7 @@ func (n *node) _findRoute(meth, path string) (*node, HandlerFunc, int) {
 
 func (n *node) indexNodes() {
 	if len(n.nodes) > 0 {
-		sort.Slice(n.nodes, func(i, j int) bool {
-			return n.nodes[i].part[0] < n.nodes[j].part[0]
-		})
-
-		n.index.minChar = n.nodes[0].part[0]
-		n.index.maxChar = n.nodes[len(n.nodes)-1].part[0]
-
-		// Reset index.
-		if size := int(n.index.maxChar - n.index.minChar + 1); len(n.index.table) != size {
-			n.index.table = make([]uint8, size)
-		} else {
-			for i := range n.index.table {
-				n.index.table[i] = 0
-			}
-		}
-
-		// Index nodes by the first char in a part.
-		for childNodeIndex, childNode := range n.nodes {
-			childNode.parent = n
-			childNode.indexNodes()
-
-			firstChar := childNode.part[0] - n.index.minChar
-			n.index.table[firstChar] = uint8(childNodeIndex + 1)
-		}
+		n._indexNodes()
 	}
 
 	if n.colon != nil {
@@ -217,12 +192,36 @@ func (n *node) indexNodes() {
 	}
 }
 
+func (n *node) _indexNodes() {
+	sort.Slice(n.nodes, func(i, j int) bool {
+		return n.nodes[i].part[0] < n.nodes[j].part[0]
+	})
+
+	n.index.minChar = n.nodes[0].part[0]
+	n.index.maxChar = n.nodes[len(n.nodes)-1].part[0]
+
+	// Reset index.
+	if size := int(n.index.maxChar - n.index.minChar + 1); len(n.index.table) != size {
+		n.index.table = make([]uint8, size)
+	} else {
+		for i := range n.index.table {
+			n.index.table[i] = 0
+		}
+	}
+
+	// Index nodes by the first char in a part.
+	for childNodeIndex, childNode := range n.nodes {
+		childNode.parent = n
+		childNode.indexNodes()
+
+		firstChar := childNode.part[0] - n.index.minChar
+		n.index.table[firstChar] = uint8(childNodeIndex + 1)
+	}
+}
+
 func (n *node) setHandler(verb string, handler HandlerFunc) {
 	if n.handlerMap == nil {
 		n.handlerMap = newHandlerMap()
-	}
-	if h := n.handlerMap.Get(verb); h != nil {
-		panic(fmt.Sprintf("%s already handles %s", n.route, verb))
 	}
 	n.handlerMap.Set(verb, handler)
 }
@@ -391,4 +390,16 @@ func (h *handlerMap) Set(meth string, handler HandlerFunc) {
 	default:
 		panic(fmt.Errorf("unknown HTTP method: %s", meth))
 	}
+}
+
+func paramsEqual(m1, m2 map[string]int) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+	for k, v1 := range m1 {
+		if v2, ok := m2[k]; !ok || v1 != v2 {
+			return false
+		}
+	}
+	return true
 }
