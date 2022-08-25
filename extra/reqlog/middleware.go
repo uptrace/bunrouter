@@ -15,8 +15,9 @@ import (
 )
 
 type middleware struct {
-	enabled bool
-	verbose bool
+	enabled               bool
+	verbose               bool
+	enabledOtherParameter bool
 }
 
 type Option func(m *middleware)
@@ -35,11 +36,20 @@ func WithVerbose(on bool) Option {
 	}
 }
 
+// WithEnabledOtherParameter configures the middleware to log request Path, IP, Request header and Params.
+func WithEnabledOtherParameter(on bool) Option {
+	return func(m *middleware) {
+		m.enabledOtherParameter = on
+	}
+}
+
 // WithEnv configures the middleware using the environment variable value.
 // For example, WithEnv("BUNDEBUG"):
 //    - BUNDEBUG=0 - disables the middleware.
 //    - BUNDEBUG=1 - enables the middleware.
 //    - BUNDEBUG=2 - enables the middleware and verbose mode.
+//    - BUNDEBUG=3 - enables the middleware and logs request heraders , path, ip and params.
+
 func FromEnv(key string) Option {
 	if key == "" {
 		key = "BUNDEBUG"
@@ -48,14 +58,16 @@ func FromEnv(key string) Option {
 		if env, ok := os.LookupEnv(key); ok {
 			m.enabled = env != "" && env != "0"
 			m.verbose = env == "2"
+			m.enabledOtherParameter = env == "3"
 		}
 	}
 }
 
 func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
 	c := &middleware{
-		enabled: true,
-		verbose: true,
+		enabled:               true,
+		verbose:               true,
+		enabledOtherParameter: false,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -94,8 +106,11 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 			formatStatus(statusCode),
 			fmt.Sprintf(" %10s ", dur.Round(time.Microsecond)),
 			formatMethod(req.Method),
-			req.URL.String(),
 		)
+
+		if m.enabledOtherParameter {
+			args = append(args, req.URL.String(), req.RemoteAddr)
+		}
 
 		if err != nil {
 			typ := reflect.TypeOf(err).String()
@@ -106,6 +121,12 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 		}
 
 		fmt.Println(args...)
+		if m.enabledOtherParameter {
+			fmt.Println("User-Agent:", req.Header.Get("User-Agent"))
+			fmt.Println("Referer:", req.Header.Get("Referer"))
+			fmt.Println("Query Params:", req.URL.Query())
+			fmt.Println("Body Params:", req.PostForm)
+		}
 
 		return err
 	}
