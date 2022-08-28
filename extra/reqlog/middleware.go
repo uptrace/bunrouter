@@ -40,14 +40,17 @@ func WithVerbose(on bool) Option {
 //    - BUNDEBUG=0 - disables the middleware.
 //    - BUNDEBUG=1 - enables the middleware.
 //    - BUNDEBUG=2 - enables the middleware and verbose mode.
-func FromEnv(key string) Option {
-	if key == "" {
-		key = "BUNDEBUG"
+func FromEnv(keys ...string) Option {
+	if len(keys) == 0 {
+		keys = []string{"BUNDEBUG"}
 	}
 	return func(m *middleware) {
-		if env, ok := os.LookupEnv(key); ok {
-			m.enabled = env != "" && env != "0"
-			m.verbose = env == "2"
+		for _, key := range keys {
+			if env, ok := os.LookupEnv(key); ok {
+				m.enabled = env != "" && env != "0"
+				m.verbose = env == "2"
+				break
+			}
 		}
 	}
 }
