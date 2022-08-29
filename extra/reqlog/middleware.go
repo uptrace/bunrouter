@@ -48,17 +48,20 @@ func WithEnabledOtherParameter(on bool) Option {
 //    - BUNDEBUG=0 - disables the middleware.
 //    - BUNDEBUG=1 - enables the middleware.
 //    - BUNDEBUG=2 - enables the middleware and verbose mode.
-//    - BUNDEBUG=3 - enables the middleware and logs request heraders , path, ip and params.
+//    - BUNDEBUG=3 - enables the middleware and logs request headers , path, ip and params.
 
-func FromEnv(key string) Option {
-	if key == "" {
-		key = "BUNDEBUG"
+func FromEnv(keys ...string) Option {
+	if len(keys) == 0 {
+		keys = []string{"BUNDEBUG"}
 	}
 	return func(m *middleware) {
-		if env, ok := os.LookupEnv(key); ok {
-			m.enabled = env != "" && env != "0"
-			m.verbose = env == "2"
-			m.enabledOtherParameter = env == "3"
+		for _, key := range keys {
+			if env, ok := os.LookupEnv(key); ok {
+				m.enabled = env != "" && env != "0"
+				m.verbose = env == "2"
+				m.enabledOtherParameter = env == "3"
+				break
+			}
 		}
 	}
 }
