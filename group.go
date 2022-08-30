@@ -66,15 +66,16 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 			panic(fmt.Errorf("routes %q and %q can't both handle %s", node.route, path, meth))
 		}
 	}
-	node.setHandler(meth, g.wrap(handler))
-
-	if !paramsEqual(node.params, params) {
-		panic(fmt.Errorf("routes %q and %q have different param names for the same route",
-			node.route, path))
-	}
+	node.setHandler(meth, &routeHandler{
+		fn:     g.wrap(handler),
+		params: params,
+	})
 
 	if node.handlerMap.notAllowed == nil {
-		node.handlerMap.notAllowed = g.wrap(g.router.methodNotAllowedHandler)
+		node.handlerMap.notAllowed = &routeHandler{
+			fn:     g.wrap(g.router.methodNotAllowedHandler),
+			params: params,
+		}
 	}
 }
 

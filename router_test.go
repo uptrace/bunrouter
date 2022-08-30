@@ -1005,20 +1005,35 @@ func TestMultipleMiddlewaresAndMethodNotAllowed(t *testing.T) {
 func TestSameRouteWithDifferentParams(t *testing.T) {
 	router := New()
 
-	router.GET("/:foo", dummyHandler)
-	require.PanicsWithError(
-		t,
-		`routes "/:foo" and "/:bar" have different param names for the same route`,
-		func() {
-			router.HEAD("/:bar", dummyHandler)
-		},
-	)
+	router.GET("/:foo", func(w http.ResponseWriter, req Request) error {
+		require.Equal(t, map[string]string{"foo": "hello"}, req.Params().Map())
+		return nil
+	})
+	router.HEAD("/:bar", func(w http.ResponseWriter, req Request) error {
+		require.Equal(t, map[string]string{"bar": "hello"}, req.Params().Map())
+		return nil
+	})
+
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/hello", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	}
+
+	{
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("HEAD", "/hello", nil)
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+	}
 }
 
 func TestConflictingPlainAndWilcardRoutes(t *testing.T) {
 	router := New()
 
 	router.GET("/", dummyHandler)
+	router.POST("/*path", dummyHandler)
 	require.PanicsWithError(
 		t,
 		`routes "/" and "/*path" can't both handle GET`,

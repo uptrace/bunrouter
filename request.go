@@ -104,6 +104,7 @@ func (req Request) Route() string {
 type Params struct {
 	path        string
 	node        *node
+	handler     *routeHandler
 	wildcardLen uint16
 }
 
@@ -122,7 +123,7 @@ func (ps Params) Get(name string) (string, bool) {
 	if ps.node == nil {
 		return "", false
 	}
-	if i, ok := ps.node.params[name]; ok {
+	if i, ok := ps.handler.params[name]; ok {
 		return ps.findParam(i)
 	}
 	return "", false
@@ -132,7 +133,7 @@ func (ps *Params) findParam(paramIndex int) (string, bool) {
 	path := ps.path
 	pathLen := len(path)
 	currNode := ps.node
-	currParamIndex := len(ps.node.params) - 1
+	currParamIndex := len(ps.handler.params) - 1
 
 	// Wildcard can be only in the final node.
 	if ps.node.isWC {
@@ -196,11 +197,11 @@ func (ps Params) Int64(name string) (int64, error) {
 }
 
 func (ps Params) Map() map[string]string {
-	if ps.node == nil || len(ps.node.params) == 0 {
+	if ps.handler == nil || len(ps.handler.params) == 0 {
 		return nil
 	}
-	m := make(map[string]string, len(ps.node.params))
-	for param, index := range ps.node.params {
+	m := make(map[string]string, len(ps.handler.params))
+	for param, index := range ps.handler.params {
 		if value, ok := ps.findParam(index); ok {
 			m[param] = value
 		}
@@ -214,11 +215,11 @@ type Param struct {
 }
 
 func (ps Params) Slice() []Param {
-	if ps.node == nil || len(ps.node.params) == 0 {
+	if ps.handler == nil || len(ps.handler.params) == 0 {
 		return nil
 	}
-	slice := make([]Param, len(ps.node.params))
-	for param, index := range ps.node.params {
+	slice := make([]Param, len(ps.handler.params))
+	for param, index := range ps.handler.params {
 		if value, ok := ps.findParam(index); ok {
 			slice[index] = Param{Key: param, Value: value}
 		}

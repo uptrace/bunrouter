@@ -73,8 +73,9 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 		handler = node.handlerMap.notAllowed
 	}
 
-	return handler, Params{
+	return handler.fn, Params{
 		node:        node,
+		handler:     handler,
 		path:        path,
 		wildcardLen: uint16(wildcardLen),
 	}

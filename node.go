@@ -11,7 +11,6 @@ type node struct {
 	route string
 	part  string
 
-	params     map[string]int // param name => param position
 	handlerMap *handlerMap
 
 	parent *node
@@ -36,7 +35,6 @@ func (n *node) addRoute(route string) (*node, map[string]int) {
 
 	if currNode.route == "" {
 		currNode.route = route
-		currNode.params = params
 	}
 	n.indexNodes()
 
@@ -108,7 +106,7 @@ func (n *node) addPart(part string) *node {
 	return node
 }
 
-func (n *node) findRoute(meth, path string) (*node, HandlerFunc, int) {
+func (n *node) findRoute(meth, path string) (*node, *routeHandler, int) {
 	if path == "" {
 		return nil, nil, 0
 	}
@@ -124,7 +122,7 @@ func (n *node) findRoute(meth, path string) (*node, HandlerFunc, int) {
 	return n._findRoute(meth, path)
 }
 
-func (n *node) _findRoute(meth, path string) (*node, HandlerFunc, int) {
+func (n *node) _findRoute(meth, path string) (*node, *routeHandler, int) {
 	var found *node
 
 	if firstChar := path[0]; firstChar >= n.index.minChar && firstChar <= n.index.maxChar {
@@ -219,7 +217,7 @@ func (n *node) _indexNodes() {
 	}
 }
 
-func (n *node) setHandler(verb string, handler HandlerFunc) {
+func (n *node) setHandler(verb string, handler *routeHandler) {
 	if n.handlerMap == nil {
 		n.handlerMap = newHandlerMap()
 	}
@@ -336,21 +334,26 @@ func paramMap(route string, params []string) map[string]int {
 //------------------------------------------------------------------------------
 
 type handlerMap struct {
-	get        HandlerFunc
-	post       HandlerFunc
-	put        HandlerFunc
-	delete     HandlerFunc
-	head       HandlerFunc
-	options    HandlerFunc
-	patch      HandlerFunc
-	notAllowed HandlerFunc
+	get        *routeHandler
+	post       *routeHandler
+	put        *routeHandler
+	delete     *routeHandler
+	head       *routeHandler
+	options    *routeHandler
+	patch      *routeHandler
+	notAllowed *routeHandler
+}
+
+type routeHandler struct {
+	fn     HandlerFunc
+	params map[string]int // param name => param position
 }
 
 func newHandlerMap() *handlerMap {
 	return new(handlerMap)
 }
 
-func (h *handlerMap) Get(meth string) HandlerFunc {
+func (h *handlerMap) Get(meth string) *routeHandler {
 	switch meth {
 	case http.MethodGet:
 		return h.get
@@ -371,7 +374,7 @@ func (h *handlerMap) Get(meth string) HandlerFunc {
 	}
 }
 
-func (h *handlerMap) Set(meth string, handler HandlerFunc) {
+func (h *handlerMap) Set(meth string, handler *routeHandler) {
 	switch meth {
 	case http.MethodGet:
 		h.get = handler
@@ -390,16 +393,4 @@ func (h *handlerMap) Set(meth string, handler HandlerFunc) {
 	default:
 		panic(fmt.Errorf("unknown HTTP method: %s", meth))
 	}
-}
-
-func paramsEqual(m1, m2 map[string]int) bool {
-	if len(m1) != len(m2) {
-		return false
-	}
-	for k, v1 := range m1 {
-		if v2, ok := m2[k]; !ok || v1 != v2 {
-			return false
-		}
-	}
-	return true
 }
