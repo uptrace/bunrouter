@@ -15,9 +15,11 @@ import (
 )
 
 type middleware struct {
-	enabled               bool
-	verbose               bool
-	enabledOtherParameter bool
+	enabled           bool
+	verbose           bool
+	enabledReferer    bool
+	enabledRemoteAddr bool
+	enabledQuery      bool
 }
 
 type Option func(m *middleware)
@@ -36,10 +38,24 @@ func WithVerbose(on bool) Option {
 	}
 }
 
-// WithEnabledOtherParameter configures the middleware to log request Path, IP, Request header and Params.
-func WithEnabledOtherParameter(on bool) Option {
+// WithEnabledReferer configures the middleware to log request referer.
+func WithEnabledReferer(on bool) Option {
 	return func(m *middleware) {
-		m.enabledOtherParameter = on
+		m.enabledReferer = on
+	}
+}
+
+// WithEnabledRemoteAddr configures the middleware to log request address.
+func WithEnabledRemoteAddr(on bool) Option {
+	return func(m *middleware) {
+		m.enabledRemoteAddr = on
+	}
+}
+
+// WithEnabledQuery configures the middleware to log request query params.
+func WithEnabledQuery(on bool) Option {
+	return func(m *middleware) {
+		m.enabledQuery = on
 	}
 }
 
@@ -48,7 +64,9 @@ func WithEnabledOtherParameter(on bool) Option {
 //    - BUNDEBUG=0 - disables the middleware.
 //    - BUNDEBUG=1 - enables the middleware.
 //    - BUNDEBUG=2 - enables the middleware and verbose mode.
-//    - BUNDEBUG=3 - enables the middleware and logs request headers , path, ip and params.
+//    - BUNDEBUG=3 - enables the middleware and logs request referer.
+//    - BUNDEBUG=4 - enables the middleware and logs request remote address.
+//    - BUNDEBUG=5 - enables the middleware and logs request query params.
 
 func FromEnv(keys ...string) Option {
 	if len(keys) == 0 {
@@ -59,7 +77,9 @@ func FromEnv(keys ...string) Option {
 			if env, ok := os.LookupEnv(key); ok {
 				m.enabled = env != "" && env != "0"
 				m.verbose = env == "2"
-				m.enabledOtherParameter = env == "3"
+				m.enabledReferer = env == "3"
+				m.enabledRemoteAddr = env == "4"
+				m.enabledQuery = env == "5"
 				break
 			}
 		}
@@ -68,9 +88,11 @@ func FromEnv(keys ...string) Option {
 
 func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
 	c := &middleware{
-		enabled:               true,
-		verbose:               true,
-		enabledOtherParameter: false,
+		enabled:           true,
+		verbose:           true,
+		enabledReferer:    false,
+		enabledRemoteAddr: false,
+		enabledQuery:      false,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -111,8 +133,16 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 			formatMethod(req.Method),
 		)
 
-		if m.enabledOtherParameter {
-			args = append(args, req.URL.String(), req.RemoteAddr)
+		if m.enabledReferer {
+			args = append(args, req.Header.Get("Referer"))
+		}
+
+		if m.enabledRemoteAddr {
+			args = append(args, req.URL.String())
+		}
+
+		if m.enabledQuery {
+			args = append(args, req.URL.Query())
 		}
 
 		if err != nil {
@@ -124,12 +154,6 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 		}
 
 		fmt.Println(args...)
-		if m.enabledOtherParameter {
-			fmt.Println("User-Agent:", req.Header.Get("User-Agent"))
-			fmt.Println("Referer:", req.Header.Get("Referer"))
-			fmt.Println("Query Params:", req.URL.Query())
-			fmt.Println("Body Params:", req.PostForm)
-		}
 
 		return err
 	}
