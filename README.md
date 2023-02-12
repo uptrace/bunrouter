@@ -6,9 +6,9 @@
 [![Chat](https://discordapp.com/api/guilds/752070105847955518/widget.png)](https://discord.gg/rWtp5Aj)
 
 > BunRouter is brought to you by :star: [**uptrace/uptrace**](https://github.com/uptrace/uptrace).
-> Uptrace is an open source and blazingly fast
-> [distributed tracing tool](https://get.uptrace.dev/compare/distributed-tracing-tools.html) powered
-> by OpenTelemetry and ClickHouse. Give it a star as well!
+> Uptrace is an open-source APM tool that supports distributed tracing, metrics, and logs. You can
+> use it to monitor applications and set up automatic alerts to receive notifications via email,
+> Slack, Telegram, and others. Star it as well!
 
 **TLDR** BunRouter is as fast as httprouter, but supports middlewares, routing rules priority, and
 error handling.
