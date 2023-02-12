@@ -9,8 +9,8 @@ replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 require (
 	github.com/klauspost/compress v1.15.15
 	github.com/rs/cors v1.8.3
-	github.com/uptrace/bunrouter v1.0.19
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.19
+	github.com/uptrace/bunrouter v1.0.20
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.20
 )
 
 require (

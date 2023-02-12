@@ -4,4 +4,4 @@ go 1.17
 
 replace github.com/uptrace/bunrouter => ../..
 
-require github.com/uptrace/bunrouter v1.0.19
+require github.com/uptrace/bunrouter v1.0.20

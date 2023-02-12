@@ -9,9 +9,9 @@ replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 replace github.com/uptrace/bunrouter/extra/basicauth => ../../extra/basicauth
 
 require (
-	github.com/uptrace/bunrouter v1.0.19
-	github.com/uptrace/bunrouter/extra/basicauth v1.0.19
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.19
+	github.com/uptrace/bunrouter v1.0.20
+	github.com/uptrace/bunrouter/extra/basicauth v1.0.20
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.20
 )
 
 require (
