@@ -1,6 +1,7 @@
 package bunrouter
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -123,8 +124,9 @@ func testGroupMethods(t *testing.T) {
 	testMethod := func(method, expect string) {
 		result = ""
 
+		url := fmt.Sprintf("%s/%s", fullUserPath, method)
 		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(method, fullUserPath+method, nil)
+		r, _ := http.NewRequest(method, url, nil)
 		router.ServeHTTP(w, r)
 
 		if expect == "" {
