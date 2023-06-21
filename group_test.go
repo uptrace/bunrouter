@@ -124,8 +124,8 @@ func testGroupMethods(t *testing.T) {
 	testMethod := func(method, expect string) {
 		result = ""
 
-		url := fmt.Sprintf("%s/%s", fullUserPath, method)
 		w := httptest.NewRecorder()
+		url := fmt.Sprintf("%s/%s", fullUserPath, method)
 		r, _ := http.NewRequest(method, url, nil)
 		router.ServeHTTP(w, r)
 
