@@ -79,6 +79,11 @@ func (g *Group) Handle(meth string, path string, handler HandlerFunc) {
 	}
 }
 
+// Expose path read-only.
+func (g *Group) Path() string {
+	return g.path
+}
+
 // Syntactic sugar for Handle("GET", path, handler)
 func (g *Group) GET(path string, handler HandlerFunc) {
 	g.Handle("GET", path, handler)

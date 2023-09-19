@@ -1,6 +1,7 @@
 package bunrouter
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -104,19 +105,28 @@ func testGroupMethods(t *testing.T) {
 		}
 	}
 	router := New()
+
 	// Testing with a sub-group of a group as that will test everything at once
-	g := router.NewGroup("/base").NewGroup("/user")
+	const (
+		basePath     = "/base"
+		userPath     = "/user"
+		fullUserPath = basePath + userPath
+	)
+	g := router.NewGroup(basePath).NewGroup(userPath)
 	g.GET("/:param", makeHandler("GET"))
 	g.POST("/:param", makeHandler("POST"))
 	g.PATCH("/:param", makeHandler("PATCH"))
 	g.PUT("/:param", makeHandler("PUT"))
 	g.DELETE("/:param", makeHandler("DELETE"))
 
+	require.Equal(t, g.Path(), fullUserPath)
+
 	testMethod := func(method, expect string) {
 		result = ""
 
 		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(method, "/base/user/"+method, nil)
+		url := fmt.Sprintf("%s/%s", fullUserPath, method)
+		r, _ := http.NewRequest(method, url, nil)
 		router.ServeHTTP(w, r)
 
 		if expect == "" {
@@ -137,6 +147,6 @@ func testGroupMethods(t *testing.T) {
 	testMethod("DELETE", "DELETE")
 	testMethod("HEAD", "")
 
-	router.HEAD("/base/user/:param", makeHandler("HEAD"))
+	router.HEAD(fullUserPath+"/:param", makeHandler("HEAD"))
 	testMethod("HEAD", "HEAD")
 }
