@@ -37,9 +37,9 @@ func WithVerbose(on bool) Option {
 
 // WithEnv configures the middleware using the environment variable value.
 // For example, WithEnv("BUNDEBUG"):
-//    - BUNDEBUG=0 - disables the middleware.
-//    - BUNDEBUG=1 - enables the middleware.
-//    - BUNDEBUG=2 - enables the middleware and verbose mode.
+//   - BUNDEBUG=0 - disables the middleware.
+//   - BUNDEBUG=1 - enables the middleware.
+//   - BUNDEBUG=2 - enables the middleware and verbose mode.
 func FromEnv(keys ...string) Option {
 	if len(keys) == 0 {
 		keys = []string{"BUNDEBUG"}
@@ -58,7 +58,6 @@ func FromEnv(keys ...string) Option {
 func NewMiddleware(opts ...Option) bunrouter.MiddlewareFunc {
 	c := &middleware{
 		enabled: true,
-		verbose: true,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -76,12 +75,12 @@ func (m *middleware) Middleware(next bunrouter.HandlerFunc) bunrouter.HandlerFun
 
 		now := time.Now()
 		err := next(rec.Wrapped, req)
-		dur := time.Since(now)
 		statusCode := rec.StatusCode()
 
 		if !m.verbose && statusCode >= 200 && statusCode < 300 && err == nil {
 			return nil
 		}
+		dur := time.Since(now)
 
 		args := make([]interface{}, 0, 10)
 		args = append(args,
