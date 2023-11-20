@@ -1,3 +1,7 @@
+## [1.0.21](https://github.com/uptrace/bunrouter/compare/v1.0.20...v1.0.21) (2023-11-20)
+
+
+
 ## [1.0.20](https://github.com/uptrace/bunrouter/compare/v1.0.19...v1.0.20) (2023-02-12)
 
 
