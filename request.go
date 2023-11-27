@@ -178,6 +178,10 @@ func (ps Params) ByName(name string) string {
 	return s
 }
 
+func (ps Params) Int(name string) (int, error) {
+	return strconv.Atoi(ps.ByName(name))
+}
+
 func (ps Params) Uint32(name string) (uint32, error) {
 	n, err := strconv.ParseUint(ps.ByName(name), 10, 32)
 	return uint32(n), err
