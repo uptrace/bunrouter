@@ -108,12 +108,15 @@ func TestNotFound(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, w.Code)
 	require.Equal(t, 0, calledNotFound)
 
-	// Now try with a custome handler.
+	// Now try with a custom handler.
 	router = New(WithNotFoundHandler(notFoundHandler))
 	router.GET("/user/abc", simpleHandler)
 
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/abc/", nil)
+
 	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, 1, calledNotFound)
 }
 
@@ -127,6 +130,7 @@ func TestMethodNotAllowed(t *testing.T) {
 
 	router := New()
 	router.POST("/abc", simpleHandler)
+	router.GET("/abc/:id/def/:sub_id", simpleHandler)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/abc", nil)
@@ -135,12 +139,22 @@ func TestMethodNotAllowed(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	require.Equal(t, 0, calledMethodNotAllowed)
 
-	// Now try with a custome handler.
-	router = New(WithMethodNotAllowedHandler(methodNotAllowedHandler))
-	router.POST("/abc", simpleHandler)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/abc/1/def/2", nil)
 
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	require.Equal(t, 0, calledMethodNotAllowed)
+
+	// Now try with a custom handler.
+	router = New(WithMethodNotAllowedHandler(methodNotAllowedHandler))
+	router.POST("/abc", simpleHandler)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/abc", nil)
+
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, 1, calledMethodNotAllowed)
 }
 

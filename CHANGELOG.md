@@ -1,3 +1,9 @@
+## [1.0.22]() (???)
+
+### Bug Fixes
+
+* fix a case that the notfound handler was called although route exists ([d704aaf](https://github.com/uptrace/bunrouter/pull/97/commits/d704aaf7098151c4196567f1b9d99e0c13ec3d42))
+
 ## [1.0.21](https://github.com/uptrace/bunrouter/compare/v1.0.20...v1.0.21) (2023-11-20)
 
 
