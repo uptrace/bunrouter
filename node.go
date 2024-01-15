@@ -143,9 +143,7 @@ func (n *node) _findRoute(meth, path string) (*node, *routeHandler, int) {
 					if handler != nil {
 						return node, handler, wildcardLen
 					}
-					if node != nil {
-						found = node
-					}
+					found = node
 				}
 			}
 		}
@@ -154,8 +152,11 @@ func (n *node) _findRoute(meth, path string) (*node, *routeHandler, int) {
 	if n.colon != nil {
 		if i := strings.IndexByte(path, '/'); i > 0 {
 			node, handler, wildcardLen := n.colon._findRoute(meth, path[i:])
-			if handler != nil {
+			if node != nil && handler != nil {
 				return node, handler, wildcardLen
+			}
+			if found == nil {
+				found = node
 			}
 		} else if n.colon.handlerMap != nil {
 			if handler := n.colon.handlerMap.Get(meth); handler != nil {
