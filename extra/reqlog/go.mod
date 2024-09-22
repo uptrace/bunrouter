@@ -7,7 +7,7 @@ replace github.com/uptrace/bunrouter => ../..
 require (
 	github.com/fatih/color v1.17.0
 	github.com/felixge/httpsnoop v1.0.4
-	github.com/uptrace/bunrouter v1.0.21
+	github.com/uptrace/bunrouter v1.0.22
 	go.opentelemetry.io/otel/trace v1.30.0
 )
 

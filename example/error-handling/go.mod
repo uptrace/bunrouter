@@ -7,8 +7,8 @@ replace github.com/uptrace/bunrouter => ../..
 replace github.com/uptrace/bunrouter/extra/reqlog => ../../extra/reqlog
 
 require (
-	github.com/uptrace/bunrouter v1.0.21
-	github.com/uptrace/bunrouter/extra/reqlog v1.0.21
+	github.com/uptrace/bunrouter v1.0.22
+	github.com/uptrace/bunrouter/extra/reqlog v1.0.22
 )
 
 require (

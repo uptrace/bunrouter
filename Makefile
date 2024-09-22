@@ -12,7 +12,7 @@ test:
 	done
 
 go_mod_tidy:
-	go get -u && go mod tidy  -compat=1.18
+	go get -u && go mod tidy
 	set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 	  echo "go mod tidy in $${dir}"; \
 	  (cd "$${dir}" && \
