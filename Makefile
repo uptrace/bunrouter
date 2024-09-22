@@ -17,7 +17,7 @@ go_mod_tidy:
 	  echo "go mod tidy in $${dir}"; \
 	  (cd "$${dir}" && \
 	    go get -u ./... && \
-	    go mod tidy -compat=1.18); \
+	    go mod tidy); \
 	done
 
 fmt:
