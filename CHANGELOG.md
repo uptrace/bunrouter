@@ -1,3 +1,12 @@
+## [1.0.22](https://github.com/uptrace/bunrouter/compare/v1.0.21...v1.0.22) (2024-09-22)
+
+
+### Features
+
+* add params.Int ([1709e1d](https://github.com/uptrace/bunrouter/commit/1709e1de85ddd98bc324a99652424c616dfd846c))
+
+
+
 ## [1.0.21](https://github.com/uptrace/bunrouter/compare/v1.0.20...v1.0.21) (2023-11-20)
 
 
