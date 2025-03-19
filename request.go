@@ -362,7 +362,9 @@ func JSON(w http.ResponseWriter, value interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 
 	if value == nil {
-		w.Write([]byte("null"))
+		if _, err := w.Write([]byte("null")); err != nil {
+			return fmt.Errorf("bunrouter: failed to write null response: %w", err)
+		}
 		return nil
 	}
 

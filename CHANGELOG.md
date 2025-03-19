@@ -1,3 +1,19 @@
+## [1.0.23](https://github.com/uptrace/bunrouter/compare/v1.0.22...v1.0.23) (2025-03-19)
+
+
+### Features
+
+* enhanced error handling and nil checks throughout the codebase ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+* implemented proper HTTP error interface for standardized error responses ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+* added more descriptive error messages with package prefix ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+
+### Bug Fixes
+
+* prevent panics with comprehensive nil checks ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+* improved parameter validation with bounds checking ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+* ensured Map() and Slice() methods always return non-nil values ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+* fixed JSON handling for nil values ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
+
 ## [1.0.22](https://github.com/uptrace/bunrouter/compare/v1.0.21...v1.0.22) (2024-09-22)
 
 
