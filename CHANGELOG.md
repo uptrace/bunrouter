@@ -1,6 +1,17 @@
 ## [1.0.23](https://github.com/uptrace/bunrouter/compare/v1.0.22...v1.0.23) (2025-03-19)
 
 
+### Bug Fixes
+
+* **router:** ensure proper param handling in MethodNotAllowed fallback test ([1fe6546](https://github.com/uptrace/bunrouter/commit/1fe65464675f73552c05bf806bfd7adba2dee01a))
+* **router:** improve error handling & nil checks ([094d78b](https://github.com/uptrace/bunrouter/commit/094d78ba93918f73506421fcb7c2215f275bbb34))
+* **router:** improve error handling & nil checks ([d4bd43d](https://github.com/uptrace/bunrouter/commit/d4bd43dce23ab26ba0cdb65db3b10a2dcefccac6))
+
+
+
+## [1.0.23](https://github.com/uptrace/bunrouter/compare/v1.0.22...v1.0.23) (2025-03-19)
+
+
 ### Features
 
 * enhanced error handling and nil checks throughout the codebase ([0dba7e1](https://github.com/uptrace/bunrouter/commit/0dba7e1))
