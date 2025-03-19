@@ -7,14 +7,18 @@ import (
 	"sync"
 )
 
+// Router is the main router structure that implements HTTP request routing.
+// It maintains a routing tree and handles incoming HTTP requests.
 type Router struct {
-	config
-	Group
-
-	mu   sync.Mutex
-	tree node
+	config            // embedded router configuration
+	Group             // embedded route group
+	mu     sync.Mutex // protects the routing tree
+	tree   node       // root node of the routing tree
 }
 
+// New creates and returns a new Router instance with the given options.
+// Options can include middleware, custom handlers for 404 and 405 responses,
+// and other router configurations.
 func New(opts ...Option) *Router {
 	r := &Router{
 		tree: node{
@@ -40,18 +44,21 @@ func New(opts ...Option) *Router {
 
 var _ http.Handler = (*Router)(nil)
 
-// ServeHTTP implements http.Handler interface.
+// ServeHTTP implements the http.Handler interface.
+// It processes the incoming HTTP request and routes it to the appropriate handler.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	_ = r.ServeHTTPError(w, req)
 }
 
-// ServeHTTPError is like ServeHTTP, but it also returns the error returned
-// by the matched route handler.
+// ServeHTTPError is similar to ServeHTTP but also returns any error
+// that occurred during request handling.
 func (r *Router) ServeHTTPError(w http.ResponseWriter, req *http.Request) error {
 	handler, params := r.lookup(w, req)
 	return handler(w, newRequestParams(req, params))
 }
 
+// lookup finds the appropriate handler and parameters for the given HTTP request.
+// It returns the handler function and parsed route parameters.
 func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, Params) {
 	path := req.URL.RawPath
 	if path == "" {
@@ -81,6 +88,8 @@ func (r *Router) lookup(w http.ResponseWriter, req *http.Request) (HandlerFunc, 
 	}
 }
 
+// redir handles URL redirects for cleaned paths and trailing slash variations.
+// It returns a redirect handler if a redirect is needed, nil otherwise.
 func (r *Router) redir(method, path string) HandlerFunc {
 	if path == "/" {
 		return nil
@@ -112,11 +121,13 @@ func (r *Router) redir(method, path string) HandlerFunc {
 
 //------------------------------------------------------------------------------
 
+// CompatRouter provides compatibility layer for the router.
 type CompatRouter struct {
 	*Router
 	*CompatGroup
 }
 
+// Compat returns a new CompatRouter instance that wraps the current router.
 func (r *Router) Compat() *CompatRouter {
 	return &CompatRouter{
 		Router:      r,
@@ -124,11 +135,13 @@ func (r *Router) Compat() *CompatRouter {
 	}
 }
 
+// VerboseRouter provides a verbose interface to the router.
 type VerboseRouter struct {
 	*Router
 	*VerboseGroup
 }
 
+// Verbose returns a new VerboseRouter instance that wraps the current router.
 func (r *Router) Verbose() *VerboseRouter {
 	return &VerboseRouter{
 		Router:       r,
@@ -138,6 +151,8 @@ func (r *Router) Verbose() *VerboseRouter {
 
 //------------------------------------------------------------------------------
 
+// redirectHandler creates a handler function that performs HTTP redirects
+// to the specified new path while preserving query parameters and fragments.
 func redirectHandler(newPath string) HandlerFunc {
 	return func(w http.ResponseWriter, req Request) error {
 		newURL := url.URL{
@@ -150,11 +165,14 @@ func redirectHandler(newPath string) HandlerFunc {
 	}
 }
 
+// methodNotAllowedHandler is the default handler for requests with methods
+// that are not allowed for the matched route.
 func methodNotAllowedHandler(w http.ResponseWriter, r Request) error {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 	return nil
 }
 
+// notFoundHandler is the default handler for requests that don't match any route.
 func notFoundHandler(w http.ResponseWriter, req Request) error {
 	http.NotFound(w, req.Request)
 	return nil
